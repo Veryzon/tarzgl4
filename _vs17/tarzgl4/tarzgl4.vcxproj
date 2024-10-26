@@ -55,9 +55,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
-    <Import Project="..\qwadro\qwadro.vcxitems" Label="Shared" />
-  </ImportGroup>
+  <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -158,47 +156,57 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\zglCommands.h" />
-    <ClInclude Include="..\..\zglDevices.h" />
-    <ClInclude Include="..\..\zglObjects.h" />
-    <ClInclude Include="..\..\zglUtils.h" />
-    <ClInclude Include="..\..\zglDefs.h" />
-    <ClInclude Include="..\..\zglInterop_WGL32.h" />
+    <ClInclude Include="..\..\src\zglCommands.h" />
+    <ClInclude Include="..\..\src\zglDevices.h" />
+    <ClInclude Include="..\..\src\zglObjects.h" />
+    <ClInclude Include="..\..\src\zglUtils.h" />
+    <ClInclude Include="..\..\src\zglDefs.h" />
+    <ClInclude Include="..\..\src\zglInterop_WGL32.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="tarzgl4.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\zglCommandDecoder.c" />
-    <ClCompile Include="..\..\zglInterop_D3D.c" />
-    <ClCompile Include="..\..\zglLigature.c" />
-    <ClCompile Include="..\..\zglBuffer.c" />
-    <ClCompile Include="..\..\zglBufferOps.c" />
-    <ClCompile Include="..\..\zglCanvas.c" />
-    <ClCompile Include="..\..\zglCommandEncoder.c" />
-    <ClCompile Include="..\..\zglDrawContext.c" />
-    <ClCompile Include="..\..\zglDrawDevice_W32.c" />
-    <ClCompile Include="..\..\zglDrawInput.c" />
-    <ClCompile Include="..\..\zglDrawOutput_GDI32.c" />
-    <ClCompile Include="..\..\zglDrawBridge.c" />
-    <ClCompile Include="..\..\zglCommandBuffer.c" />
-    <ClCompile Include="..\..\zglFence.c" />
-    <ClCompile Include="..\..\zglInterop_WGL32.c" />
-    <ClCompile Include="..\..\zglPipeline.c" />
-    <ClCompile Include="..\..\zglQueryPool.c" />
-    <ClCompile Include="..\..\zglUtils.c" />
-    <ClCompile Include="..\..\zglRaster.c" />
-    <ClCompile Include="..\..\zglRasterOps.c" />
-    <ClCompile Include="..\..\zglRasterizer.c" />
-    <ClCompile Include="..\..\zglRasterizationOps.c" />
-    <ClCompile Include="..\..\zglSampler.c" />
-    <ClCompile Include="..\..\zglShader.c" />
-    <ClCompile Include="..\..\zglTransformationOps.c" />
-    <ClCompile Include="..\..\zglVertexInput.c" />
+    <ClCompile Include="..\..\src\zglCommandDecoder.c" />
+    <ClCompile Include="..\..\src\zglInterop_D3D.c" />
+    <ClCompile Include="..\..\src\zglLigature.c" />
+    <ClCompile Include="..\..\src\zglBuffer.c" />
+    <ClCompile Include="..\..\src\zglBufferOps.c" />
+    <ClCompile Include="..\..\src\zglCanvas.c" />
+    <ClCompile Include="..\..\src\zglCommandEncoder.c" />
+    <ClCompile Include="..\..\src\zglDrawContext.c" />
+    <ClCompile Include="..\..\src\zglDrawDevice_W32.c" />
+    <ClCompile Include="..\..\src\zglDrawInput.c" />
+    <ClCompile Include="..\..\src\zglDrawOutput_GDI32.c" />
+    <ClCompile Include="..\..\src\zglDrawBridge.c" />
+    <ClCompile Include="..\..\src\zglCommandBuffer.c" />
+    <ClCompile Include="..\..\src\zglFence.c" />
+    <ClCompile Include="..\..\src\zglInterop_WGL32.c" />
+    <ClCompile Include="..\..\src\zglPipeline.c" />
+    <ClCompile Include="..\..\src\zglQueryPool.c" />
+    <ClCompile Include="..\..\src\zglUtils.c" />
+    <ClCompile Include="..\..\src\zglRaster.c" />
+    <ClCompile Include="..\..\src\zglRasterOps.c" />
+    <ClCompile Include="..\..\src\zglRasterizationOps.c" />
+    <ClCompile Include="..\..\src\zglSampler.c" />
+    <ClCompile Include="..\..\src\zglShader.c" />
+    <ClCompile Include="..\..\src\zglTransformationOps.c" />
+    <ClCompile Include="..\..\src\zglVertexInput.c" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\zglWrapper.inl" />
+    <None Include="..\..\src\zglWrapper.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\afx\_vs17\e2coree\e2coree.vcxproj">
+      <Project>{973a60ff-ea6c-4d62-a302-bf610cabab8c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\afx\_vs17\e2draw\e2draw.vcxproj">
+      <Project>{2d93c9e6-a8bd-40e6-8ffe-cd15319b0241}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\afx\_vs17\e2mmux\e2mmux.vcxproj">
+      <Project>{b86a5b24-69ef-42ad-86d9-e3ac4405a9ce}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
