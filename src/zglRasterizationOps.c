@@ -51,11 +51,11 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (rasterizationDisabled)
         {
-            gl->Enable(GL_RASTERIZER_DISCARD); _SglThrowErrorOccuried();
+            gl->Enable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
         }
         else
         {
-            gl->Disable(GL_RASTERIZER_DISCARD); _SglThrowErrorOccuried();
+            gl->Disable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.rasterizationDisabled = rasterizationDisabled;
     }
@@ -85,7 +85,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             Vertices are marked as boundary or nonboundary with an edge flag. Edge flags are generated internally by the GL when it decomposes triangle stips and fans.
         */
-        gl->PolygonMode(GL_FRONT_AND_BACK, AfxToGlFillMode(fillMode)); _SglThrowErrorOccuried();
+        gl->PolygonMode(GL_FRONT_AND_BACK, AfxToGlFillMode(fillMode)); _ZglThrowErrorOccuried();
         dpu->activeRs.fillMode = fillMode;
     }
 
@@ -116,11 +116,11 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (depthBiasEnabled)
         {
-            gl->Enable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _SglThrowErrorOccuried();
+            gl->Enable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _ZglThrowErrorOccuried();
         }
         else
         {
-            gl->Disable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _SglThrowErrorOccuried();
+            gl->Disable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.depthBiasEnabled = depthBiasEnabled;
     }
@@ -147,11 +147,11 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (gl->PolygonOffsetClamp)
         {
-            gl->PolygonOffsetClamp(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor, dpu->nextRs.depthBiasClamp); _SglThrowErrorOccuried();
+            gl->PolygonOffsetClamp(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor, dpu->nextRs.depthBiasClamp); _ZglThrowErrorOccuried();
         }
         else
         {
-            gl->PolygonOffset(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor); _SglThrowErrorOccuried();
+            gl->PolygonOffset(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor); _ZglThrowErrorOccuried();
         }
 
         dpu->activeRs.depthBiasConstFactor != dpu->nextRs.depthBiasConstFactor;
@@ -200,7 +200,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
     if (dpu->activeRs.lineWidth != lineWidth)
     {
-        gl->LineWidth(lineWidth); _SglThrowErrorOccuried();
+        gl->LineWidth(lineWidth); _ZglThrowErrorOccuried();
         dpu->activeRs.lineWidth = lineWidth;
     }
 #endif
@@ -221,13 +221,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (depthTestEnabled)
         {
-            AfxAssert(!dpu->activeRs.depthTestEnabled);
-            gl->Enable(GL_DEPTH_TEST); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeRs.depthTestEnabled);
+            gl->Enable(GL_DEPTH_TEST); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeRs.depthTestEnabled);
-            gl->Disable(GL_DEPTH_TEST); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeRs.depthTestEnabled);
+            gl->Disable(GL_DEPTH_TEST); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.depthTestEnabled = depthTestEnabled;
     }
@@ -264,8 +264,8 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 In order to unconditionally write to the depth buffer, the depth test should be enabled and set to GL_ALWAYS.
             */
 
-            AfxAssert(depthCompareOp < avxCompareOp_TOTAL);
-            gl->DepthFunc(SglToGlCompareOp(depthCompareOp)); _SglThrowErrorOccuried();
+            AFX_ASSERT(depthCompareOp < avxCompareOp_TOTAL);
+            gl->DepthFunc(ZglToGlCompareOp(depthCompareOp)); _ZglThrowErrorOccuried();
             dpu->activeRs.depthCompareOp = depthCompareOp;
         }
     }
@@ -290,13 +290,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (depthWriteDisabled)
         {
-            //AfxAssert(dpu->activeRs.depthWriteDisabled);
-            gl->DepthMask(GL_FALSE); _SglThrowErrorOccuried();
+            //AFX_ASSERT(dpu->activeRs.depthWriteDisabled);
+            gl->DepthMask(GL_FALSE); _ZglThrowErrorOccuried();
         }
         else
         {
-            //AfxAssert(!dpu->activeRs.depthWriteDisabled);
-            gl->DepthMask(GL_TRUE); _SglThrowErrorOccuried();
+            //AFX_ASSERT(!dpu->activeRs.depthWriteDisabled);
+            gl->DepthMask(GL_TRUE); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.depthWriteDisabled = depthWriteDisabled;
     }
@@ -325,12 +325,12 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (depthBoundsTestEnabled)
         {
-            gl->Enable(DEPTH_BOUNDS_TEST_EXT); _SglThrowErrorOccuried();
-            gl->DepthBoundsEXT(dpu->state.depthBounds[0], dpu->state.depthBounds[1]); _SglThrowErrorOccuried();
+            gl->Enable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
+            gl->DepthBoundsEXT(dpu->state.depthBounds[0], dpu->state.depthBounds[1]); _ZglThrowErrorOccuried();
         }
         else
         {
-            gl->Disable(DEPTH_BOUNDS_TEST_EXT); _SglThrowErrorOccuried();
+            gl->Disable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
         }
     }
 #endif
@@ -350,13 +350,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (stencilTestEnabled)
         {
-            AfxAssert(!dpu->activeRs.stencilTestEnabled);
-            gl->Enable(GL_STENCIL_TEST); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeRs.stencilTestEnabled);
+            gl->Enable(GL_STENCIL_TEST); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeRs.stencilTestEnabled);
-            gl->Disable(GL_STENCIL_TEST); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeRs.stencilTestEnabled);
+            gl->Disable(GL_STENCIL_TEST); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.stencilTestEnabled = stencilTestEnabled;
     }
@@ -418,7 +418,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             (dpu->activeRs.stencilFront.reference != reference)
             )
         {
-            gl->StencilFuncSeparate(GL_FRONT, SglToGlCompareOp(compareOp), reference, compareMask); _SglThrowErrorOccuried();
+            gl->StencilFuncSeparate(GL_FRONT, ZglToGlCompareOp(compareOp), reference, compareMask); _ZglThrowErrorOccuried();
 
             dpu->activeRs.stencilFront.compareMask = compareMask;
             dpu->activeRs.stencilFront.compareOp = compareOp;
@@ -435,7 +435,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             (dpu->activeRs.stencilBack.reference != reference)
             )
         {
-            gl->StencilFuncSeparate(GL_BACK, SglToGlCompareOp(compareOp), reference, compareMask); _SglThrowErrorOccuried();
+            gl->StencilFuncSeparate(GL_BACK, ZglToGlCompareOp(compareOp), reference, compareMask); _ZglThrowErrorOccuried();
 
             dpu->activeRs.stencilBack.compareMask = compareMask;
             dpu->activeRs.stencilBack.compareOp = compareOp;
@@ -476,7 +476,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (dpu->activeRs.stencilFront.writeMask != writeMask)
         {
-            gl->StencilMaskSeparate(GL_FRONT, writeMask); _SglThrowErrorOccuried();
+            gl->StencilMaskSeparate(GL_FRONT, writeMask); _ZglThrowErrorOccuried();
             dpu->activeRs.stencilFront.writeMask = writeMask;
         }
 
@@ -484,7 +484,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (dpu->activeRs.stencilBack.writeMask != writeMask)
         {
-            gl->StencilMaskSeparate(GL_BACK, writeMask); _SglThrowErrorOccuried();
+            gl->StencilMaskSeparate(GL_BACK, writeMask); _ZglThrowErrorOccuried();
             dpu->activeRs.stencilBack.writeMask = writeMask;
         }
     }
@@ -504,13 +504,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
         if (msEnabled)
         {
-            AfxAssert(!dpu->activeRs.msEnabled);
-            gl->Enable(GL_MULTISAMPLE); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeRs.msEnabled);
+            gl->Enable(GL_MULTISAMPLE); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeRs.msEnabled);
-            gl->Disable(GL_MULTISAMPLE); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeRs.msEnabled);
+            gl->Disable(GL_MULTISAMPLE); _ZglThrowErrorOccuried();
 
         }
         dpu->activeRs.msEnabled = msEnabled;
@@ -529,19 +529,19 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             if (sampleCnt)
             {
-                AfxAssert(!dpu->activeRs.sampleCnt);
-                gl->Enable(GL_SAMPLE_MASK); _SglThrowErrorOccuried();
+                AFX_ASSERT(!dpu->activeRs.sampleCnt);
+                gl->Enable(GL_SAMPLE_MASK); _ZglThrowErrorOccuried();
 
                 for (afxUnit i = 0; i < sampleCnt; i++)
                 {
                     dpu->activeRs.sampleMasks[i] = dpu->nextRs.sampleMasks[i];
-                    gl->SampleMaski(i, dpu->nextRs.sampleMasks[i]); _SglThrowErrorOccuried();
+                    gl->SampleMaski(i, dpu->nextRs.sampleMasks[i]); _ZglThrowErrorOccuried();
                 }
             }
             else
             {
-                AfxAssert(dpu->activeRs.sampleCnt);
-                gl->Disable(GL_SAMPLE_MASK); _SglThrowErrorOccuried();
+                AFX_ASSERT(dpu->activeRs.sampleCnt);
+                gl->Disable(GL_SAMPLE_MASK); _ZglThrowErrorOccuried();
             }
             dpu->activeRs.sampleCnt = sampleCnt;
         }
@@ -558,18 +558,18 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             if (sampleShadingEnabled)
             {
-                AfxAssert(dpu->activeRs.sampleShadingEnabled);
-                gl->Enable(GL_SAMPLE_SHADING); _SglThrowErrorOccuried();
+                AFX_ASSERT(dpu->activeRs.sampleShadingEnabled);
+                gl->Enable(GL_SAMPLE_SHADING); _ZglThrowErrorOccuried();
             }
             else
             {
-                AfxAssert(!dpu->activeRs.sampleShadingEnabled);
-                gl->Disable(GL_SAMPLE_SHADING); _SglThrowErrorOccuried();
+                AFX_ASSERT(!dpu->activeRs.sampleShadingEnabled);
+                gl->Disable(GL_SAMPLE_SHADING); _ZglThrowErrorOccuried();
             }
 
             if (gl->MinSampleShading) // gl v4.0
             {
-                gl->MinSampleShading(minSampleShadingValue); _SglThrowErrorOccuried();
+                gl->MinSampleShading(minSampleShadingValue); _ZglThrowErrorOccuried();
             }
 
             dpu->activeRs.sampleShadingEnabled = sampleShadingEnabled;
@@ -587,13 +587,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             if (alphaToOneEnabled)
             {
-                AfxAssert(!dpu->activeRs.alphaToOneEnabled);
-                gl->Enable(GL_SAMPLE_ALPHA_TO_ONE); _SglThrowErrorOccuried();
+                AFX_ASSERT(!dpu->activeRs.alphaToOneEnabled);
+                gl->Enable(GL_SAMPLE_ALPHA_TO_ONE); _ZglThrowErrorOccuried();
             }
             else
             {
-                AfxAssert(dpu->activeRs.alphaToOneEnabled);
-                gl->Disable(GL_SAMPLE_ALPHA_TO_ONE); _SglThrowErrorOccuried();
+                AFX_ASSERT(dpu->activeRs.alphaToOneEnabled);
+                gl->Disable(GL_SAMPLE_ALPHA_TO_ONE); _ZglThrowErrorOccuried();
             }
             dpu->activeRs.alphaToOneEnabled = alphaToOneEnabled;
         }
@@ -610,13 +610,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             if (alphaToCoverageEnabled)
             {
-                AfxAssert(!dpu->activeRs.alphaToCoverageEnabled);
-                gl->Enable(GL_SAMPLE_ALPHA_TO_COVERAGE); _SglThrowErrorOccuried();
+                AFX_ASSERT(!dpu->activeRs.alphaToCoverageEnabled);
+                gl->Enable(GL_SAMPLE_ALPHA_TO_COVERAGE); _ZglThrowErrorOccuried();
             }
             else
             {
-                AfxAssert(dpu->activeRs.alphaToCoverageEnabled);
-                gl->Disable(GL_SAMPLE_ALPHA_TO_COVERAGE); _SglThrowErrorOccuried();
+                AFX_ASSERT(dpu->activeRs.alphaToCoverageEnabled);
+                gl->Disable(GL_SAMPLE_ALPHA_TO_COVERAGE); _ZglThrowErrorOccuried();
             }
             dpu->activeRs.alphaToCoverageEnabled = alphaToCoverageEnabled;
         }
@@ -645,14 +645,14 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 v[i][1] = dpu->nextRs.scisRects[i].origin[1];
                 v[i][2] = dpu->nextRs.scisRects[i].extent[0];
                 v[i][3] = dpu->nextRs.scisRects[i].extent[1];
-                gl->ScissorArrayv(i, 1, &v[i][0]); _SglThrowErrorOccuried();
+                gl->ScissorArrayv(i, 1, &v[i][0]); _ZglThrowErrorOccuried();
             }
         }
-        //gl->ScissorArrayv(0, cnt, &v[0][0]); _SglThrowErrorOccuried();
+        //gl->ScissorArrayv(0, cnt, &v[0][0]); _ZglThrowErrorOccuried();
 #else
         for (afxUnit i = 0; i < ZGL_MAX_VIEWPORTS; i++)
         {
-            AfxAssertRange(ZGL_MAX_VIEWPORTS, i, 1);
+            AFX_ASSERT_RANGE(ZGL_MAX_VIEWPORTS, i, 1);
 
             if (AfxTestBitEnabled(updMask, i))
             {
@@ -663,7 +663,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
                 if (gl->ScissorArrayv)
                 {
-                    gl->ScissorArrayv(i, 1, &v[0][0]); _SglThrowErrorOccuried();
+                    gl->ScissorArrayv(i, 1, &v[0][0]); _ZglThrowErrorOccuried();
                 }
                 else
                 {
@@ -672,8 +672,8 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                     GLsizei w = (GLsizei)(dpu->nextRs.scisRects[0].extent[0]);
                     GLsizei h = (GLsizei)(dpu->nextRs.scisRects[0].extent[1]);
 
-                    AfxAssert(i == 0);
-                    gl->Scissor(x, y, w, h); _SglThrowErrorOccuried();
+                    AFX_ASSERT(i == 0);
+                    gl->Scissor(x, y, w, h); _ZglThrowErrorOccuried();
                 }
                 AfxCopyRect(&(dpu->activeRs.scisRects[i]), &dpu->nextRs.scisRects[i]);
             }
@@ -693,100 +693,101 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         //AfxGetColorOutputChannels(ras, 0, outCnt, ch);
 
 #ifndef _ZGL_DBG_IGNORE_BLEND
+
+        if (ch->blendEnabled && !blendNoUsed)
+        {
+            blendNoUsed = FALSE;
+
+            /*
+                GL_BLEND
+                If enabled, blend the computed fragment color values with the values in the color buffers. See glBlendFunc.
+            */
+
+            if (!dpu->activeRs.anyBlendEnabled)
+            {
+                gl->Enable(GL_BLEND); _ZglThrowErrorOccuried();
+                dpu->activeRs.anyBlendEnabled = TRUE;
+            }
+        }
+
+        if (ch->blendEnabled != dpu->activeRs.outs[i].blendEnabled)
+        {
+
+            dpu->activeRs.outs[i].blendEnabled = ch->blendEnabled;
+        }
+
         if (ch->blendEnabled)
         {
-            //if (ch->blendEnabled != dpu->activeRs.outs[i].blendEnabled)
+            //if (dpu->nextBlendConstUpd)
             {
-                if (ch->blendEnabled)
-                {
-                    if (blendNoUsed)
-                    {
-                        blendNoUsed = FALSE;
+                /*
+                    glBlendColor — set the blend color.
 
-                        /*
-                            GL_BLEND
-                            If enabled, blend the computed fragment color values with the values in the color buffers. See glBlendFunc.
-                        */
+                    The GL_BLEND_COLOR may be used to calculate the source and destination blending factors. The color components are clamped to the range [0,1] before being stored.
+                    See glBlendFunc for a complete description of the blending operations. Initially the GL_BLEND_COLOR is set to (0, 0, 0, 0).
+                */
 
-                        if (!dpu->activeRs.anyBlendEnabled)
-                        {
-                            gl->Enable(GL_BLEND); _SglThrowErrorOccuried();
-                            dpu->activeRs.anyBlendEnabled = TRUE;
-                        }
-                    }
-
-                    
-                }
-                dpu->activeRs.outs[i].blendEnabled = ch->blendEnabled;
+                AfxColorCopy(dpu->activeRs.blendConstants, dpu->nextRs.blendConstants);
+                gl->BlendColor(dpu->activeRs.blendConstants[0], dpu->activeRs.blendConstants[1], dpu->activeRs.blendConstants[2], dpu->activeRs.blendConstants[3]);
+                //dpu->nextBlendConstUpd = NIL;
             }
-
-            //if (dpu->activeRs.outs[i].blendEnabled)
+#if 0
+            if ((dpu->activeRs.outs[i].blendConfig.rgbBlendOp != ch->blendConfig.rgbBlendOp) ||
+                (dpu->activeRs.outs[i].blendConfig.aBlendOp != ch->blendConfig.aBlendOp))
+#endif
             {
-                //if (dpu->nextBlendConstUpd)
-                {
-                    /*
-                        glBlendColor — set the blend color.
+                /*
+                    glBlendEquationSeparate — set the RGB blend equation and the alpha blend equation separately.
 
-                        The GL_BLEND_COLOR may be used to calculate the source and destination blending factors. The color components are clamped to the range [0,1] before being stored.
-                        See glBlendFunc for a complete description of the blending operations. Initially the GL_BLEND_COLOR is set to (0, 0, 0, 0).
-                    */
+                    The blend equations determines how a new pixel (the source color) is combined with a pixel already in the framebuffer (the destination color).
+                    These functions specify one blend equation for the RGB-color components and one blend equation for the alpha component.
+                    glBlendEquationSeparatei specifies the blend equations for a single draw buffer whereas glBlendEquationSeparate sets the blend equations for all draw buffers.
 
-                    AfxColorCopy(dpu->activeRs.blendConstants, dpu->nextRs.blendConstants);
-                    gl->BlendColor(dpu->activeRs.blendConstants[0], dpu->activeRs.blendConstants[1], dpu->activeRs.blendConstants[2], dpu->activeRs.blendConstants[3]);
-                    //dpu->nextBlendConstUpd = NIL;
-                }
+                    The blend equations use the source and destination blend factors specified by either glBlendFunc or glBlendFuncSeparate.
+                    See glBlendFunc or glBlendFuncSeparate for a description of the various blend factors.
+                */
+                gl->BlendEquationSeparatei(i, AfxToGlBlendOp(ch->blendConfig.rgbBlendOp), AfxToGlBlendOp(ch->blendConfig.aBlendOp)); _ZglThrowErrorOccuried();
+                dpu->activeRs.outs[i].blendConfig.rgbBlendOp = ch->blendConfig.rgbBlendOp;
+                dpu->activeRs.outs[i].blendConfig.aBlendOp = ch->blendConfig.aBlendOp;
+            }
 #if 0
-                if ((dpu->activeRs.outs[i].blendConfig.rgbBlendOp != ch->blendConfig.rgbBlendOp) ||
-                    (dpu->activeRs.outs[i].blendConfig.aBlendOp != ch->blendConfig.aBlendOp))
+            if ((dpu->activeRs.outs[i].blendConfig.rgbSrcFactor != ch->blendConfig.rgbSrcFactor) ||
+                (dpu->activeRs.outs[i].blendConfig.rgbDstFactor != ch->blendConfig.rgbDstFactor) ||
+                (dpu->activeRs.outs[i].blendConfig.aSrcFactor != ch->blendConfig.aSrcFactor) ||
+                (dpu->activeRs.outs[i].blendConfig.aDstFactor != ch->blendConfig.aDstFactor))
 #endif
-                {
-                    /*
-                        glBlendEquationSeparate — set the RGB blend equation and the alpha blend equation separately.
+            {
+                /*
+                    glBlendFuncSeparate — specify pixel arithmetic for RGB and alpha components separately.
 
-                        The blend equations determines how a new pixel (the source color) is combined with a pixel already in the framebuffer (the destination color).
-                        These functions specify one blend equation for the RGB-color components and one blend equation for the alpha component.
-                        glBlendEquationSeparatei specifies the blend equations for a single draw buffer whereas glBlendEquationSeparate sets the blend equations for all draw buffers.
+                    Pixels can be drawn using a function that blends the incoming (source) RGBA values with the RGBA values that are already in the frame buffer (the destination values).
+                    Blending is initially disabled. Use glEnable and glDisable with argument GL_BLEND to enable and disable blending.
 
-                        The blend equations use the source and destination blend factors specified by either glBlendFunc or glBlendFuncSeparate.
-                        See glBlendFunc or glBlendFuncSeparate for a description of the various blend factors.
-                    */
-                    gl->BlendEquationSeparatei(i, AfxToGlBlendOp(ch->blendConfig.rgbBlendOp), AfxToGlBlendOp(ch->blendConfig.aBlendOp)); _SglThrowErrorOccuried();
-                    dpu->activeRs.outs[i].blendConfig.rgbBlendOp = ch->blendConfig.rgbBlendOp;
-                    dpu->activeRs.outs[i].blendConfig.aBlendOp = ch->blendConfig.aBlendOp;
-                }
-#if 0
-                if ((dpu->activeRs.outs[i].blendConfig.rgbSrcFactor != ch->blendConfig.rgbSrcFactor) ||
-                    (dpu->activeRs.outs[i].blendConfig.rgbDstFactor != ch->blendConfig.rgbDstFactor) ||
-                    (dpu->activeRs.outs[i].blendConfig.aSrcFactor != ch->blendConfig.aSrcFactor) ||
-                    (dpu->activeRs.outs[i].blendConfig.aDstFactor != ch->blendConfig.aDstFactor))
-#endif
-                {
-                    /*
-                        glBlendFuncSeparate — specify pixel arithmetic for RGB and alpha components separately.
-
-                        Pixels can be drawn using a function that blends the incoming (source) RGBA values with the RGBA values that are already in the frame buffer (the destination values).
-                        Blending is initially disabled. Use glEnable and glDisable with argument GL_BLEND to enable and disable blending.
-
-                        glBlendFuncSeparate defines the operation of blending for all draw buffers when it is enabled.
-                        glBlendFuncSeparatei defines the operation of blending for a single draw buffer specified by buf when enabled for that draw buffer.
-                        srcRGB specifies which method is used to scale the source RGB-color components. dstRGB specifies which method is used to scale the destination RGB-color components.
-                        Likewise, srcAlpha specifies which method is used to scale the source alpha color component, and dstAlpha specifies which method is used to scale the destination alpha component.
-                        The possible methods are described in the following table. Each method defines four scale factors, one each for red, green, blue, and alpha.
-                    */
-                    gl->BlendFuncSeparatei(i, AfxToGlBlendFactor(ch->blendConfig.rgbSrcFactor), AfxToGlBlendFactor(ch->blendConfig.rgbDstFactor), AfxToGlBlendFactor(ch->blendConfig.aSrcFactor), AfxToGlBlendFactor(ch->blendConfig.aDstFactor)); _SglThrowErrorOccuried();
-                    dpu->activeRs.outs[i].blendConfig.rgbSrcFactor = ch->blendConfig.rgbSrcFactor;
-                    dpu->activeRs.outs[i].blendConfig.rgbDstFactor = ch->blendConfig.rgbDstFactor;
-                    dpu->activeRs.outs[i].blendConfig.aSrcFactor = ch->blendConfig.aSrcFactor;
-                    dpu->activeRs.outs[i].blendConfig.aDstFactor = ch->blendConfig.aDstFactor;
-                }
+                    glBlendFuncSeparate defines the operation of blending for all draw buffers when it is enabled.
+                    glBlendFuncSeparatei defines the operation of blending for a single draw buffer specified by buf when enabled for that draw buffer.
+                    srcRGB specifies which method is used to scale the source RGB-color components. dstRGB specifies which method is used to scale the destination RGB-color components.
+                    Likewise, srcAlpha specifies which method is used to scale the source alpha color component, and dstAlpha specifies which method is used to scale the destination alpha component.
+                    The possible methods are described in the following table. Each method defines four scale factors, one each for red, green, blue, and alpha.
+                */
+                gl->BlendFuncSeparatei(i, AfxToGlBlendFactor(ch->blendConfig.rgbSrcFactor), AfxToGlBlendFactor(ch->blendConfig.rgbDstFactor), AfxToGlBlendFactor(ch->blendConfig.aSrcFactor), AfxToGlBlendFactor(ch->blendConfig.aDstFactor)); _ZglThrowErrorOccuried();
+                dpu->activeRs.outs[i].blendConfig.rgbSrcFactor = ch->blendConfig.rgbSrcFactor;
+                dpu->activeRs.outs[i].blendConfig.rgbDstFactor = ch->blendConfig.rgbDstFactor;
+                dpu->activeRs.outs[i].blendConfig.aSrcFactor = ch->blendConfig.aSrcFactor;
+                dpu->activeRs.outs[i].blendConfig.aDstFactor = ch->blendConfig.aDstFactor;
             }
         }
 #endif
 
 #ifndef _ZGL_DBG_IGNORE_COLOR_MASK
 
-        //if (ch->discardMask != dpu->nextRs.outs[i].discardMask)
+        // The color write mask operation is applied regardless of whether blending is enabled.
+        
+        // The color write mask operation is applied only if Color Write Enable is enabled for the respective attachment. 
+        // Otherwise the color write mask is ignored and writes to all components of the attachment are disabled.
+
+        if (ch->discardMask != dpu->activeRs.outs[i].discardMask)
         {
+            if (dpu->activeRs.colDts[i].storeOp == avxStoreOp_STORE)
             /*
                 glColorMask, glColorMaski — enable and disable writing of frame buffer color components.
 
@@ -796,20 +797,17 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
                 Changes to individual bits of components cannot be controlled. Rather, changes are either enabled or disabled for entire color components.
             */
-            gl->ColorMaski(i, !(ch->discardMask & avxRgbaMask_R), !(ch->discardMask & avxRgbaMask_G), !(ch->discardMask & avxRgbaMask_B), !(ch->discardMask & avxRgbaMask_A)); _SglThrowErrorOccuried();
+            gl->ColorMaski(i, !(ch->discardMask & avxRgbaMask_R), !(ch->discardMask & avxRgbaMask_G), !(ch->discardMask & avxRgbaMask_B), !(ch->discardMask & avxRgbaMask_A)); _ZglThrowErrorOccuried();
             dpu->activeRs.outs[i].discardMask = ch->discardMask;
         }
 #endif
     }
 
 #ifndef _ZGL_DBG_IGNORE_BLEND
-    if (blendNoUsed)
+    if (blendNoUsed && dpu->activeRs.anyBlendEnabled)
     {
-        if (dpu->activeRs.anyBlendEnabled)
-        {
-            gl->Disable(GL_BLEND); _SglThrowErrorOccuried();
-            dpu->activeRs.anyBlendEnabled = FALSE;
-        }
+        gl->Disable(GL_BLEND); _ZglThrowErrorOccuried();
+        dpu->activeRs.anyBlendEnabled = FALSE;
     }
 #endif
 
@@ -822,13 +820,13 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
     {
         if (logicOpEnabled)
         {
-            AfxAssert(!dpu->activeRs.logicOpEnabled);
-            gl->Enable(GL_COLOR_LOGIC_OP); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeRs.logicOpEnabled);
+            gl->Enable(GL_COLOR_LOGIC_OP); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeRs.logicOpEnabled);
-            gl->Disable(GL_COLOR_LOGIC_OP); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeRs.logicOpEnabled);
+            gl->Disable(GL_COLOR_LOGIC_OP); _ZglThrowErrorOccuried();
         }
         dpu->activeRs.logicOpEnabled = logicOpEnabled;
     }
@@ -850,7 +848,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 Logic operations have no effect on floating point draw buffers.
                 However, if GL_COLOR_LOGIC_OP is enabled, blending is still disabled in this case.
             */
-            gl->LogicOp(AfxToGlLogicOp(logicOp)); _SglThrowErrorOccuried();
+            gl->LogicOp(AfxToGlLogicOp(logicOp)); _ZglThrowErrorOccuried();
             dpu->activeRs.logicOp = logicOp;
         }
     }

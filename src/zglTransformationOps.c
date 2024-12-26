@@ -40,13 +40,13 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
         if (cullMode)
         {
-            AfxAssert(!dpu->activeTs.cullMode);
-            gl->Enable(GL_CULL_FACE); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeTs.cullMode);
+            gl->Enable(GL_CULL_FACE); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeTs.cullMode);
-            gl->Disable(GL_CULL_FACE); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeTs.cullMode);
+            gl->Disable(GL_CULL_FACE); _ZglThrowErrorOccuried();
         }
 
         if (cullMode)
@@ -65,7 +65,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
                 If mode is GL_FRONT_AND_BACK, no facets are drawn, but other primitives such as points and lines are drawn.
             */
-            gl->CullFace(AfxToGlCullMode(cullMode)); _SglThrowErrorOccuried();
+            gl->CullFace(AfxToGlCullMode(cullMode)); _ZglThrowErrorOccuried();
         }
         dpu->activeTs.cullMode = cullMode;
     }
@@ -92,7 +92,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
                 Passing GL_CCW to mode selects counterclockwise polygons as front-facing; GL_CW selects clockwise polygons as front-facing.
                 By default, counterclockwise polygons are taken to be front-facing.
             */
-            gl->FrontFace(cwFrontFacing ? GL_CW : GL_CCW); _SglThrowErrorOccuried();
+            gl->FrontFace(cwFrontFacing ? GL_CW : GL_CCW); _ZglThrowErrorOccuried();
             dpu->activeTs.cwFrontFacing = cwFrontFacing;
         }
     }
@@ -100,7 +100,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
     if (dpu->nextTs.vpsUpdMask)
     {
         afxUnit vpCnt = dpu->activePip->m.vpCnt;
-        AfxAssert(vpCnt);
+        AFX_ASSERT(vpCnt);
         afxMask vpsUpdMask = dpu->nextTs.vpsUpdMask;
         dpu->nextTs.vpsUpdMask = NIL;
 
@@ -112,39 +112,39 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
         {
             if (vpsUpdMask & AFX_BIT(i))
             {
-                v[i][0] = dpu->nextTs.vps[i].offset[0];
-                v[i][1] = dpu->nextTs.vps[i].offset[1];
+                v[i][0] = dpu->nextTs.vps[i].origin[0];
+                v[i][1] = dpu->nextTs.vps[i].origin[1];
                 v[i][2] = dpu->nextTs.vps[i].extent[0];
                 v[i][3] = dpu->nextTs.vps[i].extent[1];
 
-                v2[i][0] = dpu->nextTs.vps[i].depth[0];
-                v2[i][1] = dpu->nextTs.vps[i].depth[1];
-                gl->ViewportArrayv(i, 1, &v[i][0]); _SglThrowErrorOccuried();
-                gl->DepthRangeArrayv(i, 1, &v2[i][0]); _SglThrowErrorOccuried();
+                v2[i][0] = dpu->nextTs.vps[i].minDepth;
+                v2[i][1] = dpu->nextTs.vps[i].maxDepth;
+                gl->ViewportArrayv(i, 1, &v[i][0]); _ZglThrowErrorOccuried();
+                gl->DepthRangeArrayv(i, 1, &v2[i][0]); _ZglThrowErrorOccuried();
             }
         }
-        //gl->ViewportArrayv(0, vpCnt, &v[0][0]); _SglThrowErrorOccuried();
-        //gl->DepthRangeArrayv(0, vpCnt, &v2[0][0]); _SglThrowErrorOccuried();
+        //gl->ViewportArrayv(0, vpCnt, &v[0][0]); _ZglThrowErrorOccuried();
+        //gl->DepthRangeArrayv(0, vpCnt, &v2[0][0]); _ZglThrowErrorOccuried();
 #else
         if (1 < vpCnt)
         {
-            AfxAssert(vpCnt);
+            AFX_ASSERT(vpCnt);
             GLint x = (GLint)(dpu->nextTs.vps[0].offset[0]);
             GLint y = (GLint)(dpu->nextTs.vps[0].offset[1]);
             GLsizei w = (GLsizei)(dpu->nextTs.vps[0].extent[0]);
             GLsizei h = (GLsizei)(dpu->nextTs.vps[0].extent[1]);
-            gl->Viewport(x, y, w, h); _SglThrowErrorOccuried();
+            gl->Viewport(x, y, w, h); _ZglThrowErrorOccuried();
 
 #ifndef _ZGL_DBG_IGNORE_DEPTH_RANGE
             GLdouble n = dpu->nextTs.vps[0].depth[0];
             GLdouble f = dpu->nextTs.vps[0].depth[1];
-            gl->DepthRange(n, f); _SglThrowErrorOccuried();
+            gl->DepthRange(n, f); _ZglThrowErrorOccuried();
 #endif
         }
         else
         {
             afxUnit cnt = dpu->nextViewportUpdCnt;
-            AfxAssert(cnt);
+            AFX_ASSERT(cnt);
             cnt = AfxClamp(cnt, 0, vpCnt);
 
             afxMask updMask = dpu->nextViewportUpdMask;
@@ -156,25 +156,25 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
                     if (gl->ViewportArrayv)
                     {
                         GLfloat v[ZGL_MAX_VIEWPORTS][4];
-                        AfxAssert(ZGL_MAX_VIEWPORTS >= cnt);
+                        AFX_ASSERT(ZGL_MAX_VIEWPORTS >= cnt);
 
                         v[i][0] = dpu->nextTs.vps[i].offset[0],
                         v[i][1] = dpu->nextTs.vps[i].offset[1],
                         v[i][2] = dpu->nextTs.vps[i].extent[0],
                         v[i][3] = dpu->nextTs.vps[i].extent[1];
 
-                        gl->ViewportArrayv(i, 1, &v[0][0]); _SglThrowErrorOccuried();
+                        gl->ViewportArrayv(i, 1, &v[0][0]); _ZglThrowErrorOccuried();
                     }
 #ifndef _ZGL_DBG_IGNORE_DEPTH_RANGE
                     if (gl->DepthRangeArrayv)
                     {
                         GLdouble v[ZGL_MAX_VIEWPORTS][2];
-                        AfxAssert(ZGL_MAX_VIEWPORTS >= cnt);
+                        AFX_ASSERT(ZGL_MAX_VIEWPORTS >= cnt);
 
                         v[i][0] = dpu->nextTs.vps[i].depth[0],
                             v[i][1] = dpu->nextTs.vps[i].depth[1];
 
-                        gl->DepthRangeArrayv(0, 1, &v[0][0]); _SglThrowErrorOccuried();
+                        gl->DepthRangeArrayv(0, 1, &v[0][0]); _ZglThrowErrorOccuried();
                     }
 #endif
                     dpu->activeTs.vps[i] = dpu->nextTs.vps[i];
@@ -202,8 +202,8 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
         if (primRestartEnabled)
         {
-            AfxAssert(!dpu->activeTs.primRestartEnabled);
-            gl->Enable(GL_PRIMITIVE_RESTART); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeTs.primRestartEnabled);
+            gl->Enable(GL_PRIMITIVE_RESTART); _ZglThrowErrorOccuried();
 
             /*
                 glPrimitiveRestartIndex — specify the primitive restart index
@@ -218,7 +218,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
                 When either glDrawElementsBaseVertex, glDrawElementsInstancedBaseVertex or glMultiDrawElementsBaseVertex is used, the primitive restart comparison occurs before the basevertex offset is added to the array index.
             */
 
-            //gl->PrimitiveRestartIndex(); _SglThrowErrorOccuried();
+            //gl->PrimitiveRestartIndex(); _ZglThrowErrorOccuried();
 
             /*
                 GL_PRIMITIVE_RESTART_FIXED_INDEX
@@ -228,12 +228,12 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
                 where n is equal to 8 for GL_UNSIGNED_BYTE, 16 for GL_UNSIGNED_SHORT and 32 for GL_UNSIGNED_INT.
             */
 
-            //gl->Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX); _SglThrowErrorOccuried();
+            //gl->Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeTs.primRestartEnabled);
-            gl->Disable(GL_PRIMITIVE_RESTART); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeTs.primRestartEnabled);
+            gl->Disable(GL_PRIMITIVE_RESTART); _ZglThrowErrorOccuried();
         }
         dpu->activeTs.primRestartEnabled = primRestartEnabled;
     }
@@ -252,13 +252,13 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
         if (depthClampEnabled)
         {
-            AfxAssert(!dpu->activeTs.depthClampEnabled);
-            gl->Enable(GL_DEPTH_CLAMP); _SglThrowErrorOccuried();
+            AFX_ASSERT(!dpu->activeTs.depthClampEnabled);
+            gl->Enable(GL_DEPTH_CLAMP); _ZglThrowErrorOccuried();
         }
         else
         {
-            AfxAssert(dpu->activeTs.depthClampEnabled);
-            gl->Disable(GL_DEPTH_CLAMP); _SglThrowErrorOccuried();
+            AFX_ASSERT(dpu->activeTs.depthClampEnabled);
+            gl->Disable(GL_DEPTH_CLAMP); _ZglThrowErrorOccuried();
         }
         dpu->activeTs.depthClampEnabled = depthClampEnabled;
     }
@@ -268,7 +268,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 _ZGL void _DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, afxViewport const vp[])
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertRange(ZGL_MAX_VIEWPORTS, first, cnt);
+    AFX_ASSERT_RANGE(ZGL_MAX_VIEWPORTS, first, cnt);
 
     for (afxUnit i = 0; i < cnt; i++)
     {
@@ -296,7 +296,7 @@ _ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBuff
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
 
-    AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, first, cnt);
+    AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, first, cnt);
 
     // deferred because it requires the vertex input info.
 
@@ -310,7 +310,7 @@ _ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBuff
         afxUnit32 stride = info->stride;
 
         afxUnit bindingIdx = first + i;
-        AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
+        AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
 
         dpu->nextVinBindings.sources[bindingIdx].buf = buf;
         dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AfxMin(offset, AfxGetBufferCapacity(buf, 0) - 1) : offset;

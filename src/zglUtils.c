@@ -86,7 +86,7 @@ GL_RGBA32UI	GL_RGBA	ui32	ui32	ui32	ui32
 */
 
 #if 0
-_ZGL void SglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
+_ZGL void ZglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
 {
     static struct { GLint intFmt; GLenum layout, type; } const v[] =
     {
@@ -130,11 +130,11 @@ _ZGL void SglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
     };
 
     afxError err = NIL;
-    AfxAssert(v[avxFormat_D32F].intFmt == GL_DEPTH_COMPONENT32F);
-    AfxAssert(v[avxFormat_D32].intFmt == GL_DEPTH_COMPONENT32);
-    AfxAssert(v[avxFormat_D24].intFmt == GL_DEPTH_COMPONENT24);
-    AfxAssert(v[avxFormat_D24S8].intFmt == GL_DEPTH24_STENCIL8);
-    AfxAssert(v[avxFormat_D32FS8].intFmt == GL_DEPTH32F_STENCIL8);
+    AFX_ASSERT(v[avxFormat_D32F].intFmt == GL_DEPTH_COMPONENT32F);
+    AFX_ASSERT(v[avxFormat_D32].intFmt == GL_DEPTH_COMPONENT32);
+    AFX_ASSERT(v[avxFormat_D24].intFmt == GL_DEPTH_COMPONENT24);
+    AFX_ASSERT(v[avxFormat_D24S8].intFmt == GL_DEPTH24_STENCIL8);
+    AFX_ASSERT(v[avxFormat_D32FS8].intFmt == GL_DEPTH32F_STENCIL8);
 
     *fmt = v[pf].intFmt;
     *layout = v[pf].layout;
@@ -145,7 +145,7 @@ _ZGL void SglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
 static struct { GLint intFmt; GLenum layout, type; } vf[avxFormat_TOTAL] = { 0 };
 #define MAKE_FMT(fmt, glFmt, glLayout, glType) vf[fmt].intFmt = glFmt, vf[fmt].layout = glLayout, vf[fmt].type = glType
 
-_ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
+_ZGL void ZglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
 {
     static afxBool inited = FALSE;
 
@@ -170,7 +170,7 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_R8ss,        GL_R8,              GL_RED,     GL_BYTE);
         MAKE_FMT(avxFormat_R8u,         GL_R8UI,            GL_RED_INTEGER,GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_R8i,         GL_R8I,             GL_RED_INTEGER,GL_BYTE);
-        MAKE_FMT(avxFormat_R8_sRGB,     GL_SRGB8,           GL_RED,     GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_R8std,     GL_SRGB8,           GL_RED,     GL_UNSIGNED_BYTE);
         
         MAKE_FMT(avxFormat_RG8un,       GL_RG8,             GL_RG,      GL_UNSIGNED_SHORT);
         MAKE_FMT(avxFormat_RG8sn,       GL_RG8_SNORM,       GL_RG,      GL_SHORT);
@@ -178,7 +178,7 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_RG8ss,       GL_RG8,             GL_RG,      GL_SHORT);
         MAKE_FMT(avxFormat_RG8u,        GL_RG8UI,           GL_RG_INTEGER,GL_UNSIGNED_SHORT);
         MAKE_FMT(avxFormat_RG8i,        GL_RG8I,            GL_RG_INTEGER,GL_SHORT);
-        MAKE_FMT(avxFormat_RG8_sRGB,    GL_SRGB8,           GL_RG,      GL_UNSIGNED_SHORT);
+        MAKE_FMT(avxFormat_RG8std,    GL_SRGB8,           GL_RG,      GL_UNSIGNED_SHORT);
         
         MAKE_FMT(avxFormat_RGB8un,      GL_RGB8,            GL_RGB,     GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGB8sn,      GL_RGB8_SNORM,      GL_RGB,     GL_UNSIGNED_BYTE);
@@ -186,7 +186,7 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_RGB8ss,      GL_RGB8,            GL_RGB,     GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGB8u,       GL_RGB8I,           GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGB8i,       GL_RGB8UI,          GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
-        MAKE_FMT(avxFormat_RGB8_sRGB,   GL_SRGB8,           GL_RGB,     GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_RGB8std,   GL_SRGB8,           GL_RGB,     GL_UNSIGNED_BYTE);
         
         MAKE_FMT(avxFormat_BGR8un,      GL_RGB8,            GL_RGB,     GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGR8sn,      GL_RGB8_SNORM,      GL_RGB,     GL_UNSIGNED_BYTE);
@@ -194,7 +194,7 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_BGR8ss,      GL_RGB8,            GL_RGB,     GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGR8u,       GL_RGB8UI,          GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGR8i,       GL_RGB8I,           GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
-        MAKE_FMT(avxFormat_BGR8_sRGB,   GL_SRGB8,           GL_RGBA,    GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_BGR8std,   GL_SRGB8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         
         MAKE_FMT(avxFormat_RGBA8un,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGBA8sn,     GL_RGBA8_SNORM,     GL_RGBA,    GL_UNSIGNED_BYTE);
@@ -202,15 +202,42 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_RGBA8ss,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGBA8u,      GL_RGBA8UI,         GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_RGBA8i,      GL_RGBA8I,          GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
-        MAKE_FMT(avxFormat_RGBA8_sRGB,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_RGBA8std,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
         
+        // 32-bit float
+        MAKE_FMT(avxFormat_R32f,        GL_R32F,            GL_RED,     GL_FLOAT);
+        MAKE_FMT(avxFormat_RG32f,       GL_RG32F,           GL_RG,      GL_FLOAT);
+        MAKE_FMT(avxFormat_RGB32f,      GL_RGB32F,          GL_RGB,     GL_FLOAT);
+        MAKE_FMT(avxFormat_RGBA32f,     GL_RGBA32F,         GL_RGBA,    GL_FLOAT);
+        // 32-bit signed int
+        MAKE_FMT(avxFormat_R32i,        GL_R32I,            GL_RED,     GL_INT);
+        MAKE_FMT(avxFormat_RG32i,       GL_RG32I,           GL_RG,      GL_INT);
+        MAKE_FMT(avxFormat_RGB32i,      GL_RGB32I,          GL_RGB,     GL_INT);
+        MAKE_FMT(avxFormat_RGBA32i,     GL_RGBA32I,         GL_RGBA,    GL_INT);
+        // 32-bit unsigned int
+        MAKE_FMT(avxFormat_R32u,        GL_R32UI,           GL_RED,     GL_UNSIGNED_INT);
+        MAKE_FMT(avxFormat_RG32u,       GL_RG32UI,          GL_RG,      GL_UNSIGNED_INT);
+        MAKE_FMT(avxFormat_RGB32u,      GL_RGB32UI,         GL_RGB,     GL_UNSIGNED_INT);
+        MAKE_FMT(avxFormat_RGBA32u,     GL_RGBA32UI,        GL_RGBA,    GL_UNSIGNED_INT);
+        // 16-bit signed int
+        MAKE_FMT(avxFormat_R16i,        GL_R16I,            GL_RED,     GL_SHORT);
+        MAKE_FMT(avxFormat_RG16i,       GL_RG16I,           GL_RG,      GL_SHORT);
+        MAKE_FMT(avxFormat_RGB16i,      GL_RGB16I,          GL_RGB,     GL_SHORT);
+        MAKE_FMT(avxFormat_RGBA16i,     GL_RGBA16I,         GL_RGBA,    GL_SHORT);
+        // 16-bit unsigned int
+        MAKE_FMT(avxFormat_R16u,        GL_R16UI,           GL_RED,     GL_UNSIGNED_SHORT);
+        MAKE_FMT(avxFormat_RG16u,       GL_RG16UI,          GL_RG,      GL_UNSIGNED_SHORT);
+        MAKE_FMT(avxFormat_RGB16u,      GL_RGB16UI,         GL_RGB,     GL_UNSIGNED_SHORT);
+        MAKE_FMT(avxFormat_RGBA16u,     GL_RGBA16UI,        GL_RGBA,    GL_UNSIGNED_SHORT);
+
+
         MAKE_FMT(avxFormat_BGRA8un,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGRA8sn,     GL_RGBA8_SNORM,     GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGRA8us,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGRA8ss,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGRA8u,      GL_RGBA8UI,         GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_BGRA8i,      GL_RGBA8I,          GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
-        MAKE_FMT(avxFormat_BGRA8_sRGB,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_BGRA8std,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
 
         MAKE_FMT(avxFormat_ABGR8un,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_ABGR8sn,     GL_RGBA8_SNORM,     GL_RGBA,    GL_UNSIGNED_BYTE);
@@ -218,7 +245,7 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_ABGR8ss,     GL_RGBA8,           GL_RGBA,    GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_ABGR8u,      GL_RGBA8UI,         GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
         MAKE_FMT(avxFormat_ABGR8i,      GL_RGBA8I,          GL_RGBA_INTEGER, GL_UNSIGNED_BYTE);
-        MAKE_FMT(avxFormat_ABGR8_sRGB,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
+        MAKE_FMT(avxFormat_ABGR8std,  GL_SRGB8_ALPHA8,    GL_RGBA,    GL_UNSIGNED_BYTE);
         
         MAKE_FMT(avxFormat_A2RGB10un,   GL_RGB10_A2,        GL_BGRA,    GL_UNSIGNED_INT_2_10_10_10_REV);
         MAKE_FMT(avxFormat_A2RGB10sn,   GL_RGB10_A2,        GL_BGRA,    GL_UNSIGNED_INT_2_10_10_10_REV);
@@ -246,13 +273,13 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
         MAKE_FMT(avxFormat_D32fS8u,     GL_DEPTH32F_STENCIL8,   GL_DEPTH_STENCIL,   GL_FLOAT_32_UNSIGNED_INT_24_8_REV);
         
         MAKE_FMT(avxFormat_DXT1,        GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_NONE);
-        MAKE_FMT(avxFormat_DXT1_sRGB,   GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_NONE);
+        MAKE_FMT(avxFormat_DXT1std,   GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_NONE);
         MAKE_FMT(avxFormat_DXT1A,       GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_NONE);
-        MAKE_FMT(avxFormat_DXT1A_sRGB,  GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_NONE);
+        MAKE_FMT(avxFormat_DXT1Astd,  GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_NONE);
         MAKE_FMT(avxFormat_DXT3,        GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_NONE);
-        MAKE_FMT(avxFormat_DXT3_sRGB,   GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_NONE);
+        MAKE_FMT(avxFormat_DXT3std,   GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_NONE);
         MAKE_FMT(avxFormat_DXT5,        GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_NONE);
-        MAKE_FMT(avxFormat_DXT5_sRGB,   GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_NONE);
+        MAKE_FMT(avxFormat_DXT5std,   GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_NONE);
         MAKE_FMT(avxFormat_RGTC1,       GL_COMPRESSED_RED_RGTC1, GL_COMPRESSED_RED_RGTC1, GL_NONE);
         MAKE_FMT(avxFormat_RGTC1sn,     GL_COMPRESSED_SIGNED_RED_RGTC1, GL_COMPRESSED_SIGNED_RED_RGTC1, GL_NONE);
         MAKE_FMT(avxFormat_RGTC2,       GL_COMPRESSED_RG_RGTC2, GL_COMPRESSED_RG_RGTC2, GL_NONE);
@@ -260,20 +287,20 @@ _ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type)
     }
 
     afxError err = NIL;
-    AfxAssert(vf[avxFormat_D32f].intFmt == GL_DEPTH_COMPONENT32F);
-    //AfxAssert(vf[avxFormat_D32f].intFmt == GL_DEPTH_COMPONENT32);
-    AfxAssert(vf[avxFormat_X8D24].intFmt == GL_DEPTH_COMPONENT24);
-    AfxAssert(vf[avxFormat_D24S8].intFmt == GL_DEPTH24_STENCIL8);
-    AfxAssert(vf[avxFormat_D32S8].intFmt == GL_DEPTH32F_STENCIL8);
+    AFX_ASSERT(vf[avxFormat_D32f].intFmt == GL_DEPTH_COMPONENT32F);
+    //AFX_ASSERT(vf[avxFormat_D32f].intFmt == GL_DEPTH_COMPONENT32);
+    AFX_ASSERT(vf[avxFormat_X8D24].intFmt == GL_DEPTH_COMPONENT24);
+    AFX_ASSERT(vf[avxFormat_D24S8].intFmt == GL_DEPTH24_STENCIL8);
+    AFX_ASSERT(vf[avxFormat_D32S8].intFmt == GL_DEPTH32F_STENCIL8);
 
-    AfxAssert(vf[avxFormat_RGBA4].intFmt == GL_RGBA4);
+    AFX_ASSERT(vf[avxFormat_RGBA4].intFmt == GL_RGBA4);
 
     *fmt = vf[pf].intFmt;
     *layout = vf[pf].layout;
     *type = vf[pf].type;
 }
 
-_ZGL GLenum SglToGlImageDimensions(afxUnit d)
+_ZGL GLenum ZglToGlImageDimensions(afxUnit d)
 {
     static GLenum const v[] =
     {
@@ -289,7 +316,7 @@ _ZGL GLenum SglToGlImageDimensions(afxUnit d)
     return v[d];
 }
 
-_ZGL GLenum SglToGlTexelFilterMode(avxTexelFilter tfm)
+_ZGL GLenum ZglToGlTexelFilterMode(avxTexelFilter tfm)
 {
     static GLenum const v[] =
     {
@@ -302,7 +329,7 @@ _ZGL GLenum SglToGlTexelFilterMode(avxTexelFilter tfm)
     return v[tfm];
 }
 
-_ZGL GLenum SglToGlTexelFilterModeMipmapped(avxTexelFilter min, avxTexelFilter mip)
+_ZGL GLenum ZglToGlTexelFilterModeMipmapped(avxTexelFilter min, avxTexelFilter mip)
 {
     static GLenum const nearest[] =
     {
@@ -323,7 +350,7 @@ _ZGL GLenum SglToGlTexelFilterModeMipmapped(avxTexelFilter min, avxTexelFilter m
     return min == avxTexelFilter_LINEAR ? linear[mip] : nearest[mip];
 }
 
-_ZGL GLenum SglToGlTexWrapMode(avxTexelAddress twm)
+_ZGL GLenum ZglToGlTexWrapMode(avxTexelAddress twm)
 {
     static GLenum const v[] =
     {
@@ -339,7 +366,7 @@ _ZGL GLenum SglToGlTexWrapMode(avxTexelAddress twm)
     return v[twm];
 }
 
-_ZGL GLenum SglToGlColorSwizzle(avxColorSwizzle swizzle)
+_ZGL GLenum ZglToGlColorSwizzle(avxColorSwizzle swizzle)
 {
     static GLenum const v[] =
     {
@@ -355,23 +382,23 @@ _ZGL GLenum SglToGlColorSwizzle(avxColorSwizzle swizzle)
     return v[swizzle];
 }
 
-_ZGL void SglToGlColorSwizzling(avxColorSwizzling const *swizzling, GLenum *arrayedSwizzles)
+_ZGL void ZglToGlColorSwizzling(avxColorSwizzling const *swizzling, GLenum *arrayedSwizzles)
 {
-    arrayedSwizzles[0] = SglToGlColorSwizzle(swizzling->r);
-    arrayedSwizzles[1] = SglToGlColorSwizzle(swizzling->g);
-    arrayedSwizzles[2] = SglToGlColorSwizzle(swizzling->b);
-    arrayedSwizzles[3] = SglToGlColorSwizzle(swizzling->a);
+    arrayedSwizzles[0] = ZglToGlColorSwizzle(swizzling->r);
+    arrayedSwizzles[1] = ZglToGlColorSwizzle(swizzling->g);
+    arrayedSwizzles[2] = ZglToGlColorSwizzle(swizzling->b);
+    arrayedSwizzles[3] = ZglToGlColorSwizzle(swizzling->a);
 }
 
-_ZGL void SglDetermineGlTargetInternalFormatType(afxRaster ras, GLenum *target, GLint *intFmt, GLenum *fmt, GLenum *type)
+_ZGL void ZglDetermineGlTargetInternalFormatType(afxRaster ras, GLenum *target, GLint *intFmt, GLenum *fmt, GLenum *type)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssert(target);
-    AfxAssert(intFmt);
-    AfxAssert(fmt);
-    AfxAssert(type);
+    AFX_ASSERT(target);
+    AFX_ASSERT(intFmt);
+    AFX_ASSERT(fmt);
+    AFX_ASSERT(type);
     afxResult cubemap = AfxTestRasterFlags(ras, afxRasterFlag_CUBEMAP);
-    AfxAssert(ras->m.extent.w); // always have at least one dimension.
+    AFX_ASSERT(ras->m.extent.w); // always have at least one dimension.
     
     if (AfxTestRasterFlags(ras, afxRasterFlag_1D)) // Y
     {
@@ -419,7 +446,7 @@ _ZGL void SglDetermineGlTargetInternalFormatType(afxRaster ras, GLenum *target, 
         }
     }
 
-    SglToGlFormat2(ras->m.fmt, intFmt, fmt, type);
+    ZglToGlFormat2(ras->m.fmt, intFmt, fmt, type);
 }
 
 _ZGL GLenum AfxToGlFrontFace(avxFrontFace ff)
@@ -444,7 +471,7 @@ _ZGL GLenum AfxToGlCullMode(avxCullMode cm)
         GL_BACK,
         GL_FRONT_AND_BACK
     };
-    AfxAssert(v[avxCullMode_BACK] == GL_BACK);
+    AFX_ASSERT(v[avxCullMode_BACK] == GL_BACK);
     return v[cm];
 };
 
@@ -460,7 +487,7 @@ _ZGL GLenum AfxToGlFillMode(avxFillMode pm)
     return v[pm];
 };
 
-_ZGL GLenum SglToGlCompareOp(avxCompareOp co)
+_ZGL GLenum ZglToGlCompareOp(avxCompareOp co)
 {
     static GLenum const v[] =
     {
@@ -609,7 +636,7 @@ _ZGL GLenum AfxToGlLogicOp(avxLogicOp f)
         GL_OR_REVERSE,
         GL_OR_INVERTED
     };
-    AfxAssert(v[avxLogicOp_NOP] == GL_NOOP);
+    AFX_ASSERT(v[avxLogicOp_NOP] == GL_NOOP);
     return v[f];
 }
 
@@ -641,6 +668,7 @@ _ZGL GLenum AfxToGlBlendFactor(avxBlendFactor f)
     return v[f];
 }
 
+#if 0
 _ZGL void AfxToGlVertexFormat(afxVertexFormat fmt, GLint* siz, GLenum* typ, afxUnit32* stride)
 {
     struct
@@ -696,3 +724,4 @@ _ZGL void AfxToGlVertexFormat(afxVertexFormat fmt, GLint* siz, GLenum* typ, afxU
     //AFX_STATIC_ASSERT(afxVertexFormat_TOTAL == 5, "");
 
 }
+#endif

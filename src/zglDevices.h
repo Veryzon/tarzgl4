@@ -80,7 +80,7 @@ typedef struct zglRasterizerState
     afxReal             depthBiasClamp; /// is the maximum (or minimum) depth bias of a fragment. /// 0.f
 
     afxBool             msEnabled; /// If enabld, multisample rasterization will be used. FALSE
-    afxUnit              sampleCnt; /// is a value specifying the number of samples used in rasterization. /// 0
+    afxUnit             sampleLvl; /// is a value specifying the number of samples used in rasterization. /// 0
     afxMask             sampleMasks[32]; /// an array of sample mask values used in the sample mask test. /// [ 1, ]
     afxBool             sampleShadingEnabled; /// used to enable Sample Shading. /// FALSE
     afxReal             minSampleShadingValue; /// specifies a minimum fraction of sample shading if sampleShadingEnable is set to TRUE. /// 0.f
@@ -118,20 +118,25 @@ typedef struct zglRasterizerState
 
 typedef struct
 {
+    avxDpu                  m;
     glVmt                   gl;
-    afxUnit                  exuIdx;
-    afxUnit                  portId; // exuIdx
-    afxDrawContext          activeDctx;
+    //afxUnit                  exuIdx;
+    //afxUnit                  portId; // exuIdx
+    //afxDrawSystem          activeDsys;
 
-    afxSize                 numOfFedVertices, numOfFedIndices, numOfFedInstances;
- 
+    //afxSize                 numOfFedVertices, numOfFedIndices, numOfFedInstances;
+
+    //afxBool                 running;
+
+    //afxBool         instanced;
+
     zglXfrmState            activeTs, nextTs;
     zglRasterizerState      activeRs, nextRs;
 
     avxLigature             activeLiga, nextLiga;
     avxPipeline             activePip, nextPip;
     GLuint                  activePipGpuHandle;
-    avxVertexInput          activeVin, nextVin;
+    avxVertexDecl          activeVin, nextVin;
     GLuint                  activeVinGpuHandle;
     zglVertexInputState     nextVinBindings;
 
@@ -154,9 +159,6 @@ typedef struct
                             nextLs[_ZGL_MAX_LEGO_PER_BIND][_ZGL_MAX_ENTRY_PER_LEGO];
     afxMask                 nextLsUpdMask[_ZGL_MAX_LEGO_PER_BIND];
 
-    afxBool                 running;
-
-    afxBool         instanced;
 
     // submission stuff
     afxBool         submissionSuspended;
@@ -185,6 +187,7 @@ typedef struct
     GLuint          timeElapsedQueryIdActive;
 } zglDpu;
 
+#if 0
 struct _afxDdevIdd
 {
     WNDCLASSEX      wndClss;
@@ -193,6 +196,21 @@ struct _afxDdevIdd
 
     afxModule       d3d9Dll;
     HRESULT (WINAPI*Direct3DCreate9Ex)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
+    afxBool         useDxgiSwapchain;
+    afxBool         hasDxInterop1;
+    afxBool         hasDxInterop2;
+};
+#endif
+
+AFX_OBJECT(afxDrawDevice)
+{
+    AFX_OBJ(_avxDrawDevice) m;
+    WNDCLASSEX      wndClss;
+    afxModule       oglDll;
+    afxUnit         oglVerMajor, oglVerMinor, oglVerPatch;
+
+    afxModule       d3d9Dll;
+    HRESULT(WINAPI*Direct3DCreate9Ex)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
     afxBool         useDxgiSwapchain;
     afxBool         hasDxInterop1;
     afxBool         hasDxInterop2;
@@ -207,26 +225,20 @@ AFX_OBJECT(afxDrawBridge)
     int                     dcPxlFmt;
     PIXELFORMATDESCRIPTOR   dcPfd;
     HGLRC                   hRC;
-    afxUnit                  verMajor, verMinor, verPatch;
+    afxUnit                 verMajor, verMinor, verPatch;
     afxString               subsysName;
     afxString               subsysVer;
 
-    afxThread               worker;
-    afxCondition            schedCnd; // signaled when some task is scheduled to this bridge.
-    afxMutex                schedCndMtx;
-    afxBool                 schedCnt;
-
     afxInterlockedQueue     deletionQueue;
+
+    afxClassExtension vinExt;
+    afxClassExtension pipExt;
+    afxClassExtension canvExt;
 };
 
-AFX_OBJECT(afxDrawQueue)
+AFX_OBJECT(afxDrawSystem)
 {
-    AFX_OBJECT(_avxDrawQueue) m;
-};
-
-AFX_OBJECT(afxDrawContext)
-{
-    AFX_OBJECT(_avxDrawContext) m;
+    AFX_OBJECT(_avxDrawSystem) m;
     // presentation stuff, only on unit 0.
     afxBool presentationSuspended;
     //GLuint presentFboGpuHandle;
@@ -290,11 +302,6 @@ AFX_OBJECT(afxDrawOutput)
     } d3dsw9;
 };
 
-AFX_OBJECT(afxDrawInput)
-{
-    AFX_OBJECT(_avxDrawInput) m;
-};
-
 AFX_DEFINE_STRUCT(_zglDeleteGlRes)
 {
     union
@@ -305,49 +312,39 @@ AFX_DEFINE_STRUCT(_zglDeleteGlRes)
     GLuint  type; // 0 buf, 1 tex, 2 surf, 3 canv, 4 smp, 5 pip, 6 shd, 7 shd (separate) program
 };
 
-ZGL void _SglDctxEnqueueDeletion(afxDrawContext dctx, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
+ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 
 ZGL afxError _DpuPresentDout(zglDpu* dpu, afxDrawOutput dout, afxUnit outBufIdx);
 
-ZGL afxError _SglDdevOpenCb(afxDrawDevice ddev, afxDrawContext dctx, void** args, afxUnit invokeNo);
-ZGL afxError _SglDdevCloseCb(afxDrawDevice ddev, afxDrawContext dctx);
+ZGL afxError _ZglDdevOpenCb(afxDrawDevice ddev, afxDrawSystem dsys, void** args, afxUnit invokeNo);
+ZGL afxError _ZglDdevCloseCb(afxDrawDevice ddev, afxDrawSystem dsys);
 
-ZGL afxError _SglOpenDexuCb(afxDrawDevice ddev, afxDrawBridge dexu, afxDrawBridgeConfig const* cfg);
+ZGL afxError _ZglOpenDexuCb(afxDrawDevice ddev, afxDrawBridge dexu, afxDrawBridgeConfig const* cfg);
 
-//ZGL afxBool _SglDqueVmtSubmitCb(afxDrawContext dctx, afxDrawBridge dexu, afxDrawSubmissionSpecification const *spec, afxUnit *submNo);
+//ZGL afxBool _ZglDqueVmtSubmitCb(afxDrawSystem dsys, afxDrawBridge dexu, afxDrawSubmissionSpecification const *spec, afxUnit *submNo);
 ZGL afxBool _DexuProcCb(afxDrawBridge dexu, afxThread thr);
 
-ZGL afxClassConfig const _SglDctxMgrCfg;
+ZGL afxClassConfig const _ZglDsysMgrCfg;
 
-ZGL afxError _SglDdevOpenDinCb(afxDrawDevice ddev, afxDrawInput din, afxDrawInputConfig const* cfg);
-ZGL afxError _SglDdevCloseDoutCb(afxDrawDevice ddev, afxDrawOutput dout);
-ZGL afxError _SglDdevOpenDoutCb(afxDrawDevice ddev, afxDrawOutput dout, afxDrawOutputConfig const* config);
-ZGL afxError _SglDinFreeAllBuffers(afxDrawInput din);
+ZGL afxError _ZglDinCtorCb(afxDrawInput din, void** args, afxUnit invokeNo);
+ZGL afxError _ZglDoutCtorCb(afxDrawOutput dout, void** args, afxUnit invokeNo);
+ZGL afxError _ZglDoutDtorCb(afxDrawOutput dout);
 
-ZGL afxResult _SglDdevIoctl(afxDrawDevice ddev, afxUnit reqCode, va_list va);
+ZGL afxError _ZglDsysDtorCb(afxDrawSystem dsys);
+ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo);
 
-ZGL afxError _SglActivateDout(zglDpu* dpu, afxDrawOutput dout);
+ZGL afxError _ZglDexuDtorCb(afxDrawBridge dexu);
+ZGL afxError _ZglDexuCtorCb(afxDrawBridge dexu, void** args, afxUnit invokeNo);
 
-ZGL afxError _SglRelinkDoutCb(afxDrawDevice ddev, afxDrawContext dctx, afxUnit cnt, afxDrawOutput dout[]);
+ZGL afxError _ZglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
+ZGL afxError _ZglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl);
+ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* ique);
+ZGL void    _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 
-ZGL afxError _SglDinCtorCb(afxDrawInput din, void** args, afxUnit invokeNo);
-ZGL afxError _SglDoutCtorCb(afxDrawOutput dout, void** args, afxUnit invokeNo);
-ZGL afxError _SglDoutDtorCb(afxDrawOutput dout);
 
-ZGL afxError _SglDctxDtorCb(afxDrawContext dctx);
-ZGL afxError _SglDctxCtorCb(afxDrawContext dctx, void** args, afxUnit invokeNo);
-
-ZGL afxError _SglDexuDtorCb(afxDrawBridge dexu);
-ZGL afxError _SglDexuCtorCb(afxDrawBridge dexu, void** args, afxUnit invokeNo);
-
-ZGL afxError _SglDqueCtorCb(afxDrawQueue dque, void** args, afxUnit invokeNo);
-
-ZGL afxError _SglDexuStartCb(afxDrawBridge dexu);
-ZGL afxError _SglDexuStopCb(afxDrawBridge dexu);
-
-ZGL afxError _SglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
-ZGL afxError _SglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl);
-ZGL afxError _SglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* ique);
-ZGL void    _SglDctxEnqueueDeletion(afxDrawContext dctx, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
+_ZGL afxError _ZglSemCtorCb(afxSemaphore sem, void** args, afxUnit invokeNo);
+_ZGL afxError _ZglSemDtorCb(afxSemaphore sem);
+_ZGL afxError _ZglFencCtorCb(afxFence fenc, void** args, afxUnit invokeNo);
+_ZGL afxError _ZglFencDtorCb(afxFence fenc);
 
 #endif//ZGL_DEVICES_H

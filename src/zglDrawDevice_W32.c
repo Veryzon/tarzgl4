@@ -20,9 +20,9 @@
 
 //#define _AVOID_WGL_FUNCS 1
 
-extern afxClassConfig _SglDexuMgrCfg;
+extern afxClassConfig _ZglDexuMgrCfg;
 
-_ZGL LRESULT WINAPI _SglWndHndlngPrcW32Callback(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+_ZGL LRESULT WINAPI _ZglWndHndlngPrcW32Callback(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     afxError err = AFX_ERR_NONE;
     //afxObject obj = (afxObject)(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -35,7 +35,7 @@ _ZGL LRESULT WINAPI _SglWndHndlngPrcW32Callback(HWND hWnd, UINT message, WPARAM 
     return DefWindowProcA(hWnd, message, wParam, lParam);
 }
 
-_ZGL afxError _SglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* deletionQueue)
+_ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* deletionQueue)
 {
     afxError err = AFX_ERR_NONE;
 
@@ -45,59 +45,59 @@ _ZGL afxError _SglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* del
         switch (res.type)
         {
         case GL_BUFFER:
-            AfxAssert(gl->IsBuffer(res.gpuHandle));
-            gl->DeleteBuffers(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsBuffer(res.gpuHandle));
+            AFX_ASSERT(gl->IsBuffer(res.gpuHandle));
+            gl->DeleteBuffers(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsBuffer(res.gpuHandle));
             break;
         case GL_TEXTURE:
-            AfxAssert(gl->IsTexture(res.gpuHandle));
-            gl->DeleteTextures(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsTexture(res.gpuHandle));
+            AFX_ASSERT(gl->IsTexture(res.gpuHandle));
+            gl->DeleteTextures(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsTexture(res.gpuHandle));
             break;
         case GL_RENDERBUFFER:
-            AfxAssert(gl->IsRenderBuffer(res.gpuHandle));
-            gl->DeleteRenderbuffers(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsRenderBuffer(res.gpuHandle));
+            AFX_ASSERT(gl->IsRenderBuffer(res.gpuHandle));
+            gl->DeleteRenderbuffers(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsRenderBuffer(res.gpuHandle));
             break;
         case GL_FRAMEBUFFER:
-            AfxAssert(gl->IsFramebuffer(res.gpuHandle));
-            gl->DeleteFramebuffers(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsFramebuffer(res.gpuHandle));
+            AFX_ASSERT(gl->IsFramebuffer(res.gpuHandle));
+            gl->DeleteFramebuffers(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsFramebuffer(res.gpuHandle));
             break;
         case GL_SAMPLER:
-            AfxAssert(gl->IsSampler(res.gpuHandle));
-            gl->DeleteSamplers(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsSampler(res.gpuHandle));
+            AFX_ASSERT(gl->IsSampler(res.gpuHandle));
+            gl->DeleteSamplers(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsSampler(res.gpuHandle));
             break;
         case GL_PROGRAM:
-            AfxAssert(gl->IsProgram(res.gpuHandle));
-            gl->DeleteProgram(res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsProgram(res.gpuHandle));
+            AFX_ASSERT(gl->IsProgram(res.gpuHandle));
+            gl->DeleteProgram(res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsProgram(res.gpuHandle));
             break;
         case GL_SHADER:
-            AfxAssert(gl->IsShader(res.gpuHandle));
-            gl->DeleteShader(res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsShader(res.gpuHandle));
+            AFX_ASSERT(gl->IsShader(res.gpuHandle));
+            gl->DeleteShader(res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsShader(res.gpuHandle));
             break;
         case GL_VERTEX_ARRAY:
-            AfxAssert(gl->IsVertexArray(res.gpuHandle));
-            gl->GenVertexArrays(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsVertexArray(res.gpuHandle));
+            AFX_ASSERT(gl->IsVertexArray(res.gpuHandle));
+            gl->GenVertexArrays(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsVertexArray(res.gpuHandle));
             break;
         case GL_PROGRAM_PIPELINE:
-            AfxAssert(gl->IsProgramPipeline(res.gpuHandle));
-            gl->DeleteProgramPipelines(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsProgramPipeline(res.gpuHandle));
+            AFX_ASSERT(gl->IsProgramPipeline(res.gpuHandle));
+            gl->DeleteProgramPipelines(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsProgramPipeline(res.gpuHandle));
             break;
         case GL_SYNC_FENCE:
-            AfxAssert(gl->IsSync(res.gpuHandlePtr));
-            gl->DeleteSync(res.gpuHandlePtr); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsSync(res.gpuHandlePtr));
+            AFX_ASSERT(gl->IsSync(res.gpuHandlePtr));
+            gl->DeleteSync(res.gpuHandlePtr); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsSync(res.gpuHandlePtr));
             break;
         case GL_QUERY_BUFFER:
-            AfxAssert(gl->IsQuery(res.gpuHandle));
-            gl->DeleteQueries(1, &res.gpuHandle); _SglThrowErrorOccuried();
-            AfxAssert(!gl->IsQuery(res.gpuHandle));
+            AFX_ASSERT(gl->IsQuery(res.gpuHandle));
+            gl->DeleteQueries(1, &res.gpuHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(!gl->IsQuery(res.gpuHandle));
             break;
         default:
             AfxLogError("");
@@ -107,17 +107,16 @@ _ZGL afxError _SglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* del
     return err;
 }
 
-_ZGL void _SglDctxEnqueueDeletion(afxDrawContext dctx, afxUnit exuIdx, afxUnit type, afxSize gpuHandle)
+_ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle)
 {
-    //AfxEntry("dctx=%p", dctx);
+    //AfxEntry("dsys=%p", dsys);
     afxError err = AFX_ERR_NONE;
 
-    AfxAssertObjects(1, &dctx, afxFcc_DCTX);
+    AFX_ASSERT_OBJECTS(afxFcc_DSYS, 1, &dsys);
 
-    afxDrawDevice ddev = AfxGetProvider(dctx);
-    AfxAssertObjects(1, &ddev, afxFcc_DDEV);    
-    
-    afxDrawBridge dexu = dctx->m.exus[exuIdx];
+    afxDrawBridge dexu = dsys->m.bridges[exuIdx];
+    afxDrawDevice ddev = dexu->m.ddev;
+    AFX_ASSERT_OBJECTS(afxFcc_DDEV, 1, &ddev);
     
     _zglDeleteGlRes delRes;
     delRes.gpuHandlePtr = (void*)gpuHandle;
@@ -126,11 +125,11 @@ _ZGL void _SglDctxEnqueueDeletion(afxDrawContext dctx, afxUnit exuIdx, afxUnit t
     while(!AfxPushInterlockedQueue(&dexu->deletionQueue, &delRes))
         AfxYield();
 
-    dexu->schedCnt += 1;
-    AfxSignalCondition2(&dexu->schedCnd);
+    dexu->m.schedCnt += 1;
+    AfxSignalCondition2(&dexu->m.schedCnd);
 }
 
-_ZGL afxError _SglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
+_ZGL afxError _ZglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
 {
     afxError err = NIL;
     HDC bkpHdc = wglGetCurrentDrawDCSIG();
@@ -156,7 +155,8 @@ _ZGL afxError _SglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int
     int dcPxlFmt = 0;
     PIXELFORMATDESCRIPTOR dcPfd = { 0 };
 
-    if (!(hWnd = CreateWindowExA(dwExStyle, cls->lpszClassName, cls->lpszClassName, wndStyles | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 1, 1, NIL, NIL, cls->hInstance, NIL))) AfxThrowError();
+    if (!(hWnd = CreateWindowExA(dwExStyle, cls->lpszClassName, cls->lpszClassName, wndStyles | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 1, 1, NIL, NIL, cls->hInstance, NIL)))
+        AfxThrowError();
     else
     {
         if (!(hDC = GetDC(hWnd))) AfxThrowError();
@@ -243,14 +243,14 @@ _ZGL afxError _SglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int
             if (!wgl.ChoosePixelFormatARB(hDC, &pxlAttrPairs[0][0], NIL, 1, &dcPxlFmt, &formatCount)) AfxThrowError();
             else
             {
-                AfxAssert(dcPxlFmt);
-                AfxAssert(formatCount);
+                AFX_ASSERT(dcPxlFmt);
+                AFX_ASSERT(formatCount);
                 AfxZero(&dcPfd, sizeof(dcPfd));
 
                 wglDescribePixelFormatSIG(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd);
                 wglSetPixelFormatSIG(hDC, dcPxlFmt, hWnd, &dcPfd);
 
-                AfxAssert(dcPfd.dwFlags & pfdFlags);
+                AFX_ASSERT(dcPfd.dwFlags & pfdFlags);
             }
 
             if (err)
@@ -271,7 +271,7 @@ _ZGL afxError _SglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int
     return err;
 }
 
-_ZGL afxError _SglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl)
+_ZGL afxError _ZglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl)
 {
     afxError err = NIL;
     HDC bkpHdc = wglGetCurrentDrawDCSIG();
@@ -322,10 +322,10 @@ _ZGL afxError _SglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HG
     return err;
 }
 
-_ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
+_ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &ddev, afxFcc_DDEV);
+    AFX_ASSERT_OBJECTS(afxFcc_DDEV, 1, &ddev);
     afxResult rslt = 0;
 
     switch (reqCode)
@@ -337,9 +337,10 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
     }
     case 1: // init
     {
+#if 0
         if (!ddev->idd)
         {
-            if (!(ddev->idd = AfxAllocate(1, sizeof(ddev->idd[0]), 0, AfxHere()))) AfxThrowError();
+            if (AfxAllocate(sizeof(ddev->idd[0]), 0, AfxHere(), (void**)&ddev->idd)) AfxThrowError();
             else
             {
                 afxUri uri;
@@ -354,11 +355,11 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                     if (AfxLoadModule(&uri, NIL, &ddev->idd->oglDll)) AfxThrowError();
                     else
                     {
-                        //SglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
+                        //ZglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
 
                         ddev->idd->wndClss.cbSize = sizeof(ddev->idd->wndClss); // only on EX
                         ddev->idd->wndClss.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-                        ddev->idd->wndClss.lpfnWndProc = _SglWndHndlngPrcW32Callback;
+                        ddev->idd->wndClss.lpfnWndProc = _ZglWndHndlngPrcW32Callback;
                         ddev->idd->wndClss.cbClsExtra = sizeof(ddev);
                         ddev->idd->wndClss.cbWndExtra = sizeof((afxDrawOutput)0);
                         ddev->idd->wndClss.hInstance = GetModuleHandleA(NULL);
@@ -366,7 +367,7 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                         ddev->idd->wndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
                         ddev->idd->wndClss.hbrBackground = NULL;
                         ddev->idd->wndClss.lpszMenuName = NULL;
-                        ddev->idd->wndClss.lpszClassName = "OpenGL/Vulkan Continuous Integration --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build";
+                        ddev->idd->wndClss.lpszClassName = "SIGMA GL/2 Continuous Integration --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build";
                         ddev->idd->wndClss.hIconSm = LoadIconA(NULL, IDI_SHIELD);
 
                         if (!(RegisterClassExA(&(ddev->idd->wndClss)))) AfxThrowError();
@@ -394,13 +395,13 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                             ddev->idd->oglVerMajor = verMajor;
                             ddev->idd->oglVerMinor = verMinor;
                             ddev->idd->oglVerPatch = verPatch;
-
+                            
                             HWND tmpHwnd;
                             HDC tmpHdc;
                             int pixelFmt;
                             PIXELFORMATDESCRIPTOR pfd;
 
-                            if (_SglCreateHwSurface(&ddev->idd->wndClss, &tmpHwnd, &tmpHdc, &pixelFmt, &pfd)) AfxThrowError();
+                            if (_ZglCreateHwSurface(&ddev->idd->wndClss, &tmpHwnd, &tmpHdc, &pixelFmt, &pfd)) AfxThrowError();
                             else
                             {
                                 HDC bkpHdc = wglGetCurrentDrawDCSIG();
@@ -409,13 +410,13 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                                 HGLRC tmpHglrc;
                                 glVmt gl;
 
-                                if (_SglCreateHwContext(ddev->idd->oglDll, tmpHdc, NIL, &tmpHglrc, &gl)) AfxThrowError();
+                                if (_ZglCreateHwContext(ddev->idd->oglDll, tmpHdc, NIL, &tmpHglrc, &gl)) AfxThrowError();
                                 else
                                 {
                                     wglMakeContextCurrentSIG(tmpHdc, tmpHdc, tmpHglrc);
 
-                                    SglDetectDeviceFeatures(&gl, tmpHdc, &ddev->features);
-                                    SglDetectDeviceLimits(&gl, &ddev->limits);
+                                    ZglDetectDeviceFeatures(&gl, tmpHdc, &ddev->features);
+                                    ZglDetectDeviceLimits(&gl, &ddev->limits);
 
                                     ddev->idd->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
                                     ddev->idd->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
@@ -429,12 +430,12 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                                     if (0 == unitIdx)
                                     {
                                         GLint n = 0;
-                                        gl->GetIntegerv(GL_NUM_EXTENSIONS, &n); _SglThrowErrorOccuried();
+                                        gl->GetIntegerv(GL_NUM_EXTENSIONS, &n); _ZglThrowErrorOccuried();
                                         AfxLogEcho("Listing #%03u \"core\" GL supported extensions.", n);
 
                                         for (GLint i = 0; i < n; i++)
                                         {
-                                            const char* extension = (const char*)gl->GetStringi(GL_EXTENSIONS, i); _SglThrowErrorOccuried();
+                                            const char* extension = (const char*)gl->GetStringi(GL_EXTENSIONS, i); _ZglThrowErrorOccuried();
                                             AfxLogEcho("%.3u %s ext found.", i, extension);
                                         }
                                     }
@@ -453,18 +454,20 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                         }
 
                         if (err)
-                            AfxReleaseObjects(1, &ddev->idd->oglDll);
+                            AfxDisposeObjects(1, &ddev->idd->oglDll);
                     }
                 }
 
                 if (err)
-                    AfxDeallocate(ddev->idd);
+                    AfxDeallocate((void**)&ddev->idd, AfxHere());
             }
         }
+#endif
         break;
     }
     case 2: // Terminates the device. The device must first be stopped and then closed (in that order). This function should be called before the system shuts down.
     {
+#if 0
         if (ddev->idd)
         {
             AfxExhaustChainedClasses(&ddev->dev.classes);
@@ -472,18 +475,19 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
             UnregisterClassA(ddev->idd->wndClss.lpszClassName, ddev->idd->wndClss.hInstance);
 
             if (ddev->idd->oglDll)
-                AfxReleaseObjects(1, &ddev->idd->oglDll);
+                AfxDisposeObjects(1, &ddev->idd->oglDll);
 
-            AfxDeallocate(ddev->idd);
+            AfxDeallocate((void**)&ddev->idd, AfxHere());
             ddev->idd = NIL;
         }
+#endif
         break;
     }
     case 3: // Opens the device. This function must only be called after the device has been initialized.
     {
-        afxDrawContext dctx = va_arg(va, afxDrawContext);
+        afxDrawSystem dsys = va_arg(va, afxDrawSystem);
 
-        if (dctx)
+        if (dsys)
         {
 
         }
@@ -491,37 +495,58 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
     }
     case 4: // Closes the device. This function must only be called after the device has been stopped.
     {
-        afxDrawContext dctx = va_arg(va, afxDrawContext);
+        afxDrawSystem dsys = va_arg(va, afxDrawSystem);
 
-        if (dctx)
+        if (dsys)
         {
 
         }
         break;
     }
-    case 5: // run up the bridges. Starts it.
+    case 5: 
+        // run up the bridges. 
+        // Starts it.
         // This function must only be called after the device has been initialized and opened (in that order).
     {
-        afxDrawContext dctx = va_arg(va, afxDrawContext);
+        afxDrawSystem dsys = va_arg(va, afxDrawSystem);
 
-        if (dctx)
+        if (!dsys) AfxThrowError();
+        else
         {
-            for (afxUnit i = 0; i < dctx->m.exuCnt; i++)
+            for (afxUnit i = 0; i < dsys->m.bridgeCnt; i++)
             {
-                _SglDexuStartCb(dctx->m.exus[i]);
+                afxDrawBridge dexu = dsys->m.bridges[i];
+                AFX_ASSERT_OBJECTS(afxFcc_DEXU, 1, &dexu);
+
+                if (!AfxIsThreadRunning(dexu->m.worker))
+                {
+                    AfxRunThread(dexu->m.worker, (void*)dexu->m.workerProc, dexu);
+                }
             }
         }
         break;
     }
-    case 6: // run down the bridges. Stops it. This function must be called before any attempt is made to close (and then terminate, if required) the device.
+    case 6:
+        // run down the bridges. 
+        // Stops it. 
+        // This function must be called before any attempt is made to close (and then terminate, if required) the device.
     {
-        afxDrawContext dctx = va_arg(va, afxDrawContext);
+        afxDrawSystem dsys = va_arg(va, afxDrawSystem);
 
-        if (dctx)
+        if (!dsys) AfxThrowError();
+        else
         {
-            for (afxUnit i = 0; i < dctx->m.exuCnt; i++)
+            for (afxUnit i = 0; i < dsys->m.bridgeCnt; i++)
             {
-                _SglDexuStopCb(dctx->m.exus[i]);
+                afxDrawBridge dexu = dsys->m.bridges[i];
+                AFX_ASSERT_OBJECTS(afxFcc_DEXU, 1, &dexu);
+
+                afxInt exitCode = 0;
+                do
+                {
+                    AfxRequestThreadInterruption(dexu->m.worker);
+                    AfxWaitForIdleDrawBridge(dexu, AFX_TIME_INFINITE);
+                } while (!AfxWaitForThreadExit(dexu->m.worker, &exitCode));
             }
         }
         break;
@@ -536,135 +561,271 @@ _ZGL afxResult _SglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
     return rslt;
 }
 
+_ZGL afxError _ZglDdevDtorCb(afxDrawDevice ddev)
+{
+    afxError err = AFX_ERR_NONE;
+    AFX_ASSERT_OBJECTS(afxFcc_DDEV, 1, &ddev);
+
+    AfxExhaustChainedClasses(&ddev->m.dev.classes);
+
+    if (_AVX_DDEV_CLASS_CONFIG.dtor(ddev))
+        AfxThrowError();
+
+    if (ddev->oglDll)
+        AfxDisposeObjects(1, &ddev->oglDll);
+
+    if (ddev->d3d9Dll)
+        AfxDisposeObjects(1, &ddev->d3d9Dll);
+
+    UnregisterClassA(ddev->wndClss.lpszClassName, ddev->wndClss.hInstance);
+
+    return err;
+}
+
+_ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
+{
+    afxError err = AFX_ERR_NONE;
+    AFX_ASSERT_OBJECTS(afxFcc_DDEV, 1, &ddev);
+
+    afxModule icd = args[0];
+    AFX_ASSERT_OBJECTS(afxFcc_MDLE, 1, &icd);
+    afxDrawDeviceInfo const* info = (afxDrawDeviceInfo const *)(args[1]) + invokeNo;
+    AFX_ASSERT(info);
+
+    static afxDrawPortCaps const portCaps[] =
+    {
+        {
+            .capabilities = afxDrawPortFlag_DRAW | afxDrawPortFlag_COMPUTE | afxDrawPortFlag_TRANSFER | afxDrawPortFlag_VHS,
+            .minQueCnt = 4,
+            .maxQueCnt = 16,
+            .acceleration = afxAcceleration_IGPU
+        },
+        {
+            .capabilities = afxDrawPortFlag_COMPUTE | afxDrawPortFlag_TRANSFER,
+            .minQueCnt = 2,
+            .maxQueCnt = 16,
+            .acceleration = afxAcceleration_IGPU
+        },
+        {
+            .capabilities = afxDrawPortFlag_TRANSFER,
+            .minQueCnt = 2,
+            .maxQueCnt = 16,
+            .acceleration = afxAcceleration_IGPU
+        }
+    };
+
+    if (_AVX_DDEV_CLASS_CONFIG.ctor(ddev, (void*[]) { icd, (void*)info }, 0))
+    {
+        AfxThrowError();
+        return err;
+    }
+
+    afxUri uri;
+    afxUnit devPagIdx = ddev->m.dev.manifestPagNo, recIdx;
+    afxManifest const* ini = AfxGetModuleManifest(icd);
+
+    //if (!AfxFindInitializationRecord(ini, devPagIdx, &AfxString("OpenglDll"), &recIdx) || !AfxGetManifestUri(ini, devPagIdx, recIdx, &uri)) AfxThrowError();
+    //else
+    AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
+    {
+        if (AfxLoadModule(&uri, NIL, &ddev->oglDll)) AfxThrowError();
+        else
+        {
+            //ZglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
+
+            static afxChar const* const classNames[] =
+            {
+                "SIGMA GL/2 Continuous Integration --- v3 --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build",
+                "SIGMA GL/2 Continuous Integration --- v4 --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build",
+            };
+
+            ddev->wndClss.cbSize = sizeof(ddev->wndClss); // only on EX
+            ddev->wndClss.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+            ddev->wndClss.lpfnWndProc = _ZglWndHndlngPrcW32Callback;
+            ddev->wndClss.cbClsExtra = sizeof(ddev);
+            ddev->wndClss.cbWndExtra = sizeof((afxDrawOutput)0);
+            ddev->wndClss.hInstance = GetModuleHandleA(NULL);
+            ddev->wndClss.hIcon = LoadIconA(NULL, IDI_SHIELD);
+            ddev->wndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
+            ddev->wndClss.hbrBackground = NULL;
+            ddev->wndClss.lpszMenuName = NULL;
+            ddev->wndClss.lpszClassName = classNames[invokeNo]; // it is to avoid class name colision. It must be unique per process.
+            ddev->wndClss.hIconSm = LoadIconA(NULL, IDI_SHIELD);
+
+            if (!(RegisterClassExA(&(ddev->wndClss)))) AfxThrowError();
+            else
+            {
+                AfxLogComment("Listing mem available display devices...\n");
+
+                //HDC hdc = NIL;
+                afxUnit idx = 0;
+                while (1)
+                {
+                    DISPLAY_DEVICE dispdev = { 0 };
+                    dispdev.cb = sizeof(dispdev);
+
+                    if (!(EnumDisplayDevicesA(NULL, idx, &dispdev, NIL))) break;
+                    else
+                    {
+                        AfxLogComment("#%u = %s (%s) %x", idx, dispdev.DeviceString, dispdev.DeviceName, dispdev.StateFlags);
+                        idx++;
+                    }
+                }
+
+                afxUnit verMajor, verMinor, verPatch;
+                wglLoadWsiSymbolsSIG(AfxGetModuleIdd(ddev->oglDll), &verMajor, &verMinor, &verPatch);
+                ddev->oglVerMajor = verMajor;
+                ddev->oglVerMinor = verMinor;
+                ddev->oglVerPatch = verPatch;
+
+                HWND tmpHwnd;
+                HDC tmpHdc;
+                int pixelFmt;
+                PIXELFORMATDESCRIPTOR pfd;
+
+                if (_ZglCreateHwSurface(&ddev->wndClss, &tmpHwnd, &tmpHdc, &pixelFmt, &pfd)) AfxThrowError();
+                else
+                {
+                    HDC bkpHdc = wglGetCurrentDrawDCSIG();
+                    HGLRC bkpGlrc = wglGetCurrentContextSIG();
+
+                    HGLRC tmpHglrc;
+                    glVmt gl;
+
+                    if (_ZglCreateHwContext(ddev->oglDll, tmpHdc, NIL, &tmpHglrc, &gl)) AfxThrowError();
+                    else
+                    {
+                        wglMakeContextCurrentSIG(tmpHdc, tmpHdc, tmpHglrc);
+
+                        ZglDetectDeviceFeatures(&gl, tmpHdc, &ddev->m.features);
+                        ZglDetectDeviceLimits(&gl, &ddev->m.limits);
+
+                        ddev->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
+                        ddev->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+
+                        if (ddev->hasDxInterop1 || ddev->hasDxInterop2)
+                        {
+                            //ddev->idd->useDxgiSwapchain = FALSE;
+                        }
+
+#if 0
+                        if (0 == unitIdx)
+                        {
+                            GLint n = 0;
+                            gl->GetIntegerv(GL_NUM_EXTENSIONS, &n); _ZglThrowErrorOccuried();
+                            AfxLogEcho("Listing #%03u \"core\" GL supported extensions.", n);
+
+                            for (GLint i = 0; i < n; i++)
+                            {
+                                const char* extension = (const char*)gl->GetStringi(GL_EXTENSIONS, i); _ZglThrowErrorOccuried();
+                                AfxLogEcho("%.3u %s ext found.", i, extension);
+                            }
+                        }
+#endif
+
+                        for (afxUnit i = 0; i < ddev->m.portCnt; i++)
+                        {
+                            afxDrawPortCaps* caps = &ddev->m.ports[i].caps;
+                            *caps = portCaps[i];
+                        }
+
+                        wglMakeContextCurrentSIG(NIL, NIL, NIL);
+                        wglDeleteContextSIG(tmpHglrc), tmpHglrc = NIL;
+                    }
+                    ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
+                    DestroyWindow(tmpHwnd), tmpHwnd = NIL;
+                    wglMakeContextCurrentSIG(bkpHdc, bkpHdc, bkpGlrc);
+                }
+
+                if (err)
+                    UnregisterClassA(ddev->wndClss.lpszClassName, ddev->wndClss.hInstance);
+            }
+
+            if (err)
+                AfxDisposeObjects(1, &ddev->oglDll);
+        }
+    }
+
+    if (err && _AVX_DDEV_CLASS_CONFIG.dtor(ddev))
+        AfxThrowError();
+
+    return err;
+}
+
 _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &icd, afxFcc_MDLE);
+    AFX_ASSERT_OBJECTS(afxFcc_MDLE, 1, &icd);
 
-    static afxDrawFeatures drawFeatures =
+    afxClassConfig ddevClsCfg = _AVX_DDEV_CLASS_CONFIG;
+    ddevClsCfg.fixedSiz = sizeof(AFX_OBJECT(afxDrawDevice));
+    ddevClsCfg.ctor = (void*)_ZglDdevCtorCb;
+    ddevClsCfg.dtor = (void*)_ZglDdevDtorCb;
+
+    afxClassConfig dsysClsCfg = _AVX_DSYS_CLASS_CONFIG;
+    dsysClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawSystem));
+    dsysClsCfg.ctor = (void*)_ZglDsysCtorCb;
+    dsysClsCfg.dtor = (void*)_ZglDsysDtorCb;
+
+    if (_AvxImplementDrawSystem(icd, NIL, &ddevClsCfg, &dsysClsCfg))
     {
-        .robustBufAccess = TRUE,
-        .fullDrawIdxUint32 = TRUE,
-        .rasterCubeArray = TRUE,
-        .independentBlend = TRUE,
-        .primShader = TRUE,
-        .dualSrcBlend = TRUE,
-        .logicOp = TRUE,
-        .multiDrawIndirect = TRUE,
-        .drawIndirectFirstInst = TRUE,
-        .depthClamp = TRUE,
-        .depthBiasClamp = TRUE,
-        .fillModeNonSolid = TRUE,
-        .multiViewport = TRUE,
-        .dxt = TRUE,
-        .shaderClipDist = TRUE,
-        .shaderCullDist = TRUE,
-        .alphaToOne = TRUE
-    };
-
-    //static afxDrawLimits drawLimits;
-
-    static afxDrawPortCaps const drawPortCaps[] =
-    {
-        {
-            .flags = afxDrawBridgeFlag_DRAW | afxDrawBridgeFlag_COMPUTE | afxDrawBridgeFlag_TRANSFER | afxDrawBridgeFlag_VHS,
-            .minQueCnt = 4,
-            .maxQueCnt = 16,
-
-            .draw = TRUE,
-            .compute = TRUE,
-            .transfer = TRUE,
-            .present = TRUE,
-        },
-        {
-            .flags = afxDrawBridgeFlag_COMPUTE | afxDrawBridgeFlag_TRANSFER,
-            .minQueCnt = 2,
-            .maxQueCnt = 16,
-
-            .compute = TRUE,
-            .transfer = TRUE,
-        },
-        {
-            .flags = afxDrawBridgeFlag_TRANSFER,
-            .minQueCnt = 2,
-            .maxQueCnt = 16,
-
-            .transfer = TRUE,
-        }
-    };
-
-    afxClassConfig ddgeClsCfg = _AvxDexuStdImplementation;
-    ddgeClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawBridge));
-    ddgeClsCfg.ctor = (void*)_SglDexuCtorCb;
-    ddgeClsCfg.dtor = (void*)_SglDexuDtorCb;
-
-    afxClassConfig dqueClsCfg = _AvxDqueStdImplementation;
-    dqueClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawQueue));
-    dqueClsCfg.ctor = (void*)_SglDqueCtorCb;
-
-    afxClassConfig dctxClsCfg = _AvxDctxStdImplementation;
-    dctxClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawContext));
-    dctxClsCfg.ctor = (void*)_SglDctxCtorCb;
-    dctxClsCfg.dtor = (void*)_SglDctxDtorCb;
-
-    afxClassConfig doutClsCfg = _AvxDoutStdImplementation;
-    doutClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawOutput));
-    doutClsCfg.ctor = (void*)_SglDoutCtorCb;
-    doutClsCfg.dtor = (void*)_SglDoutDtorCb;
-
-    afxClassConfig dinClsCfg = _AvxDinStdImplementation;
-    dinClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawInput));
-    dinClsCfg.ctor = (void*)_SglDinCtorCb;
-
-    afxDrawDeviceInfo const ddevInfos[] =
-    {
-        {
-            .dev.urn = AfxString("targl3"),
-            .dev.type = afxDeviceType_DRAW,
-            .dev.ioctl = (void*)_SglDdevIoctrlCb,
-
-            .features = drawFeatures,
-            .clipSpace = AVX_CLIP_SPACE_OPENGL,
-
-            .portCnt = ARRAY_SIZE(drawPortCaps),
-            .portCaps = drawPortCaps,
-
-            .relinkDoutCb = _SglRelinkDoutCb,
-
-            .dqueClsCfg = &dqueClsCfg,
-            .ddgeClsCfg = &ddgeClsCfg,
-            .dctxClsCfg = &dctxClsCfg,
-            .doutClsCfg = &doutClsCfg,
-            .dinClsCfg = &dinClsCfg,
-        },
-        {
-            .dev.urn = AfxString("targl4"),
-            .dev.type = afxDeviceType_DRAW,
-            .dev.ioctl = (void*)_SglDdevIoctrlCb,
-
-            .features = drawFeatures,
-            .clipSpace = AVX_CLIP_SPACE_OPENGL,
-
-            .portCnt = ARRAY_SIZE(drawPortCaps),
-            .portCaps = drawPortCaps,
-
-            .relinkDoutCb = _SglRelinkDoutCb,
-
-            .dqueClsCfg = &dqueClsCfg,
-            .ddgeClsCfg = &ddgeClsCfg,
-            .dctxClsCfg = &dctxClsCfg,
-            .doutClsCfg = &doutClsCfg,
-            .dinClsCfg = &dinClsCfg,
-        }
-    };
-    
-    afxDrawDevice ddevices[ARRAY_SIZE(ddevInfos)] = { 0 };
-
-    if (_AvxRegisterDrawDevices(icd, ARRAY_SIZE(ddevInfos), ddevInfos, ddevices)) AfxThrowError();
+        AfxThrowError();
+        return err;
+    }
     else
     {
+        static afxDrawFeatures drawFeatures =
+        {
+            .robustBufAccess = TRUE,
+            .fullDrawIdxUint32 = TRUE,
+            .rasterCubeArray = TRUE,
+            .independentBlend = TRUE,
+            .primShader = TRUE,
+            .dualSrcBlend = TRUE,
+            .logicOp = TRUE,
+            .multiDrawIndirect = TRUE,
+            .drawIndirectFirstInst = TRUE,
+            .depthClamp = TRUE,
+            .depthBiasClamp = TRUE,
+            .fillModeNonSolid = TRUE,
+            .multiViewport = TRUE,
+            .dxt = TRUE,
+            .shaderClipDist = TRUE,
+            .shaderCullDist = TRUE,
+            .alphaToOne = TRUE
+        };
 
+        afxDrawDeviceInfo const ddevInfos[] =
+        {
+            {
+                .dev.urn = AfxString("tarzgl3"),
+                .dev.type = afxDeviceType_DRAW,
+                .dev.ioctl = (void*)_ZglDdevIoctrlCb,
+
+                .features = drawFeatures,
+                .clipSpaceDepth = avxClipSpaceDepth_NEG_ONE_TO_ONE,
+
+                .portCnt = 3
+            },
+            {
+                .dev.urn = AfxString("tarzgl4"),
+                .dev.type = afxDeviceType_DRAW,
+                .dev.ioctl = (void*)_ZglDdevIoctrlCb,
+
+                .features = drawFeatures,
+                .clipSpaceDepth = avxClipSpaceDepth_NEG_ONE_TO_ONE,
+
+                .portCnt = 3
+            }
+        };
+
+        afxDrawDevice ddevices[ARRAY_SIZE(ddevInfos)] = { 0 };
+
+        if (_AvxRegisterDrawDevices(icd, ARRAY_SIZE(ddevInfos), ddevInfos, ddevices))
+        {
+            AfxThrowError();
+            return err;
+        }
     }
-
     return err;
 }

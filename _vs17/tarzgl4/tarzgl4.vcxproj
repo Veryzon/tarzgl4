@@ -161,7 +161,7 @@
     <ClInclude Include="..\..\src\zglObjects.h" />
     <ClInclude Include="..\..\src\zglUtils.h" />
     <ClInclude Include="..\..\src\zglDefs.h" />
-    <ClInclude Include="..\..\src\zglInterop_WGL32.h" />
+    <ClInclude Include="..\..\src\zglInterop_WGL.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -172,27 +172,22 @@
     <ClCompile Include="..\..\src\zglInterop_D3D.c" />
     <ClCompile Include="..\..\src\zglLigature.c" />
     <ClCompile Include="..\..\src\zglBuffer.c" />
-    <ClCompile Include="..\..\src\zglBufferOps.c" />
     <ClCompile Include="..\..\src\zglCanvas.c" />
-    <ClCompile Include="..\..\src\zglCommandEncoder.c" />
-    <ClCompile Include="..\..\src\zglDrawContext.c" />
+    <ClCompile Include="..\..\src\zglDrawSystem_W32.c" />
     <ClCompile Include="..\..\src\zglDrawDevice_W32.c" />
-    <ClCompile Include="..\..\src\zglDrawInput.c" />
-    <ClCompile Include="..\..\src\zglDrawOutput_GDI32.c" />
-    <ClCompile Include="..\..\src\zglDrawBridge.c" />
-    <ClCompile Include="..\..\src\zglCommandBuffer.c" />
+    <ClCompile Include="..\..\src\zglDrawOutput_GDI.c" />
+    <ClCompile Include="..\..\src\zglDrawBridge_W32.c" />
     <ClCompile Include="..\..\src\zglFence.c" />
-    <ClCompile Include="..\..\src\zglInterop_WGL32.c" />
+    <ClCompile Include="..\..\src\zglInterop_WGL.c" />
     <ClCompile Include="..\..\src\zglPipeline.c" />
     <ClCompile Include="..\..\src\zglQueryPool.c" />
     <ClCompile Include="..\..\src\zglUtils.c" />
     <ClCompile Include="..\..\src\zglRaster.c" />
-    <ClCompile Include="..\..\src\zglRasterOps.c" />
     <ClCompile Include="..\..\src\zglRasterizationOps.c" />
     <ClCompile Include="..\..\src\zglSampler.c" />
     <ClCompile Include="..\..\src\zglShader.c" />
     <ClCompile Include="..\..\src\zglTransformationOps.c" />
-    <ClCompile Include="..\..\src\zglVertexInput.c" />
+    <ClCompile Include="..\..\src\zglVertexDecl.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\zglWrapper.inl" />
