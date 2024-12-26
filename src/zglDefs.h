@@ -32,8 +32,8 @@
 #define _AVX_DRAW_BRIDGE_IMPL
 #define _AVX_DRAW_QUEUE_C
 #define _AVX_DRAW_QUEUE_IMPL
-#define _AVX_DRAW_CONTEXT_C
-#define _AVX_DRAW_CONTEXT_IMPL
+#define _AVX_DRAW_SYSTEM_C
+#define _AVX_DRAW_SYSTEM_IMPL
 #define _AVX_DRAW_OUTPUT_C
 #define _AVX_DRAW_OUTPUT_IMPL
 #define _AVX_DRAW_INPUT_C
@@ -48,7 +48,7 @@
 #define _AVX_RASTERIZER_IMPL
 #define _AVX_VERTEX_INPUT_C
 #define _AVX_VERTEX_INPUT_IMPL
-#define _AVX_CMD_BUFFER_C
+#define _AVX_DRAW_CONTEXT_C
 #define _AVX_CMD_BUFFER_IMPL
 #define _AVX_SAMPLER_C
 #define _AVX_SAMPLER_IMPL
@@ -65,7 +65,7 @@
 #define _AVX_QUERY_POOL_C
 #define _AVX_QUERY_POOL_IMPL
 
-#include "zglInterop_WGL32.h"
+#include "zglInterop_WGL.h"
 
 #define _ZGL_MAX_PUSH_CONSTANTS_SIZE 128
 

@@ -23,7 +23,7 @@
 // FRAME BUFFER                                                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-_ZGL afxError _SglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint layer, GLuint z)
+_ZGL afxError _ZglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint layer, GLuint z)
 {
     afxError err = AFX_ERR_NONE;
 
@@ -31,36 +31,36 @@ _ZGL afxError _SglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLenum glA
     {
     case GL_RENDERBUFFER:
     {
-        gl->FramebufferRenderbuffer(glTarget, glAttachment, GL_RENDERBUFFER, texHandle); _SglThrowErrorOccuried();
+        gl->FramebufferRenderbuffer(glTarget, glAttachment, GL_RENDERBUFFER, texHandle); _ZglThrowErrorOccuried();
     }
     case GL_TEXTURE_2D:
     {
-        gl->FramebufferTexture2D(glTarget, glAttachment, texTarget, texHandle, level); _SglThrowErrorOccuried();
+        gl->FramebufferTexture2D(glTarget, glAttachment, texTarget, texHandle, level); _ZglThrowErrorOccuried();
         break;
     }
     case GL_TEXTURE_1D_ARRAY:
     {
-        gl->FramebufferTexture2D(glTarget, glAttachment, texTarget, texHandle, level); _SglThrowErrorOccuried();
+        gl->FramebufferTexture2D(glTarget, glAttachment, texTarget, texHandle, level); _ZglThrowErrorOccuried();
         break;
     }
     case GL_TEXTURE_1D:
     {
-        gl->FramebufferTexture1D(glTarget, glAttachment, texTarget, texHandle, level); _SglThrowErrorOccuried();
+        gl->FramebufferTexture1D(glTarget, glAttachment, texTarget, texHandle, level); _ZglThrowErrorOccuried();
         break;
     }
     case GL_TEXTURE_3D:
     {
-        gl->FramebufferTexture3D(glTarget, glAttachment, texTarget, texHandle, level, z); _SglThrowErrorOccuried();
+        gl->FramebufferTexture3D(glTarget, glAttachment, texTarget, texHandle, level, z); _ZglThrowErrorOccuried();
         break;
     }
     case GL_TEXTURE_2D_ARRAY:
     {
-        gl->FramebufferTexture3D(glTarget, glAttachment, texTarget, texHandle, level, layer); _SglThrowErrorOccuried();
+        gl->FramebufferTexture3D(glTarget, glAttachment, texTarget, texHandle, level, layer); _ZglThrowErrorOccuried();
         break;
     }
     case GL_TEXTURE_CUBE_MAP:
     default:
-        gl->FramebufferTexture(glTarget, glAttachment, texHandle, level); _SglThrowErrorOccuried();
+        gl->FramebufferTexture(glTarget, glAttachment, texHandle, level); _ZglThrowErrorOccuried();
         break;
     };
 
@@ -72,14 +72,14 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
     //AfxEntry("canv=%p", canv);
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
-    afxUnit exuIdx = dpu->exuIdx;
+    afxUnit exuIdx = dpu->m.exuIdx;
     afxBool bound = (canv == dpu->activeRs.canv);
 
     if (!canv)
     {
         if (dpu->activeRs.canv || dpu->activeRs.canvGpuHandle)
         {
-            gl->BindFramebuffer(glTarget, 0); _SglThrowErrorOccuried();
+            gl->BindFramebuffer(glTarget, 0); _ZglThrowErrorOccuried();
             dpu->activeRs.canvGpuHandle = NIL;
             dpu->activeRs.canv = NIL;
             dpu->nextRs.canv = NIL;
@@ -87,7 +87,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
     }
     else
     {
-        AfxAssertObjects(1, &canv, afxFcc_CANV);
+        AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
         GLuint glHandle = canv->glHandle;
         zglUpdateFlags devUpdReq = (canv->updFlags & ZGL_UPD_FLAG_DEVICE);
             
@@ -95,16 +95,16 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
         {
             if (glHandle)
             {
-                AfxAssert(gl->IsFramebuffer(glHandle));
-                gl->DeleteFramebuffers(1, &(glHandle)); _SglThrowErrorOccuried();
+                AFX_ASSERT(gl->IsFramebuffer(glHandle));
+                gl->DeleteFramebuffers(1, &(glHandle)); _ZglThrowErrorOccuried();
                 canv->glHandle = NIL;
                 glHandle = NIL;
             }
-            gl->GenFramebuffers(1, &(glHandle)); _SglThrowErrorOccuried();
-            gl->BindFramebuffer(glTarget, glHandle); _SglThrowErrorOccuried();
-            AfxAssert(gl->IsFramebuffer(glHandle));
+            gl->GenFramebuffers(1, &(glHandle)); _ZglThrowErrorOccuried();
+            gl->BindFramebuffer(glTarget, glHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(gl->IsFramebuffer(glHandle));
             canv->glHandle = glHandle;
-            AfxAssert(!bound);
+            AFX_ASSERT(!bound);
             bound = TRUE;
             dpu->activeRs.canv = canv;
 
@@ -114,7 +114,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
             
             if (surCnt)
             {
-                AfxAssert(_ZGL_MAX_SURF_PER_CANV >= surCnt);
+                AFX_ASSERT(_ZGL_MAX_SURF_PER_CANV >= surCnt);
                 AfxGetDrawBuffers(canv, 0, surCnt, surfaces);
 
                 afxUnit dsSurIdx[2];
@@ -153,8 +153,8 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
                     }
                     else
                     {
-                        AfxAssertObjects(1, &ras, afxFcc_RAS);
-                        AfxAssert(AfxTestRasterUsage(ras, afxRasterUsage_DRAW));
+                        AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+                        AFX_ASSERT(AfxTestRasterUsage(ras, afxRasterUsage_DRAW));
 
                         DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
 
@@ -162,16 +162,16 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
                         {
                             glTexHandle = ras->glRboHandle;
                             glTexTarget = GL_RENDERBUFFER;
-                            AfxAssert(gl->IsRenderBuffer(glTexHandle));
+                            AFX_ASSERT(gl->IsRenderBuffer(glTexHandle));
                         }
                         else
                         {
                             glTexHandle = ras->glHandle;
                             glTexTarget = ras->glTarget;
-                            AfxAssert(gl->IsTexture(glTexHandle));
+                            AFX_ASSERT(gl->IsTexture(glTexHandle));
                         }
                     }
-                    _SglBindFboAttachment(&dpu->gl, glTarget, glAttachment, glTexTarget, glTexHandle, 0, 0, 0);
+                    _ZglBindFboAttachment(&dpu->gl, glTarget, glAttachment, glTexTarget, glTexHandle, 0, 0, 0);
                 }
             }
 
@@ -207,7 +207,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
                 break;
             default:
                 AfxLogError("UNKNOWN");
-                _SglThrowErrorOccuried();
+                _ZglThrowErrorOccuried();
                 break;
             }
 
@@ -221,8 +221,8 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
                 (glHandle != dpu->activeRs.canvGpuHandle)
                 )
             {
-                AfxAssert(gl->IsFramebuffer(glHandle));
-                gl->BindFramebuffer(glTarget, glHandle); _SglThrowErrorOccuried();
+                AFX_ASSERT(gl->IsFramebuffer(glHandle));
+                gl->BindFramebuffer(glTarget, glHandle); _ZglThrowErrorOccuried();
                 dpu->activeRs.canvGpuHandle = glHandle;
                 dpu->activeRs.canv = canv;
                 dpu->nextRs.canv = NIL;
@@ -233,13 +233,13 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv)
 }
 
 #if 0
-_ZGL afxError _SglReadjustCanvasCb(avxCanvas canv, afxWhd const whd)
+_ZGL afxError _ZglReadjustCanvasCb(avxCanvas canv, afxWhd const whd)
 {
 	afxError err = AFX_ERR_NONE;
-	AfxAssertObjects(1, &canv, afxFcc_CANV);
-	AfxAssert(whd);
-	AfxAssert(whd[0]);
-	AfxAssert(whd[1]);
+	AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
+	AFX_ASSERT(whd);
+	AFX_ASSERT(whd[0]);
+	AFX_ASSERT(whd[1]);
     afxWhd minWhd = { ZGL_MAX_CANVAS_WIDTH, ZGL_MAX_CANVAS_HEIGHT, ZGL_MAX_CANVAS_LAYERS }, surWhd;
     
     for (afxUnit i = 0; i < canv->m.slotCnt; i++)
@@ -248,7 +248,7 @@ _ZGL afxError _SglReadjustCanvasCb(avxCanvas canv, afxWhd const whd)
 
         if (ras)
         {
-            AfxAssertObjects(1, &ras, afxFcc_RAS);
+            AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
             AfxGetRasterExtent(ras, 0, surWhd);
             AfxWhdMin(minWhd, minWhd, surWhd);
         }
@@ -272,19 +272,19 @@ _ZGL afxError _SglReadjustCanvasCb(avxCanvas canv, afxWhd const whd)
 _ZGL afxError _AfxCanvDropAllSurfaces(avxCanvas canv)
 {
 	afxError err = AFX_ERR_NONE;
-	AfxAssertObjects(1, &canv, afxFcc_CANV);
+	AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
 
 	//canv->m.colorCnt = 0;
     //canv->m.surfCnt = 0;
 	return err;
 }
 
-_ZGL afxError _SglCanvDtor(avxCanvas canv)
+_ZGL afxError _ZglCanvDtor(avxCanvas canv)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &canv, afxFcc_CANV);
+    AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
 
-    afxDrawContext dctx = AfxGetProvider(canv);
+    afxDrawSystem dsys = AfxGetProvider(canv);
 
     for (afxUnit i = 0; i < canv->m.slotCnt; i++)
     {
@@ -292,32 +292,32 @@ _ZGL afxError _SglCanvDtor(avxCanvas canv)
 
         if (ras)
         {
-            AfxAssertObjects(1, &ras, afxFcc_RAS);
-            AfxReleaseObjects(1, &ras);
+            AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+            AfxDisposeObjects(1, &ras);
             canv->m.slots[i].ras = NIL;
         }
     }
 
     if (canv->glHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_FRAMEBUFFER, (afxSize)canv->glHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_FRAMEBUFFER, (afxSize)canv->glHandle);
         canv->glHandle = 0;
     }
 
-    if (_AvxCanvStdImplementation.dtor(canv))
+    if (_AVX_CANV_CLASS_CONFIG.dtor(canv))
         AfxThrowError();
 
     return err;
 }
 
-_ZGL afxError _SglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
 
-    if (_AvxCanvStdImplementation.ctor(canv, args, invokeNo)) AfxThrowError();
+    if (_AVX_CANV_CLASS_CONFIG.ctor(canv, args, invokeNo)) AfxThrowError();
     else
     {
-        //canv->m.readjust = _SglReadjustCanvasCb;
+        //canv->m.readjust = _ZglReadjustCanvasCb;
         canv->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
         canv->glHandle = 0;
         canv->storeBitmask = NIL;

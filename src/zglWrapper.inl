@@ -18,7 +18,7 @@
 #include "zglDdrv.h"
 #include "qwadro/exec/afxSystem.h"
 
-ZGLINL void SglBindTextureUnit(zglDpu* dpu, GLuint unit, GLenum target, GLuint texture)
+ZGLINL void ZglBindTextureUnit(zglDpu* dpu, GLuint unit, GLenum target, GLuint texture)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
@@ -29,21 +29,21 @@ ZGLINL void SglBindTextureUnit(zglDpu* dpu, GLuint unit, GLenum target, GLuint t
     }
     else
     {
-        gl->ActiveTexture(GL_TEXTURE0 + unit); _SglThrowErrorOccuried();
-        gl->BindTexture(target, texture); _SglThrowErrorOccuried();
+        gl->ActiveTexture(GL_TEXTURE0 + unit); _ZglThrowErrorOccuried();
+        gl->BindTexture(target, texture); _ZglThrowErrorOccuried();
     }
 }
 
-ZGLINL void SglUsePipeline(zglDpu* dpu, GLuint program)
+ZGLINL void ZglUsePipeline(zglDpu* dpu, GLuint program)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
-    gl->UseProgram(program); _SglThrowErrorOccuried();
+    gl->UseProgram(program); _ZglThrowErrorOccuried();
 }
 
-ZGLINL void SglBindFramebuffer(zglDpu* dpu, GLenum target, GLuint fbo)
+ZGLINL void ZglBindFramebuffer(zglDpu* dpu, GLenum target, GLuint fbo)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
-    gl->BindFramebuffer(target, fbo); _SglThrowErrorOccuried();
+    gl->BindFramebuffer(target, fbo); _ZglThrowErrorOccuried();
 }

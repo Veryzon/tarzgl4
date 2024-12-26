@@ -322,7 +322,7 @@ _ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxDrawOutput dout, afxBool lock
 
     if (dout->dxgi.mRenderbufferBufferHandle == NIL)
     {
-        AfxAssert(dout->dxgi.mTextureHandle == NIL);
+        AFX_ASSERT(dout->dxgi.mTextureHandle == NIL);
         return err;
     }
 
@@ -374,8 +374,8 @@ _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* 
     afxError err;
     glVmt const* gl = &dpu->gl;
 
-    AfxAssert(rc->w > 0 && rc->h > 0);
-    AfxAssert(dout->dxgi.mSwapChain1 != NIL);
+    AFX_ASSERT(rc->w > 0 && rc->h > 0);
+    AFX_ASSERT(dout->dxgi.mSwapChain1 != NIL);
     gl->Flush();
     setObjectsLockedDxgi(dpu, dout, FALSE);
     HRESULT result = S_OK;
@@ -407,7 +407,7 @@ _ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, afxRaster textur
     afxError err;
     afxDrawDevice ddev = AfxGetProvider(dout);
 
-    AfxAssert(dout->dxgi.mTextureHandle == NIL);
+    AFX_ASSERT(dout->dxgi.mTextureHandle == NIL);
     GLuint textureID = texture->glHandle;
     ID3D11Texture2D *colorBuffer = NIL;
     HRESULT result = IDXGISwapChain_GetBuffer(dout->dxgi.mSwapChain, 0, &IID_ID3D11Texture2D, (void**)(&colorBuffer));
@@ -537,7 +537,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
 
         if (SUCCEEDED(result))
         {
-            AfxAssert(dxgiFactory2 != NIL);
+            AFX_ASSERT(dxgiFactory2 != NIL);
             DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
             swapChainDesc.BufferCount = 1;
             swapChainDesc.Format = dout->dxgi.mSwapChainFormat;

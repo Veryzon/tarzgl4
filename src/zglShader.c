@@ -28,7 +28,7 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
     //AfxEntry("shd=%p", shd);
     afxError err = AFX_ERR_NONE;
     (void)dpu;
-    AfxAssertObjects(1, &shd, afxFcc_SHD);
+    AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &shd);
 
     if ((shd->updFlags & ZGL_UPD_FLAG_DEVICE))
     {
@@ -36,35 +36,35 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
         {
             if (shd->glHandle)
             {
-                gl->DeleteShader(shd->glHandle); _SglThrowErrorOccuried();
+                gl->DeleteShader(shd->glHandle); _ZglThrowErrorOccuried();
                 shd->glHandle = NIL;
             }
 
-            AfxAssert(NIL == shd->glHandle);
+            AFX_ASSERT(NIL == shd->glHandle);
 
             if (!(shd->glHandle = gl->CreateShader(AfxToGlShaderStage(stage))))
             {
                 AfxThrowError();
-                _SglThrowErrorOccuried();
+                _ZglThrowErrorOccuried();
             }
             else
             {
-                AfxAssert(shd);
-                AfxAssert(gl->IsShader(shd->glHandle));
+                AFX_ASSERT(shd);
+                AFX_ASSERT(gl->IsShader(shd->glHandle));
                 const GLint codeLens[] = { shd->m.codeLen };
                 GLchar const* const codes[] = { (GLchar const*)shd->m.code };
-                gl->ShaderSource(shd->glHandle, 1, codes, codeLens); _SglThrowErrorOccuried();
-                gl->CompileShader(shd->glHandle); _SglThrowErrorOccuried();
+                gl->ShaderSource(shd->glHandle, 1, codes, codeLens); _ZglThrowErrorOccuried();
+                gl->CompileShader(shd->glHandle); _ZglThrowErrorOccuried();
                 GLint status = 0;
-                gl->GetShaderiv(shd->glHandle, GL_COMPILE_STATUS, &status); _SglThrowErrorOccuried();
+                gl->GetShaderiv(shd->glHandle, GL_COMPILE_STATUS, &status); _ZglThrowErrorOccuried();
 
                 if (status == GL_FALSE)
                 {
                     AfxThrowError();
                     afxChar str[1024];
-                    gl->GetShaderInfoLog(shd->glHandle, sizeof(str), NIL, (GLchar*)str); _SglThrowErrorOccuried();
+                    gl->GetShaderInfoLog(shd->glHandle, sizeof(str), NIL, (GLchar*)str); _ZglThrowErrorOccuried();
                     AfxLogError(str);
-                    gl->DeleteShader(shd->glHandle); _SglThrowErrorOccuried();
+                    gl->DeleteShader(shd->glHandle); _ZglThrowErrorOccuried();
                     shd->glHandle = NIL;
                 }
                 else
@@ -78,7 +78,7 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
         }
         else if ((shd->updFlags & ZGL_UPD_FLAG_DEVICE_FLUSH))
         {
-            AfxAssert(shd->glHandle);
+            AFX_ASSERT(shd->glHandle);
             
             AfxThrowError(); // can't be modified
         }
@@ -86,36 +86,36 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
     return err;
 }
 
-_ZGL afxError _SglShdDtor(avxShader shd)
+_ZGL afxError _ZglShdDtor(avxShader shd)
 {
     afxError err = AFX_ERR_NONE;
 
-    afxDrawContext dctx = AfxGetProvider(shd);
+    afxDrawSystem dsys = AfxGetProvider(shd);
     
     if (shd->glHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_SHADER, (afxSize)shd->glHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_SHADER, (afxSize)shd->glHandle);
         shd->glHandle = 0;
     }
 
     if (shd->glProgHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_PROGRAM, (afxSize)shd->glProgHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_PROGRAM, (afxSize)shd->glProgHandle);
         shd->glProgHandle = 0;
     }
 
-    if (_AvxShdStdImplementation.dtor(shd))
+    if (_AVX_SHD_CLASS_CONFIG.dtor(shd))
         AfxThrowError();
 
     return err;
 }
 
-_ZGL afxError _SglShdCtor(avxShader shd, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglShdCtor(avxShader shd, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &shd, afxFcc_SHD);
+    AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &shd);
 
-    if (_AvxShdStdImplementation.ctor(shd, args, invokeNo)) AfxThrowError();
+    if (_AVX_SHD_CLASS_CONFIG.ctor(shd, args, invokeNo)) AfxThrowError();
     else
     {
         shd->glHandle = NIL;
@@ -123,19 +123,9 @@ _ZGL afxError _SglShdCtor(avxShader shd, void** args, afxUnit invokeNo)
         shd->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
         shd->compiled = FALSE;
 
-        if (err && _AvxShdStdImplementation.dtor(shd))
+        if (err && _AVX_SHD_CLASS_CONFIG.dtor(shd))
             AfxThrowError();
     }
-    AfxAssertObjects(1, &shd, afxFcc_SHD);
+    AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &shd);
     return err;
 }
-
-_ZGL afxClassConfig const _SglShdMgrCfg =
-{
-    .fcc = afxFcc_SHD,
-    .name = "Shader",
-    .desc = "Programmable Pipeline Module",
-    .fixedSiz = sizeof(AFX_OBJECT(avxShader)),
-    .ctor = (void*)_SglShdCtor,
-    .dtor = (void*)_SglShdDtor
-};

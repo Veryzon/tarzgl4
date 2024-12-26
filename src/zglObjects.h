@@ -27,7 +27,7 @@ AFX_OBJECT(avxPipeline)
     //zglVertexInput  vertexInput;
 };
 
-AFX_OBJECT(avxVertexInput)
+AFX_OBJECT(avxVertexDecl)
 {
     AFX_OBJECT(_avxVertexInput) m;
     zglUpdateFlags  updFlags;
@@ -112,52 +112,7 @@ AFX_OBJECT(avxCanvas)
     afxMask         storeBitmask;
 };
 
-AFX_OBJECT(avxCmdb)
-{
-    AFX_OBJECT(_avxCmdb) m;
-    afxChain                    commands;
-    afxChain                    echoes;
-    afxChain                    canvOps;
-    afxChain            drawCalls;
-    afxChain            stateChanges;
-    afxChain            pipBinds;
-    afxChain            vbufBinds;
-    afxChain            ibufBinds;
-    afxChain            bufBinds;
-    afxChain            texBinds;
-
-    afxUnit              totalCmdCnt;
-    afxUnit              lastDrawCmdIdx;
-    afxUnit              drawCmdCnt;
-    afxUnit              lastPipBindCmdIdx;
-    afxUnit              pipBindCmdCnt;
-    afxUnit              lastVbufBindCmdIdx;
-    afxUnit              vbufBindCmdCnt;
-    afxUnit              lastIbufBindCmdIdx;
-    afxUnit              ibufBindCmdCnt;
-    afxUnit              lastBufBindCmdIdx;
-    afxUnit              bufBindCmdCnt;
-    afxUnit              lastTexBindCmdIdx;
-    afxUnit              texBindCmdCnt;
-    afxUnit              lastRasUpdCmdIdx;
-    afxUnit              rasUpdCmdCnt;
-    afxUnit              lastDepthUpdCmdIdx;
-    afxUnit              depthUpdCmdCnt;
-    afxUnit              lastVpCmdIdx; // viewport and/or scissor changes
-    afxUnit              vpUpdCmdCnt;
-    afxUnit              lastScisCmdIdx; // viewport and/or scissor changes
-    afxUnit              scisUpdCmdCnt;
-    struct
-    {
-        struct
-        {
-            avxPipeline     next;
-            avxPipeline     curr;
-        } pip;
-    } levelCaches[1];
-};
-
-ZGL void _SglDctxEnqueueDeletion(afxDrawContext dctx, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
+ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 
 
 ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, afxBuffer buf);
@@ -181,33 +136,34 @@ ZGL afxError _DpuUnpackRasFromIob(zglDpu* dpu, afxRaster ras, afxStream in, afxU
 
 ZGL afxError _DpuCopyRas(zglDpu* dpu, afxRaster src, afxRaster dst, afxUnit opCnt, afxRasterCopy const ops[]);
 
-ZGL afxError _SglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxFence const fences[]);
-ZGL afxError _SglResetFenc(afxUnit cnt, afxFence const fences[]);
+ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxFence const fences[]);
+ZGL afxError _ZglResetFenc(afxUnit cnt, afxFence const fences[]);
 
-ZGL afxClassConfig const _SglFencMgrCfg;
-ZGL afxClassConfig const _SglSemMgrCfg;
+ZGL afxClassConfig const _ZglFencMgrCfg;
+ZGL afxClassConfig const _ZglSemMgrCfg;
 
-ZGL afxClassConfig _SglCmdbMgrCfg;
-
-ZGL afxError _SglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo);
-ZGL afxError _SglPipDtor(avxPipeline pip);
-ZGL afxError _SglRazrDtor(avxRasterizer razr);
-ZGL afxError _SglRazrCtor(avxRasterizer razr, void** args, afxUnit invokeNo);
-ZGL afxError _SglShdCtor(avxShader shd, void** args, afxUnit invokeNo);
-ZGL afxError _SglShdDtor(avxShader shd);
-ZGL afxError _SglVinCtor(avxVertexInput vin, void** args, afxUnit invokeNo);
-ZGL afxError _SglVinDtor(avxVertexInput vin);
-ZGL afxError _SglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo);
-ZGL afxError _SglCanvDtor(avxCanvas canv);
-ZGL afxError _SglRasCtor(afxRaster ras, void** args, afxUnit invokeNo);
-ZGL afxError _SglRasDtor(afxRaster ras);
+ZGL afxError _ZglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo);
+ZGL afxError _ZglPipDtor(avxPipeline pip);
+ZGL afxError _ZglShdCtor(avxShader shd, void** args, afxUnit invokeNo);
+ZGL afxError _ZglShdDtor(avxShader shd);
+ZGL afxError _ZglVinCtor(avxVertexDecl vin, void** args, afxUnit invokeNo);
+ZGL afxError _ZglVinDtor(avxVertexDecl vin);
+ZGL afxError _ZglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo);
+ZGL afxError _ZglCanvDtor(avxCanvas canv);
+ZGL afxError _ZglRasCtor(afxRaster ras, void** args, afxUnit invokeNo);
+ZGL afxError _ZglRasDtor(afxRaster ras);
 ZGL afxError _BufCtorCb(afxBuffer buf, void** args, afxUnit invokeNo);
 ZGL afxError _BufDtorCb(afxBuffer buf);
-ZGL afxError _SglSampCtor(avxSampler samp, void** args, afxUnit invokeNo);
-ZGL afxError _SglSampDtor(avxSampler samp);
-ZGL afxError _SglLigaCtor(avxLigature liga, void** args, afxUnit invokeNo);
-ZGL afxError _SglLigaDtor(avxLigature liga);
-ZGL afxError _SglQrypCtor(avxQueryPool qryp, void** args, afxUnit invokeNo);
-ZGL afxError _SglQrypDtor(avxQueryPool qryp);
+ZGL afxError _ZglSampCtor(avxSampler samp, void** args, afxUnit invokeNo);
+ZGL afxError _ZglSampDtor(avxSampler samp);
+ZGL afxError _ZglLigaCtor(avxLigature liga, void** args, afxUnit invokeNo);
+ZGL afxError _ZglLigaDtor(avxLigature liga);
+ZGL afxError _ZglQrypCtor(avxQueryPool qryp, void** args, afxUnit invokeNo);
+ZGL afxError _ZglQrypDtor(avxQueryPool qryp);
+
+ZGL afxError _ZglCmdbCtorCb(afxDrawContext dctx, void** args, afxUnit invokeNo);
+ZGL afxError _ZglCmdbDtorCb(afxDrawContext dctx);
+
+
 
 #endif//ZGL_OBJECTS_H

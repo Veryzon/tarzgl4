@@ -15,9 +15,6 @@
     <ClInclude Include="..\..\src\zglDefs.h">
       <Filter>tarzgl4</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\zglInterop_WGL32.h">
-      <Filter>tarzgl4</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\zglUtils.h">
       <Filter>tarzgl4</Filter>
     </ClInclude>
@@ -30,6 +27,9 @@
     <ClInclude Include="..\..\src\zglObjects.h">
       <Filter>tarzgl4</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\zglInterop_WGL.h">
+      <Filter>tarzgl4</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\zglShader.c">
@@ -39,9 +39,6 @@
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglRasterizationOps.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglRasterOps.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglRaster.c">
@@ -59,52 +56,40 @@
     <ClCompile Include="..\..\src\zglFence.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zglDrawInput.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglDrawBridge.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\zglDrawDevice_W32.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglDrawContext.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglCommandEncoder.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglCommandDecoder.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zglCommandBuffer.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\zglCanvas.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglBufferOps.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglBuffer.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zglVertexInput.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\zglTransformationOps.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglDrawOutput_GDI32.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\zglInterop_WGL32.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglUtils.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zglInterop_D3D.c">
+      <Filter>tarzgl4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglInterop_WGL.c">
+      <Filter>tarzgl4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglDrawOutput_GDI.c">
+      <Filter>tarzgl4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglDrawBridge_W32.c">
+      <Filter>tarzgl4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglDrawSystem_W32.c">
+      <Filter>tarzgl4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglVertexDecl.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
   </ItemGroup>

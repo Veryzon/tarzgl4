@@ -54,7 +54,7 @@
 #include "../dep/gl/glad.h"
 #include "../dep/gl/glad_wgl.h"
 #include "qwadro/inc/afxQwadro.h"
-#include "afx/src/dev/AvxImplKit.h"
+#include "afx/src/draw/impl/avxImplementation.h"
 
 #ifndef AVX_DRV_SRC
 #   ifdef _DEBUG
@@ -846,9 +846,9 @@ typedef union glVmt
 } glVmt;
 
 #ifdef _AFX_DEBUG
-#   define _SglThrowErrorOccuried() { GLenum err = gl->GetError(); switch (err) { case GL_NO_ERROR: break; case 1280: AfxLogError("GL: INVAL_PARAM"); break; case 1281: AfxLogError("GL: INVAL_VALUE"); break; case 1282: AfxLogError("GL: INVAL_OP"); break; case 1283: AfxLogError("GL: STACK_OVERFLOW"); break; case 1284: AfxLogError("GL: STACK_UNDERFLOW"); break; case 1285: AfxLogError("GL: OUT_OF_MEM"); break; default: AfxLogError("GL: %d", err); break; }}
+#   define _ZglThrowErrorOccuried() { GLenum err = gl->GetError(); switch (err) { case GL_NO_ERROR: break; case 1280: AfxLogError("GL: INVAL_PARAM"); break; case 1281: AfxLogError("GL: INVAL_VALUE"); break; case 1282: AfxLogError("GL: INVAL_OP"); break; case 1283: AfxLogError("GL: STACK_OVERFLOW"); break; case 1284: AfxLogError("GL: STACK_UNDERFLOW"); break; case 1285: AfxLogError("GL: OUT_OF_MEM"); break; default: AfxLogError("GL: %d", err); break; }}
 #else
-#   define _SglThrowErrorOccuried()
+#   define _ZglThrowErrorOccuried()
 #endif//AFX_DONT_DEBUG
 
 typedef union wglVmt
@@ -907,8 +907,8 @@ typedef union wglVmt
 
 ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
-ZGL void SglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
-ZGL void SglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits);
+ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
+ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits);
 
 ZGL wglVmt wgl;
 

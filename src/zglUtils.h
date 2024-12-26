@@ -22,7 +22,7 @@
 ZGL GLenum AfxToGlFrontFace(avxFrontFace ff);
 ZGL GLenum AfxToGlCullMode(avxCullMode cm);
 ZGL GLenum AfxToGlFillMode(avxFillMode pm);
-ZGL GLenum SglToGlCompareOp(avxCompareOp co);
+ZGL GLenum ZglToGlCompareOp(avxCompareOp co);
 ZGL GLuint AfxToGlShaderStage(avxShaderStage s);
 ZGL GLuint AfxToGlShaderStageBit(avxShaderStage s);
 ZGL GLenum AfxToGlTopology(avxTopology pm);
@@ -30,17 +30,19 @@ ZGL GLenum AfxToGlBufferUsage(afxInt bt);
 ZGL GLenum AfxToGlStencilOp(avxStencilOp so);
 ZGL GLenum AfxToGlBlendOp(avxBlendOp f);
 ZGL GLenum AfxToGlBlendFactor(avxBlendFactor f);
+#if 0
 ZGL void AfxToGlVertexFormat(afxVertexFormat fmt, GLint* siz, GLenum* typ, afxUnit32* stride);
+#endif
 ZGL GLenum AfxToGlLogicOp(avxLogicOp f);
-//ZGL void SglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type);
-ZGL GLenum SglToGlImageDimensions(afxUnit d);
-ZGL GLenum SglToGlTexelFilterMode(avxTexelFilter tfm);
-ZGL GLenum SglToGlTexelFilterModeMipmapped(avxTexelFilter min, avxTexelFilter mip);
-ZGL GLenum SglToGlTexWrapMode(avxTexelAddress twm);
-ZGL GLenum SglToGlColorSwizzle(avxColorSwizzle swizzle);
-ZGL void SglToGlColorSwizzling(avxColorSwizzling const *swizzling, GLenum *arrayedSwizzles);
-ZGL void SglDetermineGlTargetInternalFormatType(afxRaster tex, GLenum *target, GLint *intFmt, GLenum *fmt, GLenum *type);
+//ZGL void ZglToGlFormat(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type);
+ZGL GLenum ZglToGlImageDimensions(afxUnit d);
+ZGL GLenum ZglToGlTexelFilterMode(avxTexelFilter tfm);
+ZGL GLenum ZglToGlTexelFilterModeMipmapped(avxTexelFilter min, avxTexelFilter mip);
+ZGL GLenum ZglToGlTexWrapMode(avxTexelAddress twm);
+ZGL GLenum ZglToGlColorSwizzle(avxColorSwizzle swizzle);
+ZGL void ZglToGlColorSwizzling(avxColorSwizzling const *swizzling, GLenum *arrayedSwizzles);
+ZGL void ZglDetermineGlTargetInternalFormatType(afxRaster tex, GLenum *target, GLint *intFmt, GLenum *fmt, GLenum *type);
 
-ZGL void SglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type);
+ZGL void ZglToGlFormat2(avxFormat pf, GLint *fmt, GLenum *layout, GLenum *type);
 
 #endif//AVX_TO_GL_H

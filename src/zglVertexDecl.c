@@ -18,7 +18,7 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-_ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
+_ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexDecl vin)
 {
     //AfxEntry("pip=%p", pip);
     afxError err = AFX_ERR_NONE;
@@ -29,7 +29,7 @@ _ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
         if (dpu->activeVin ||
             (dpu->activeVinGpuHandle != dpu->emptyVao))
         {
-            gl->BindVertexArray(dpu->emptyVao); _SglThrowErrorOccuried();
+            gl->BindVertexArray(dpu->emptyVao); _ZglThrowErrorOccuried();
 
             dpu->nextVin = NIL;
             dpu->activeVin = NIL;
@@ -38,54 +38,62 @@ _ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
     }
     else
     {
-        AfxAssertObjects(1, &vin, afxFcc_VIN);
+        AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
         GLuint glHandle = vin->glHandle;
 
         if (!glHandle || (vin->updFlags & ZGL_UPD_FLAG_DEVICE_INST))
         {
             if (glHandle)
             {
-                gl->DeleteVertexArrays(1, &glHandle), glHandle = NIL; _SglThrowErrorOccuried();
+                gl->DeleteVertexArrays(1, &glHandle), glHandle = NIL; _ZglThrowErrorOccuried();
             }
 
-            gl->GenVertexArrays(1, &glHandle); _SglThrowErrorOccuried();
-            gl->BindVertexArray(glHandle); _SglThrowErrorOccuried();
-            AfxAssert(gl->IsVertexArray(glHandle));
+            gl->GenVertexArrays(1, &glHandle); _ZglThrowErrorOccuried();
+            gl->BindVertexArray(glHandle); _ZglThrowErrorOccuried();
+            AFX_ASSERT(gl->IsVertexArray(glHandle));
             
             afxUnit attrCnt = vin->m.attrCnt;
 
             for (afxUnit i = 0; i < attrCnt; i++)
             {
-                avxVertexInputAttr const* attr = &vin->m.attrs[i];
-                AfxAssertRange(afxVertexFormat_TOTAL, attr->fmt, 1);
-                AfxAssertRange(ZGL_MAX_VERTEX_ATTRIBS, attr->location, 1);
-                AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, attr->streamIdx, 1);
-                AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, attr->offset, 1);
+                avxVertexInput const* attr = &vin->m.attrs[i];
+                AFX_ASSERT_RANGE(avxFormat_TOTAL, attr->fmt, 1);
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIBS, attr->location, 1);
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, attr->srcIdx, 1);
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, attr->offset, 1);
 
                 afxUnit location = attr->location;
-                afxUnit srcIdx = attr->streamIdx;
+                afxUnit srcIdx = attr->srcIdx;
 
-                GLint glsiz;
+                avxFormatDescription pfd;
+                AfxDescribePixelFormat(attr->fmt, &pfd);
+                GLint glsiz = pfd.compCnt;
                 GLenum gltype;
                 GLuint glStride;
-                AfxToGlVertexFormat(attr->fmt, &glsiz, &gltype, &glStride);
+                //AfxToGlVertexFormat(attr->fmt, &glsiz, &gltype, &glStride);
 
-                //gl->BindAttribLocation(glHandle, location, AfxGetStringData(&(vsh->base.ioDecls[i].semantic), 0)); _SglThrowErrorOccuried();
+                GLint glIntFmt;
+                GLenum glLayout;
+                GLenum glType;
+                ZglToGlFormat2(attr->fmt, &glIntFmt, &glLayout, &glType);
+                gltype = glType;
+                
+                //gl->BindAttribLocation(glHandle, location, AfxGetStringData(&(vsh->base.ioDecls[i].semantic), 0)); _ZglThrowErrorOccuried();
 
-                AfxAssert(16 > location);  // max vertex attrib
-                gl->EnableVertexAttribArray(location); _SglThrowErrorOccuried();
-                AfxAssert(gl->BindVertexBuffer);
-                gl->VertexAttribFormat(location, glsiz, gltype, !!attr->normalized, attr->offset); _SglThrowErrorOccuried();
+                AFX_ASSERT(16 > location);  // max vertex attrib
+                gl->EnableVertexAttribArray(location); _ZglThrowErrorOccuried();
+                AFX_ASSERT(gl->BindVertexBuffer);
+                gl->VertexAttribFormat(location, glsiz, gltype, /*!!attr->normalized*/pfd.isNormalized[0], attr->offset); _ZglThrowErrorOccuried();
                 //afxUnit srcIdx = streamIdx;// dpu->state.vertexInput.streams[streamIdx].srcIdx;
-                //AfxAssertRange(_ZGL_MAX_VBO_PER_BIND, srcIdx, 1);
-                AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, srcIdx, 1);
-                gl->VertexAttribBinding(location, srcIdx); _SglThrowErrorOccuried();
+                //AFX_ASSERT_RANGE(_ZGL_MAX_VBO_PER_BIND, srcIdx, 1);
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, srcIdx, 1);
+                gl->VertexAttribBinding(location, srcIdx); _ZglThrowErrorOccuried();
 
                 afxUnit instDivisor = vin->m.streams[srcIdx].instanceRate;
 
                 if (instDivisor)
                 {
-                    gl->VertexAttribDivisor(location, instDivisor); _SglThrowErrorOccuried();
+                    gl->VertexAttribDivisor(location, instDivisor); _ZglThrowErrorOccuried();
                 }
             }
 
@@ -93,10 +101,10 @@ _ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
 
             for (afxUnit i = 0; i < streamCnt; i++)
             {
-                avxVertexInputStream const* stream = &vin->m.streams[i];
-                AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->slotIdx, 1);
-                //AfxAssertRange(ZGL_MAX_VERTEX_ATTRIB_STRIDE, 0, stream->stride);
-                //gl->BindVertexBuffer(stream->slotIdx, 0, 0, stream->stride); _SglThrowErrorOccuried();
+                avxVertexFetch const* stream = &vin->m.streams[i];
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->srcIdx, 1);
+                //AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_STRIDE, 0, stream->stride);
+                //gl->BindVertexBuffer(stream->slotIdx, 0, 0, stream->stride); _ZglThrowErrorOccuried();
             }
 
             vin->glHandle = glHandle;
@@ -115,8 +123,8 @@ _ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
             if ((dpu->activeVin != vin) ||
                 (dpu->activeVinGpuHandle != glHandle))
             {
-                AfxAssert(gl->IsVertexArray(glHandle));
-                gl->BindVertexArray(glHandle); _SglThrowErrorOccuried();
+                AFX_ASSERT(gl->IsVertexArray(glHandle));
+                gl->BindVertexArray(glHandle); _ZglThrowErrorOccuried();
 
                 dpu->nextVin = NIL; // force update in "next first time".
                 dpu->activeVin = vin;
@@ -131,36 +139,36 @@ _ZGL afxError _DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
     return err;
 }
 
-_ZGL afxError _SglVinDtor(avxVertexInput vin)
+_ZGL afxError _ZglVinDtor(avxVertexDecl vin)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &vin, afxFcc_VIN);
-    afxDrawContext dctx = AfxGetProvider(vin);
+    AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
+    afxDrawSystem dsys = AfxGetProvider(vin);
 
     if (vin->glHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_VERTEX_ARRAY, (afxSize)vin->glHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_VERTEX_ARRAY, (afxSize)vin->glHandle);
         vin->glHandle = 0;
     }
 
-    if (_AvxVinStdImplementation.dtor(vin))
+    if (_AVX_VIN_CLASS_CONFIG.dtor(vin))
         AfxThrowError();
 
     return err;
 }
 
-_ZGL afxError _SglVinCtor(avxVertexInput vin, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglVinCtor(avxVertexDecl vin, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &vin, afxFcc_VIN);
+    AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
 
-    if (_AvxVinStdImplementation.ctor(vin, args, invokeNo)) AfxThrowError();
+    if (_AVX_VIN_CLASS_CONFIG.ctor(vin, args, invokeNo)) AfxThrowError();
     else
     {
         vin->glHandle = 0;
         vin->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
-        if (err && _AvxVinStdImplementation.dtor(vin))
+        if (err && _AVX_VIN_CLASS_CONFIG.dtor(vin))
             AfxThrowError();
     }
     return err;

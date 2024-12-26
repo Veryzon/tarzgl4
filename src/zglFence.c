@@ -30,12 +30,11 @@ _ZGL afxError _DpuBindAndSyncFenc(zglDpu* dpu, afxBool syncOnly, afxFence fenc)
     return err;
 }
 
-_ZGL afxError _SglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxFence const fences[])
+_ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxFence const fences[])
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(cnt, fences, afxFcc_FENC);
-    afxDrawContext dctx = (void*)AfxGetFenceContext(fences[0]);
-    afxDrawDevice ddev = AfxGetDrawContextDevice(dctx);
+    AFX_ASSERT_OBJECTS(afxFcc_FENC, cnt, fences);
+    afxDrawSystem dsys = (void*)AfxGetFenceContext(fences[0]);
     afxUnit txuIdx = 0;
     glVmt const* gl = NIL;// &ddev->idd->dpus[txuIdx].gl;
 
@@ -48,10 +47,10 @@ _ZGL afxError _SglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxF
         for (afxUnit i = 0; i < cnt; i++)
         {
             afxFence fenc = fences[i];
-            AfxAssertObjects(1, fenc, afxFcc_FENC);
+            AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, fenc);
 
             // To block all CPU operations until a sync object is signaled, you call this function:
-            GLenum rslt = gl->ClientWaitSync(fenc->glHandle, GL_SYNC_FLUSH_COMMANDS_BIT, /*timeout*/0); _SglThrowErrorOccuried();
+            GLenum rslt = gl->ClientWaitSync(fenc->glHandle, GL_SYNC_FLUSH_COMMANDS_BIT, /*timeout*/0); _ZglThrowErrorOccuried();
 
             /*
                 This function will not return until one of two things happens: the sync​ object parameter becomes signaled, or a number of nanoseconds greater than or equal to the timeout​ parameter passes.
@@ -116,29 +115,29 @@ _ZGL afxError _SglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxF
     return err;
 }
 
-_ZGL afxError _SglResetFenc(afxUnit cnt, afxFence const fences[])
+_ZGL afxError _ZglResetFenc(afxUnit cnt, afxFence const fences[])
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(cnt, fences, afxFcc_FENC);
+    AFX_ASSERT_OBJECTS(afxFcc_FENC, cnt, fences);
     
     for (afxUnit i = 0; i < cnt; i++)
     {
         afxFence fenc = fences[i];
-        AfxAssertObjects(1, fenc, afxFcc_FENC);
+        AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, fenc);
         fenc->m.signaled = FALSE;
     }
     return err;
 }
 
-_ZGL afxError _SglFencDtor(afxFence fenc)
+_ZGL afxError _ZglFencDtorCb(afxFence fenc)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &fenc, afxFcc_FENC);
-    afxDrawContext dctx = (void*)AfxGetFenceContext(fenc);
+    AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, &fenc);
+    afxDrawSystem dsys = (void*)AfxGetFenceContext(fenc);
 
     if (fenc->glHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_SYNC_FENCE, (afxSize)fenc->glHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_SYNC_FENCE, (afxSize)fenc->glHandle);
         fenc->glHandle = 0;
     }
 
@@ -148,10 +147,10 @@ _ZGL afxError _SglFencDtor(afxFence fenc)
     return err;
 }
 
-_ZGL afxError _SglFencCtor(afxFence fenc, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglFencCtorCb(afxFence fenc, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &fenc, afxFcc_FENC);
+    AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, &fenc);
 
     if (_AfxFencStdImplementation.ctor(fenc, args, invokeNo)) AfxThrowError();
     else
@@ -165,20 +164,10 @@ _ZGL afxError _SglFencCtor(afxFence fenc, void** args, afxUnit invokeNo)
     return err;
 }
 
-_ZGL afxClassConfig const _SglFencMgrCfg =
-{
-    .fcc = afxFcc_FENC,
-    .name = "Fence",
-    .desc = "Device Synchronization Fence",
-    .fixedSiz = sizeof(AFX_OBJECT(afxFence)),
-    .ctor = (void*)_SglFencCtor,
-    .dtor = (void*)_SglFencDtor
-};
-
-_ZGL afxError _SglSemDtor(afxSemaphore sem)
+_ZGL afxError _ZglSemDtorCb(afxSemaphore sem)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &sem, afxFcc_SEM);
+    AFX_ASSERT_OBJECTS(afxFcc_SEM, 1, &sem);
 
     if (_AfxSemStdImplementation.dtor(sem))
         AfxThrowError();
@@ -186,10 +175,10 @@ _ZGL afxError _SglSemDtor(afxSemaphore sem)
     return err;
 }
 
-_ZGL afxError _SglSemCtor(afxSemaphore sem, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglSemCtorCb(afxSemaphore sem, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &sem, afxFcc_SEM);
+    AFX_ASSERT_OBJECTS(afxFcc_SEM, 1, &sem);
 
     if (_AfxSemStdImplementation.ctor(sem, args, invokeNo)) AfxThrowError();
     else
@@ -200,13 +189,3 @@ _ZGL afxError _SglSemCtor(afxSemaphore sem, void** args, afxUnit invokeNo)
     }
     return err;
 }
-
-_ZGL afxClassConfig const _SglSemMgrCfg =
-{
-    .fcc = afxFcc_SEM,
-    .name = "Semaphore",
-    .desc = "Device Synchronization Semaphore",
-    .fixedSiz = sizeof(AFX_OBJECT(afxSemaphore)),
-    .ctor = (void*)_SglSemCtor,
-    .dtor = (void*)_SglSemDtor
-};

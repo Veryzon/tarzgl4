@@ -21,8 +21,8 @@
 _ZGL void _DpuBeginQuery(zglDpu* dpu, avxQueryPool qryp, afxUnit qryIdx, afxBool precise)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    AfxAssertRange(qryp->m.cap, qryIdx, 1);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    AFX_ASSERT_RANGE(qryp->m.cap, qryIdx, 1);
     glVmt const* gl = &dpu->gl;
 
     gl->BeginQuery(qryp->glTarget, qryp->glHandle[qryIdx]);
@@ -32,8 +32,8 @@ _ZGL void _DpuBeginQuery(zglDpu* dpu, avxQueryPool qryp, afxUnit qryIdx, afxBool
 _ZGL void _DpuEndQuery(zglDpu* dpu, avxQueryPool qryp, afxUnit queryIdx)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    AfxAssertRange(qryp->m.cap, queryIdx, 1);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    AFX_ASSERT_RANGE(qryp->m.cap, queryIdx, 1);
     glVmt const* gl = &dpu->gl;
 
     gl->EndQuery(qryp->glTarget);
@@ -43,10 +43,10 @@ _ZGL void _DpuEndQuery(zglDpu* dpu, avxQueryPool qryp, afxUnit queryIdx)
 _ZGL void _DpuCopyQueryResults(zglDpu* dpu, avxQueryPool qryp, afxUnit baseQuery, afxUnit queryCnt, afxBuffer buf, afxSize offset, afxSize stride, afxQueryResultFlags flags)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    AfxAssertRange(qryp->m.cap, baseQuery, queryCnt);
-    AfxAssertObjects(1, &buf, afxFcc_BUF);
-    AfxAssertRange(AfxGetBufferCapacity(buf, 0), offset, stride);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    AFX_ASSERT_RANGE(qryp->m.cap, baseQuery, queryCnt);
+    AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+    AFX_ASSERT_RANGE(AfxGetBufferCapacity(buf, 0), offset, stride);
     glVmt const* gl = &dpu->gl;
     GLenum pname = (flags & afxQueryResultFlag_WAIT) ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT;
 
@@ -85,8 +85,8 @@ _ZGL void _DpuCopyQueryResults(zglDpu* dpu, avxQueryPool qryp, afxUnit baseQuery
 _ZGL void _DpuResetQueries(zglDpu* dpu, avxQueryPool qryp, afxUnit baseQuery, afxUnit queryCnt)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    AfxAssertRange(qryp->m.cap, baseQuery, queryCnt);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    AFX_ASSERT_RANGE(qryp->m.cap, baseQuery, queryCnt);
     glVmt const* gl = &dpu->gl;
 
 
@@ -95,10 +95,10 @@ _ZGL void _DpuResetQueries(zglDpu* dpu, avxQueryPool qryp, afxUnit baseQuery, af
 _ZGL void _DpuWriteTimestamp(zglDpu* dpu, avxQueryPool qryp, afxUnit queryIdx, avxPipelineStage stage)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    AfxAssertRange(qryp->m.cap, queryIdx, 1);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    AFX_ASSERT_RANGE(qryp->m.cap, queryIdx, 1);
     glVmt const* gl = &dpu->gl;
-    AfxAssert(qryp->glTarget == GL_TIMESTAMP);
+    AFX_ASSERT(qryp->glTarget == GL_TIMESTAMP);
     gl->QueryCounter(qryp->glHandle[queryIdx], qryp->glTarget);
 }
 
@@ -115,7 +115,7 @@ _ZGL afxError _DpuBindAndSyncQryp(zglDpu* dpu, afxBool syncOnly, avxQueryPool qr
     }
     else
     {
-        AfxAssertObjects(1, &qryp, afxFcc_QRYP);
+        AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
         GLuint* glHandle = qryp->glHandle;
 
         if (/*(!glHandle) || */(qryp->updFlags & ZGL_UPD_FLAG_DEVICE))
@@ -124,10 +124,10 @@ _ZGL afxError _DpuBindAndSyncQryp(zglDpu* dpu, afxBool syncOnly, avxQueryPool qr
             {
                 if (glHandle)
                 {
-                    gl->DeleteQueries(qryp->m.cap, glHandle); _SglThrowErrorOccuried();
+                    gl->DeleteQueries(qryp->m.cap, glHandle); _ZglThrowErrorOccuried();
                     glHandle = NIL;
                 }
-                gl->GenQueries(qryp->m.cap, glHandle); _SglThrowErrorOccuried();
+                gl->GenQueries(qryp->m.cap, glHandle); _ZglThrowErrorOccuried();
                 qryp->glHandle = glHandle;
                 AfxLogEcho("Query qryp inited. %u", qryp->m.cap);
             }
@@ -139,35 +139,35 @@ _ZGL afxError _DpuBindAndSyncQryp(zglDpu* dpu, afxBool syncOnly, avxQueryPool qr
     return err;
 }
 
-_ZGL afxError _SglQrypDtor(avxQueryPool qryp)
+_ZGL afxError _ZglQrypDtor(avxQueryPool qryp)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
-    afxDrawContext dctx = AfxGetQueryPoolContext(qryp);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
+    afxDrawSystem dsys = AfxGetQueryPoolContext(qryp);
 
     if (qryp->glHandle)
     {
         for (afxUnit i = 0; i < qryp->m.cap; i++)
         {
-            _SglDctxEnqueueDeletion(dctx, 0, GL_QUERY_BUFFER, (afxSize)qryp->glHandle[i]);
+            _ZglDsysEnqueueDeletion(dsys, 0, GL_QUERY_BUFFER, (afxSize)qryp->glHandle[i]);
         }
-        AfxDeallocate(qryp->glHandle);
+        AfxDeallocate((void**)&qryp->glHandle, AfxHere());
         qryp->glHandle = 0;
     }
 
     return err;
 }
 
-_ZGL afxError _SglQrypCtor(avxQueryPool qryp, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglQrypCtor(avxQueryPool qryp, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &qryp, afxFcc_QRYP);
+    AFX_ASSERT_OBJECTS(afxFcc_QRYP, 1, &qryp);
 
-    afxDrawContext dctx = args[0];
+    afxDrawSystem dsys = args[0];
     afxQueryType type = *(afxQueryType const*)args[1];
     afxUnit cap = *(afxUnit const*)args[2];
 
-    qryp->glHandle = AfxAllocate(qryp->m.cap, sizeof(qryp->glHandle[0]), 0, AfxHere());
+    AfxCoallocate(qryp->m.cap, sizeof(qryp->glHandle[0]), 0, AfxHere(), (void**)&qryp->glHandle);
     qryp->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
     qryp->m.type = type;
     qryp->m.cap = cap;

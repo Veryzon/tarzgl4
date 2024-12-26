@@ -20,7 +20,7 @@
 
 // OpenGL/Vulkan Continuous Integration
 
-_ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, afxFlags dynamics)
+_ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexDecl vin, afxFlags dynamics)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = &dpu->gl;
@@ -34,14 +34,14 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
             dpu->activePipGpuHandle = NIL;
             dpu->nextLiga = NIL;
             dpu->activeLiga = NIL;
-            gl->UseProgram(0); _SglThrowErrorOccuried();
-            //gl->BindProgramPipeline(0); _SglThrowErrorOccuried();
-            //gl->BindVertexArray(0); _SglThrowErrorOccuried();
+            gl->UseProgram(0); _ZglThrowErrorOccuried();
+            //gl->BindProgramPipeline(0); _ZglThrowErrorOccuried();
+            //gl->BindVertexArray(0); _ZglThrowErrorOccuried();
         }
     }
     else
     {
-        AfxAssertObjects(1, &pip, afxFcc_PIP);
+        AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
         GLuint glHandle = pip->glHandle;
         zglUpdateFlags devUpdReq = (pip->updFlags & ZGL_UPD_FLAG_DEVICE);
@@ -54,10 +54,10 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
             afxChar errStr[1024];
             afxUnit tmpShdGlHandleCnt = 0;
             GLuint tmpShdGlHandles[5];
-            //AfxMakeArray(&code, 2048, sizeof(afxChar), NIL);
+            //AfxMakeArray(&code, sizeof(afxChar), 2048, NIL, 0);
 
             afxArray code;
-            AfxMakeArray(&code, 4096, sizeof(afxByte), NIL);
+            AfxMakeArray(&code, sizeof(afxByte), 4096, NIL, 0);
 
             for (afxUnit stageIdx = 0; stageIdx < pip->m.stageCnt; stageIdx++)
             {
@@ -69,7 +69,7 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 AfxFormatString(&tmps.str, "#version %d%d0 %s // QWADRO (c) 2017 SIGMA FEDERATION \n", AfxMax(ZGL_DEFAULT_CTX_VER_MAJOR, shd->m.verMajor), shd->m.verMajor ? shd->m.verMinor : AfxMax(ZGL_DEFAULT_CTX_VER_MINOR, shd->m.verMinor), shd->m.extended ? " " : " core");
 
                 afxUnit arrel;
-                void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                 AfxDumpString(&tmps.str, 0, tmps.str.len, room);
 
                 afxChar const stdInc[] =
@@ -104,13 +104,13 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 \n#define SPECIALIZED(_specid_, _type_, _name_) layout(_specid_) const _type_ _name_ \
                  \
                 ";
-                room = AfxInsertArrayUnits(&code, sizeof(stdInc) - 1, &arrel, NIL);
+                room = AfxPushArrayUnits(&code, sizeof(stdInc) - 1, &arrel, NIL);
                 AfxCopy(room, stdInc, sizeof(stdInc) - 1);
 
                 if (!AfxIsStringEmpty(&pip->m.stages[stageIdx].fn.str))
                 {
                     AfxFormatString(&tmps.str, "\n#define main %.*s \n", AfxPushString(&pip->m.stages[stageIdx].fn.str));
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                 }
 
@@ -119,42 +119,42 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 case avxShaderStage_VERTEX:
                 {
                     AfxFormatString(&tmps.str, "\n#define _VERTEX_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
                 case avxShaderStage_FRAGMENT:
                 {
                     AfxFormatString(&tmps.str, "\n#define _FRAGMENT_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
                 case avxShaderStage_COMPUTE:
                 {
                     AfxFormatString(&tmps.str, "\n#define _COMPUTE_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
                 case avxShaderStage_PRIMITIVE:
                 {
                     AfxFormatString(&tmps.str, "\n#define _PRIMITIVE_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
                 case avxShaderStage_TESS_EVAL:
                 {
                     AfxFormatString(&tmps.str, "\n#define _TESS_EVAL_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
                 case avxShaderStage_TESS_CTRL:
                 {
                     AfxFormatString(&tmps.str, "\n#define _TESS_CTRL_ ");
-                    void* room = AfxInsertArrayUnits(&code, tmps.str.len, &arrel, NIL);
+                    void* room = AfxPushArrayUnits(&code, tmps.str.len, &arrel, NIL);
                     AfxDumpString(&tmps.str, 0, tmps.str.len, room);
                     break;
                 }
@@ -163,7 +163,7 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
 
                 afxUnit nullTermArrel;
                 AfxDumpShaderCode(pip->m.stages[stageIdx].shd, &code);
-                AfxInsertArrayUnits(&code, 1, &nullTermArrel, NIL);
+                AfxPushArrayUnits(&code, 1, &nullTermArrel, NIL);
 
                 avxShaderStage stage = pip->m.stages[stageIdx].stage;
 
@@ -171,25 +171,25 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
 
                 if (!(shader = gl->CreateShader(AfxToGlShaderStage(stage))))
                 {
-                    _SglThrowErrorOccuried();
+                    _ZglThrowErrorOccuried();
                 }
                 else
                 {
                     GLint compiled = 0;
-                    //gl->ShaderSource(shader, 1, (GLchar const*const[]) { (void*)code.bytemap }, (GLint const[]) { code.cnt }); _SglThrowErrorOccuried();
+                    //gl->ShaderSource(shader, 1, (GLchar const*const[]) { (void*)code.bytemap }, (GLint const[]) { code.cnt }); _ZglThrowErrorOccuried();
 #if 0
                     AfxLogComment("%.*s", code.cnt, code.bytemap);
 #endif
-                    gl->ShaderSource(shader, 1, (GLchar const*const[]) { (void*)code.bytemap }, (GLint const[]) { code.pop }); _SglThrowErrorOccuried();
-                    gl->CompileShader(shader); _SglThrowErrorOccuried();
-                    gl->GetShaderiv(shader, GL_COMPILE_STATUS, &compiled); _SglThrowErrorOccuried();
+                    gl->ShaderSource(shader, 1, (GLchar const*const[]) { (void*)code.bytemap }, (GLint const[]) { code.pop }); _ZglThrowErrorOccuried();
+                    gl->CompileShader(shader); _ZglThrowErrorOccuried();
+                    gl->GetShaderiv(shader, GL_COMPILE_STATUS, &compiled); _ZglThrowErrorOccuried();
 
                     if (compiled == GL_FALSE)
                     {
                         AfxThrowError();
-                        gl->GetShaderInfoLog(shader, sizeof(errStr), NIL, (GLchar*)errStr); _SglThrowErrorOccuried();
+                        gl->GetShaderInfoLog(shader, sizeof(errStr), NIL, (GLchar*)errStr); _ZglThrowErrorOccuried();
                         AfxLogError(errStr);
-                        gl->DeleteShader(shader); _SglThrowErrorOccuried();
+                        gl->DeleteShader(shader); _ZglThrowErrorOccuried();
                     }
                     else
                     {
@@ -202,7 +202,7 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 {
                     for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
                     {
-                        gl->DeleteShader(tmpShdGlHandles[tmpShdGlHandleCnt]); _SglThrowErrorOccuried();
+                        gl->DeleteShader(tmpShdGlHandles[tmpShdGlHandleCnt]); _ZglThrowErrorOccuried();
                         tmpShdGlHandles[tmpShdGlHandleCnt] = NIL;
                     }
                     break;
@@ -215,12 +215,12 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
             {
                 if (glHandle)
                 {
-                    gl->DeleteProgram(glHandle), glHandle = NIL; _SglThrowErrorOccuried();
+                    gl->DeleteProgram(glHandle), glHandle = NIL; _ZglThrowErrorOccuried();
                 }
 
                 if (!(glHandle = gl->CreateProgram()))
                 {
-                    _SglThrowErrorOccuried();
+                    _ZglThrowErrorOccuried();
                 }
                 else
                 {
@@ -228,22 +228,22 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
 
                     for (afxUnit i = 0; i < tmpShdGlHandleCnt; i++)
                     {
-                        gl->AttachShader(glHandle, tmpShdGlHandles[i]); _SglThrowErrorOccuried();
+                        gl->AttachShader(glHandle, tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
                     }
 
-                    gl->LinkProgram(glHandle); _SglThrowErrorOccuried();
-                    gl->GetProgramiv(glHandle, GL_LINK_STATUS, &linked); _SglThrowErrorOccuried();
+                    gl->LinkProgram(glHandle); _ZglThrowErrorOccuried();
+                    gl->GetProgramiv(glHandle, GL_LINK_STATUS, &linked); _ZglThrowErrorOccuried();
 
                     if (linked == GL_FALSE)
                     {
                         AfxThrowError();
-                        gl->GetProgramInfoLog(glHandle, sizeof(errStr), NIL, (GLchar*)errStr); _SglThrowErrorOccuried();
+                        gl->GetProgramInfoLog(glHandle, sizeof(errStr), NIL, (GLchar*)errStr); _ZglThrowErrorOccuried();
                         AfxLogError(errStr);
                     }
 
                     // required bind due to issue with Intel Graphics Drivers no allowing retrieve of uniform locations only after assembling.
-                    AfxAssert(gl->IsProgram(glHandle));
-                    gl->UseProgram(glHandle); _SglThrowErrorOccuried();
+                    AFX_ASSERT(gl->IsProgram(glHandle));
+                    gl->UseProgram(glHandle); _ZglThrowErrorOccuried();
                     bound = TRUE;
 
                     //AfxGetPipelineLigature(&pip, &liga);
@@ -253,19 +253,19 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
 
                     for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
                     {
-                        gl->DetachShader(glHandle, tmpShdGlHandles[i]); _SglThrowErrorOccuried();
+                        gl->DetachShader(glHandle, tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
                     }
 
                     if (err)
                     {
-                        gl->DeleteProgram(glHandle); _SglThrowErrorOccuried();
+                        gl->DeleteProgram(glHandle); _ZglThrowErrorOccuried();
                         glHandle = NIL;
                     }
                 }
 
                 for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
                 {
-                    gl->DeleteShader(tmpShdGlHandles[i]); _SglThrowErrorOccuried();
+                    gl->DeleteShader(tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
                     tmpShdGlHandles[i] = NIL;
                 }
 
@@ -299,8 +299,8 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 dpu->nextLiga = NIL;
                 AfxGetPipelineLigature(dpu->activePip, &dpu->activeLiga);
 
-                AfxAssert(gl->IsProgram(glHandle));
-                gl->UseProgram(glHandle); _SglThrowErrorOccuried();
+                AFX_ASSERT(gl->IsProgram(glHandle));
+                gl->UseProgram(glHandle); _ZglThrowErrorOccuried();
                 applyStates = TRUE;
                 bound = TRUE;
             }
@@ -367,9 +367,9 @@ _ZGL afxError _DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin,
                 dpu->nextRs.logicOp = config.pixelLogicOp;
             }
 
-            if ((dpu->nextRs.sampleCnt = config.sampleCnt))
+            if ((dpu->nextRs.sampleLvl = config.sampleLvl))
             {
-                AfxCopy2(dpu->nextRs.sampleMasks, config.sampleMasks, sizeof(config.sampleMasks), config.sampleCnt);
+                AfxCopy2(dpu->nextRs.sampleMasks, config.sampleMasks, sizeof(config.sampleMasks), config.sampleLvl);
             }
 
             if ((dpu->nextRs.stencilTestEnabled = config.stencilTestEnabled))
@@ -409,21 +409,21 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
     GLuint gpuHandle = pip->gpuHandle;
 
     afxInt cnt = 0;
-    gl->GetProgramiv(gpuHandle, GL_ACTIVE_UNIFORM_BLOCKS, &cnt); _SglThrowErrorOccuried();
+    gl->GetProgramiv(gpuHandle, GL_ACTIVE_UNIFORM_BLOCKS, &cnt); _ZglThrowErrorOccuried();
 
     for (afxInt i = 0; i < cnt; i++)
     {
         AFX_ZERO(&res);
 
         GLint binding, dataSiz, nameLen, subresCnt, subresIndices[1], refByVsh, refByFsh, refByGsh;
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_BINDING, &binding);  _SglThrowErrorOccuried();// The current block binding, as set either within the shader or from gl->UniformBlockBinding.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_DATA_SIZE, &dataSiz);  _SglThrowErrorOccuried();// The buffer object storage size needed for this block.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLen);  _SglThrowErrorOccuried();// The length of this block's name.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &subresCnt);  _SglThrowErrorOccuried();// The number of active uniforms within this block.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_BINDING, &binding);  _ZglThrowErrorOccuried();// The current block binding, as set either within the shader or from gl->UniformBlockBinding.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_DATA_SIZE, &dataSiz);  _ZglThrowErrorOccuried();// The buffer object storage size needed for this block.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLen);  _ZglThrowErrorOccuried();// The length of this block's name.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &subresCnt);  _ZglThrowErrorOccuried();// The number of active uniforms within this block.
         //glGetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, &subresIndices); // params​ will be filled in with the uniform indices of all uniforms that are stored in this block.It will receive GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS number of uniforms.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER, &refByVsh);  _SglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER, &refByFsh);  _SglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
-        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER, &refByGsh);  _SglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER, &refByVsh);  _ZglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER, &refByFsh);  _ZglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
+        gl->GetActiveUniformBlockiv(gpuHandle, i, GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER, &refByGsh);  _ZglThrowErrorOccuried();// GL_FALSE if the uniform block is not referenced by an active * shader, where * is the particular shader stage in question. It canv be VERTEX_SHADER, FRAGMENT_SHADER, or GEOMETRY_SHADER.
 
 
         res.binding = binding;
@@ -435,13 +435,13 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
         res.inputAttachmentIndex = 0;
         res.size = dataSiz;
         res.stages = 0;
-        gl->GetActiveUniformBlockName(gpuHandle, i, sizeof(res.name), NIL, res.name); _SglThrowErrorOccuried();
+        gl->GetActiveUniformBlockName(gpuHandle, i, sizeof(res.name), NIL, res.name); _ZglThrowErrorOccuried();
         res.name[15] = '\0';
-        //res.loc = gl->GetUniformLocation(gpuHandle, res.nameBuf); _SglThrowErrorOccuried();
+        //res.loc = gl->GetUniformLocation(gpuHandle, res.nameBuf); _ZglThrowErrorOccuried();
 
         afxResult j = AfxPipeline.RegisterResource(pip, &res);
         AfxPipeline.GetResource(pip, j, &res);
-        AfxAssert(i == j);
+        AFX_ASSERT(i == j);
         AfxLogEcho("%d %d %d %d", res.loc, res.binding, i, j);
     }
 
@@ -455,30 +455,30 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
         afxBool valid = FALSE;
 
         GLint type, blockIdx;
-        gl->GetActiveUniformsiv(gpuHandle, 1, &i, GL_UNIFORM_TYPE, &type); _SglThrowErrorOccuried();
-        gl->GetActiveUniformsiv(gpuHandle, 1, &i, GL_UNIFORM_BLOCK_INDEX, &blockIdx); _SglThrowErrorOccuried();
+        gl->GetActiveUniformsiv(gpuHandle, 1, &i, GL_UNIFORM_TYPE, &type); _ZglThrowErrorOccuried();
+        gl->GetActiveUniformsiv(gpuHandle, 1, &i, GL_UNIFORM_BLOCK_INDEX, &blockIdx); _ZglThrowErrorOccuried();
 
         if (blockIdx == -1)
         {
             switch (type)
             {
             case GL_SAMPLER_1D:
-                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _SglThrowErrorOccuried();
+                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _ZglThrowErrorOccuried();
                 res.resType = avxShaderParam_COMBINED_IMAGE_SAMPLER;
                 valid = TRUE;
                 break;
             case GL_SAMPLER_2D:
-                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _SglThrowErrorOccuried();
+                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _ZglThrowErrorOccuried();
                 res.resType = avxShaderParam_COMBINED_IMAGE_SAMPLER;
                 valid = TRUE;
                 break;
             case GL_SAMPLER_3D:
-                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _SglThrowErrorOccuried();
+                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _ZglThrowErrorOccuried();
                 res.resType = avxShaderParam_COMBINED_IMAGE_SAMPLER;
                 valid = TRUE;
                 break;
             case GL_SAMPLER_CUBE:
-                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _SglThrowErrorOccuried();
+                gl->GetActiveUniformName(gpuHandle, i, sizeof(res.name), NIL, res.name); _ZglThrowErrorOccuried();
                 res.resType = avxShaderParam_COMBINED_IMAGE_SAMPLER;
                 valid = TRUE;
                 break;
@@ -490,7 +490,7 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
 
             if (valid)
             {
-                res.location = gl->GetUniformLocation(gpuHandle, res.name); _SglThrowErrorOccuried();
+                res.location = gl->GetUniformLocation(gpuHandle, res.name); _ZglThrowErrorOccuried();
                 //res.loc = i;
                 afxSupplyDescriptor entry[1];
                 afxResult j = AfxPipeline.FindEntries(pip, 1, &res.name, entry);
@@ -498,7 +498,7 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
 
                 if (j == 1)
                 {
-                    AfxAssert(i == j);
+                    AFX_ASSERT(i == j);
                     gl->BindUniform(gpuHandle, );
                     AfxLogEcho("%d %d %d %d", res.location, res.binding, i, j);
                 }
@@ -509,43 +509,43 @@ _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
 }
 #endif
 
-_ZGL afxError _SglPipDtor(avxPipeline pip)
+_ZGL afxError _ZglPipDtor(avxPipeline pip)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &pip, afxFcc_PIP);
+    AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
-    afxDrawContext dctx = AfxGetProvider(pip);
+    afxDrawSystem dsys = AfxGetProvider(pip);
 
     if (pip->glHandle)
     {
-        _SglDctxEnqueueDeletion(dctx, 0, GL_PROGRAM, (afxSize)pip->glHandle);
+        _ZglDsysEnqueueDeletion(dsys, 0, GL_PROGRAM, (afxSize)pip->glHandle);
         pip->glHandle = 0;
     }
 
-    if (_AvxPipStdImplementation.dtor(pip))
+    if (_AVX_PIP_CLASS_CONFIG.dtor(pip))
         AfxThrowError();
 
     return err;
 }
 
-_ZGL afxError _SglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
-    AfxAssertObjects(1, &pip, afxFcc_PIP);
+    AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
-    if (_AvxPipStdImplementation.ctor(pip, args, invokeNo)) AfxThrowError();
+    if (_AVX_PIP_CLASS_CONFIG.ctor(pip, args, invokeNo)) AfxThrowError();
     else
     {
-        afxDrawContext dctx = args[0];
+        afxDrawSystem dsys = args[0];
         avxPipelineBlueprint const *pipb = ((avxPipelineBlueprint const*)args[1]) + invokeNo;
         //AfxAssertType(pipb, afxFcc_PIPB);
 
         pip->glHandle = 0;
         pip->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
-        if (err && _AvxPipStdImplementation.dtor(pip))
+        if (err && _AVX_PIP_CLASS_CONFIG.dtor(pip))
             AfxThrowError();
     }
-    AfxAssertObjects(1, &pip, afxFcc_PIP);
+    AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
     return err;
 }
