@@ -27,74 +27,32 @@
 //#define _ZGL_DBG_IGNORE_COLOR_MASK
 //#define _ZGL_DBG_IGNORE_SCISSOR_TEST
 
+//#define FORCE_FILL_MODE
+//#define FORCE_DEPTH_TEST
+//#define FORCE_DEPTH_WRITE
+//#define FORCE_DEPTH_COMPARE
+//#define FORCE_STENCIL_TEST
+//#define FORCE_STENCIL_FUNC
+//#define FORCE_STENCIL_MASK
+//#define FORCE_SCISSOR_TEST
+//#define FORCE_BLEND_EQUATION
+//#define FORCE_BLEND_FUNC
+//#define FORCE_COLOR_WRITE_MASK
+//#define FORCE_LOGIC_OP
+
 #include "zglUtils.h"
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-
-_ZGL void _ZglFlushRsChanges(zglDpu* dpu)
+_ZGLINL void _ZglFlushDsChanges(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-
-#ifndef _ZGL_DBG_IGNORE_RASTERIZER_DISCARD
-
-    afxBool rasterizationDisabled = dpu->nextRs.rasterizationDisabled;
-
-    if (dpu->activeRs.rasterizationDisabled != rasterizationDisabled)
-    {
-        /*
-            GL_RASTERIZER_DISCARD
-            If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization.
-            Furthermore, when enabled, glClear, glClearBufferData, glClearBufferSubData, glClearTexImage, and glClearTexSubImage are ignored.
-        */
-
-        if (rasterizationDisabled)
-        {
-            gl->Enable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
-        }
-        else
-        {
-            gl->Disable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
-        }
-        dpu->activeRs.rasterizationDisabled = rasterizationDisabled;
-    }
-#endif
-
-    avxFillMode fillMode = dpu->nextRs.fillMode;
-
-    if (dpu->activeRs.fillMode != fillMode)
-    {
-        /*
-            glPolygonMode — select a polygon rasterization mode.
-            void glPolygonMode(	GLenum face, GLenum mode);
-
-            face = Specifies the polygons that mode applies to. Must be GL_FRONT_AND_BACK for front- and back-facing polygons.
-            mode = Specifies how polygons will be rasterized. Accepted values are GL_POINT, GL_LINE, and GL_FILL. The initial value is GL_FILL for both front- and back-facing polygons.
-
-            glPolygonMode controls the interpretation of polygons for rasterization.
-            face describes which polygons mode applies to: both front and back-facing polygons (GL_FRONT_AND_BACK).
-            The polygon mode affects only the final rasterization of polygons.
-            In particular, a polygon's vertices are lit and the polygon is clipped and possibly culled before these modes are applied.
-
-            Three modes are defined and can be specified in mode:
-
-            GL_POINT Polygon vertices that are marked as the start of a boundary edge are drawn as points. Point attributes such as GL_POINT_SIZE and GL_POINT_SMOOTH control the rasterization of the points. Polygon rasterization attributes other than GL_POLYGON_MODE have no effect.
-            GL_LINE Boundary edges of the polygon are drawn as line segments. Line attributes such as GL_LINE_WIDTH and GL_LINE_SMOOTH control the rasterization of the lines. Polygon rasterization attributes other than GL_POLYGON_MODE have no effect.
-            GL_FILL The interior of the polygon is filled. Polygon attributes such as GL_POLYGON_SMOOTH control the rasterization of the polygon.
-
-            Vertices are marked as boundary or nonboundary with an edge flag. Edge flags are generated internally by the GL when it decomposes triangle stips and fans.
-        */
-        gl->PolygonMode(GL_FRONT_AND_BACK, AfxToGlFillMode(fillMode)); _ZglThrowErrorOccuried();
-        dpu->activeRs.fillMode = fillMode;
-    }
+    glVmt const* gl = dpu->gl;
 
     // DEPTH BIAS
 #ifndef _ZGL_DBG_IGNORE_DEPTH_BIAS
-
-    afxBool depthBiasEnabled = dpu->nextRs.depthBiasEnabled;
-
-    if (dpu->activeRs.depthBiasEnabled != depthBiasEnabled)
+    afxBool nextDepthBiasEnabled = dpu->nextDepthBiasEnabled;
+    if (nextDepthBiasEnabled != dpu->depthBiasEnabled)
     {
         /*
             GL_POLYGON_OFFSET_FILL If enabled, and if the polygon is rendered in GL_FILL mode, an offset is added to depth values of a polygon's fragments before the depth comparison is performed.
@@ -113,104 +71,66 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             GL_POLYGON_OFFSET_LINE,
             GL_POLYGON_OFFSET_POINT
         };
+        AFX_ASSERT(QwadroToGlPolygonModeBasedOffset[avxFillMode_SOLID] == GL_POLYGON_OFFSET_FILL);
 
-        if (depthBiasEnabled)
+        if (nextDepthBiasEnabled)
         {
-            gl->Enable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _ZglThrowErrorOccuried();
+            gl->Enable(QwadroToGlPolygonModeBasedOffset[nextFillMode]); _ZglThrowErrorOccuried();
         }
         else
         {
-            gl->Disable(QwadroToGlPolygonModeBasedOffset[dpu->activeRs.fillMode]); _ZglThrowErrorOccuried();
+            gl->Disable(QwadroToGlPolygonModeBasedOffset[nextFillMode]); _ZglThrowErrorOccuried();
         }
-        dpu->activeRs.depthBiasEnabled = depthBiasEnabled;
+        dpu->depthBiasEnabled = nextDepthBiasEnabled;
     }
 
-    if (
-        (dpu->activeRs.depthBiasConstFactor != dpu->nextRs.depthBiasConstFactor) ||
-        (dpu->activeRs.depthBiasSlopeScale != dpu->nextRs.depthBiasSlopeScale) ||
-        (dpu->activeRs.depthBiasClamp != dpu->nextRs.depthBiasClamp)
-        )
+    if (nextDepthBiasEnabled)
     {
-        /*
-            glPolygonOffset — set the scale and units used to calculate depth values
-            void glPolygonOffset(GLfloat factor, GLfloat units);
+        afxReal nextDepthBiasSlopeScale = dpu->nextDepthBiasSlopeScale;
+        afxReal nextDepthBiasConstFactor = dpu->nextDepthBiasConstFactor;
+        afxReal nextDepthBiasClamp = dpu->nextDepthBiasClamp;
 
-            factor Specifies a scale factor that is used to create a variable depth offset for each polygon. The initial value is 0.
-            units Is multiplied by an implementation-specific value to create a constant depth offset. The initial value is 0.
-
-            When GL_POLYGON_OFFSET_FILL, GL_POLYGON_OFFSET_LINE, or GL_POLYGON_OFFSET_POINT is enabled, each fragment's depth value will be offset after it is interpolated from the depth values of the appropriate vertices.
-            The value of the offset is factor×DZ+r×units, where DZ is a measurement of the change in depth relative to the screen area of the polygon, and r is the smallest value that is guaranteed to produce a resolvable offset for a given implementation.
-            The offset is added before the depth test is performed and before the value is written into the depth buffer.
-
-            glPolygonOffset is useful for rendering hidden-line images, for applying decals to surfaces, and for rendering solids with highlighted edges.
-        */
-
-        if (gl->PolygonOffsetClamp)
+        if ((nextDepthBiasSlopeScale != dpu->depthBiasConstFactor) ||
+            (nextDepthBiasSlopeScale != dpu->depthBiasSlopeScale) ||
+            (nextDepthBiasClamp != dpu->depthBiasClamp))
         {
-            gl->PolygonOffsetClamp(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor, dpu->nextRs.depthBiasClamp); _ZglThrowErrorOccuried();
+            /*
+                glPolygonOffset — set the scale and units used to calculate depth values
+                void glPolygonOffset(GLfloat factor, GLfloat units);
+
+                factor Specifies a scale factor that is used to create a variable depth offset for each polygon. The initial value is 0.
+                units Is multiplied by an implementation-specific value to create a constant depth offset. The initial value is 0.
+
+                When GL_POLYGON_OFFSET_FILL, GL_POLYGON_OFFSET_LINE, or GL_POLYGON_OFFSET_POINT is enabled, each fragment's depth value will be offset after it is interpolated from the depth values of the appropriate vertices.
+                The value of the offset is factor×DZ+r×units, where DZ is a measurement of the change in depth relative to the screen area of the polygon, and r is the smallest value that is guaranteed to produce a resolvable offset for a given implementation.
+                The offset is added before the depth test is performed and before the value is written into the depth buffer.
+
+                glPolygonOffset is useful for rendering hidden-line images, for applying decals to surfaces, and for rendering solids with highlighted edges.
+            */
+
+            if (gl->PolygonOffsetClamp)
+            {
+                gl->PolygonOffsetClamp(nextDepthBiasSlopeScale, nextDepthBiasConstFactor, nextDepthBiasClamp); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                gl->PolygonOffset(nextDepthBiasSlopeScale, nextDepthBiasConstFactor); _ZglThrowErrorOccuried();
+            }
+
+            dpu->depthBiasConstFactor = nextDepthBiasConstFactor;
+            dpu->depthBiasSlopeScale = nextDepthBiasSlopeScale;
+            dpu->depthBiasClamp = nextDepthBiasClamp;
         }
-        else
-        {
-            gl->PolygonOffset(dpu->nextRs.depthBiasSlopeScale, dpu->nextRs.depthBiasConstFactor); _ZglThrowErrorOccuried();
-        }
-
-        dpu->activeRs.depthBiasConstFactor != dpu->nextRs.depthBiasConstFactor;
-        dpu->activeRs.depthBiasSlopeScale != dpu->nextRs.depthBiasSlopeScale;
-        dpu->activeRs.depthBiasClamp != dpu->nextRs.depthBiasClamp;
-    }
-#endif
-
-#ifndef _ZGL_DBG_IGNORE_LINE_WIDTH
-    /*
-        glLineWidth — specify the width of rasterized lines.
-        void glLineWidth(GLfloat width);
-
-        width = Specifies the width of rasterized lines. The initial value is 1.
-
-        glLineWidth specifies the rasterized width of both aliased and antialiased lines.
-        Using a line width other than 1 has different effects, depending on whether line antialiasing is enabled.
-        To enable and disable line antialiasing, call glEnable and glDisable with argument GL_LINE_SMOOTH.
-        Line antialiasing is initially disabled.
-
-        If line antialiasing is disabled, the actual width is determined by rounding the supplied width to the nearest integer.
-        (If the rounding results in the value 0, it is as if the line width were 1.) If |delta x|>=|delta y|, i pixels are filled in each column that is rasterized, where i is the rounded value of width.
-        Otherwise, i pixels are filled in each row that is rasterized.
-
-        If antialiasing is enabled, line rasterization produces a fragment for each pixel square that intersects the region lying within the rectangle having width equal to the current line width, length equal to the actual length of the line, and centered on the mathematical line segment.
-        The coverage value for each fragment is the window coordinate area of the intersection of the rectangular region with the corresponding pixel square.
-        This value is saved and used in the final rasterization step.
-
-        Not all widths can be supported when line antialiasing is enabled.
-        If an unsupported width is requested, the nearest supported width is used.
-        Only width 1 is guaranteed to be supported; others depend on the implementation.
-        Likewise, there is a range for aliased line widths as well.
-        To query the range of supported widths and the size difference between supported widths within the range, call glGet with arguments GL_ALIASED_LINE_WIDTH_RANGE, GL_SMOOTH_LINE_WIDTH_RANGE, and GL_SMOOTH_LINE_WIDTH_GRANULARITY.
-
-        The line width specified by glLineWidth is always returned when GL_LINE_WIDTH is queried.
-        Clamping and rounding for aliased and antialiased lines have no effect on the specified value.
-
-        Nonantialiased line width may be clamped to an implementation-dependent maximum.
-        Call glGet with GL_ALIASED_LINE_WIDTH_RANGE to determine the maximum width.
-
-        In OpenGL 1.2, the tokens GL_LINE_WIDTH_RANGE and GL_LINE_WIDTH_GRANULARITY were replaced by GL_ALIASED_LINE_WIDTH_RANGE, GL_SMOOTH_LINE_WIDTH_RANGE, and GL_SMOOTH_LINE_WIDTH_GRANULARITY.
-        The old names are retained for backward compatibility, but should not be used in new code.
-    */
-
-    afxReal lineWidth = dpu->nextRs.lineWidth;
-
-    if (dpu->activeRs.lineWidth != lineWidth)
-    {
-        gl->LineWidth(lineWidth); _ZglThrowErrorOccuried();
-        dpu->activeRs.lineWidth = lineWidth;
     }
 #endif
 
     // DEPTH TEST
 #ifndef _ZGL_DBG_IGNORE_DEPTH_TEST
 
-    afxBool depthTestEnabled = dpu->nextRs.depthTestEnabled;
-
-    if (dpu->activeRs.depthTestEnabled != depthTestEnabled)
+    afxBool nextDepthTestEnabled = dpu->nextDepthTestEnabled;
+#ifndef FORCE_DEPTH_TEST
+    if (nextDepthTestEnabled != dpu->depthTestEnabled)
+#endif
     {
         /*
             GL_DEPTH_TEST
@@ -219,24 +139,29 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             See glDepthFunc and glDepthRange.
         */
 
-        if (depthTestEnabled)
+        if (nextDepthTestEnabled)
         {
-            AFX_ASSERT(!dpu->activeRs.depthTestEnabled);
+#ifndef FORCE_DEPTH_TEST
+            AFX_ASSERT(!dpu->depthTestEnabled);
+#endif
             gl->Enable(GL_DEPTH_TEST); _ZglThrowErrorOccuried();
         }
         else
         {
-            AFX_ASSERT(dpu->activeRs.depthTestEnabled);
+#ifndef FORCE_DEPTH_TEST
+            AFX_ASSERT(dpu->depthTestEnabled);
+#endif
             gl->Disable(GL_DEPTH_TEST); _ZglThrowErrorOccuried();
         }
-        dpu->activeRs.depthTestEnabled = depthTestEnabled;
+        dpu->depthTestEnabled = nextDepthTestEnabled;
     }
 
-    if (dpu->activeRs.depthTestEnabled)
+    if (nextDepthTestEnabled)
     {
-        avxCompareOp depthCompareOp = dpu->nextRs.depthCompareOp;
-
-        if (dpu->activeRs.depthCompareOp != depthCompareOp)
+        avxCompareOp nextDepthCompareOp = dpu->nextDepthCompareOp;
+#ifndef FORCE_DEPTH_COMPARE
+        if (nextDepthCompareOp != dpu->depthCompareOp)
+#endif
         {
             /*
                 glDepthFunc — specify the value used for depth buffer comparisons
@@ -264,49 +189,74 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 In order to unconditionally write to the depth buffer, the depth test should be enabled and set to GL_ALWAYS.
             */
 
-            AFX_ASSERT(depthCompareOp < avxCompareOp_TOTAL);
-            gl->DepthFunc(ZglToGlCompareOp(depthCompareOp)); _ZglThrowErrorOccuried();
-            dpu->activeRs.depthCompareOp = depthCompareOp;
+            AFX_ASSERT(nextDepthCompareOp < avxCompareOp_TOTAL);
+            gl->DepthFunc(ZglToGlCompareOp(nextDepthCompareOp)); _ZglThrowErrorOccuried();
+            dpu->depthCompareOp = nextDepthCompareOp;
         }
-    }
-#endif
 
 #ifndef _ZGL_DBG_IGNORE_DEPTH_WRITE
-    afxBool depthWriteDisabled = dpu->nextRs.depthWriteDisabled;
+        afxBool nextDepthWriteDisabled = dpu->nextDepthWriteDisabled;
 
-    if (dpu->activeRs.depthWriteDisabled != depthWriteDisabled)
-    {
         /*
-            glDepthMask — enable or disable writing into the depth buffer.
-            void glDepthMask(GLboolean flag);
-
-            flag = Specifies whether the depth buffer is enabled for writing. If flag is GL_FALSE, depth buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is enabled.
-
-            glDepthMask specifies whether the depth buffer is enabled for writing. If flag is GL_FALSE, depth buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is enabled.
-
-            Even if the depth buffer exists and the depth mask is non-zero, the depth buffer is not updated if the depth test is disabled.
-            In order to unconditionally write to the depth buffer, the depth test should be enabled and set to GL_ALWAYS (see glDepthFunc).
+            In Vulkan, depth write is explicitly tied to the depth test being enabled.
+            If the depth test is disabled, the depth write must also be disabled.
+            If the depth test is disabled, there is no meaningful way to write to the depth buffer,
+            as no comparison occurs to decide if the depth value should be updated.
         */
 
-        if (depthWriteDisabled)
+        if (!nextDepthTestEnabled)
+            nextDepthWriteDisabled = TRUE;
+
+#if 0
+        if (dpu->dsDts[0].storeOp != avxStoreOp_STORE)
         {
-            //AFX_ASSERT(dpu->activeRs.depthWriteDisabled);
-            gl->DepthMask(GL_FALSE); _ZglThrowErrorOccuried();
+            // disable depth writing
+            nextDepthWriteDisabled = TRUE;
         }
-        else
+#endif
+
+#ifndef FORCE_DEPTH_WRITE
+        if (nextDepthWriteDisabled != dpu->depthWriteDisabled)
+#endif
         {
-            //AFX_ASSERT(!dpu->activeRs.depthWriteDisabled);
-            gl->DepthMask(GL_TRUE); _ZglThrowErrorOccuried();
+            /*
+                glDepthMask — enable or disable writing into the depth buffer.
+                void glDepthMask(GLboolean flag);
+
+                flag = Specifies whether the depth buffer is enabled for writing. If flag is GL_FALSE, depth buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is enabled.
+
+                glDepthMask specifies whether the depth buffer is enabled for writing. If flag is GL_FALSE, depth buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is enabled.
+
+                Even if the depth buffer exists and the depth mask is non-zero, the depth buffer is not updated if the depth test is disabled.
+                In order to unconditionally write to the depth buffer, the depth test should be enabled and set to GL_ALWAYS (see glDepthFunc).
+            */
+
+            if (nextDepthWriteDisabled)
+            {
+                //AFX_ASSERT(dpu->activeRs.depthWriteDisabled);
+                gl->DepthMask(GL_FALSE); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                //AFX_ASSERT(!dpu->activeRs.depthWriteDisabled);
+                gl->DepthMask(GL_TRUE); _ZglThrowErrorOccuried();
+            }
+            dpu->depthWriteDisabled = nextDepthWriteDisabled;
         }
-        dpu->activeRs.depthWriteDisabled = depthWriteDisabled;
+#endif
     }
 #endif
 
 #ifndef _ZGL_DBG_IGNORE_DEPTH_BOUNDS_TEST
+    /*
+        Can you have the depth test disabled and still have the depth bounds test enabled?
+        RESOLUTION:  Yes.  The two tests operate independently.
 
-    afxBool depthBoundsTestEnabled = dpu->nextRs.depthBoundsTestEnabled;
-
-    if (dpu->activeRs.depthBoundsTestEnabled != depthBoundsTestEnabled)
+        How does the depth bounds test operate if there is no depth buffer?
+        RESOLUTION:  It is as if the depth bounds test always passes (analogous to the depth test).
+    */
+    afxBool nextDepthBoundsTestEnabled = dpu->nextDepthBoundsTestEnabled;
+    if (nextDepthBoundsTestEnabled != dpu->activeRs.depthBoundsTestEnabled)
     {
         /*
             EXT_depth_bounds_test
@@ -314,6 +264,23 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             The depth bounds test determines whether the depth value (Zpixel) stored at the location given by the incoming fragment's (xw,yw) location lies within the depth bounds range defined by two values.
             These values are set with
 
+            If there is no depth buffer, it is as if the depth bounds test always passes.
+        */
+
+        if (nextDepthBoundsTestEnabled)
+        {
+            gl->Enable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
+        }
+        else
+        {
+            gl->Disable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
+        }
+        dpu->activeRs.depthBoundsTestEnabled = nextDepthBoundsTestEnabled;
+    }
+
+    if (nextDepthBoundsTestEnabled)
+    {
+        /*
             void DepthBoundsEXT(clampd zmin, clampd zmax);
 
             Each of zmin and zmax are clamped to lie within [0,1] (being of type clampd).  If zmin <= Zpixel <= zmax, then the depth bounds test passes.  Otherwise, the test fails and the fragment is discarded.
@@ -322,48 +289,45 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
             If there is no depth buffer, it is as if the depth bounds test always passes.
         */
-
-        if (depthBoundsTestEnabled)
-        {
-            gl->Enable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
-            gl->DepthBoundsEXT(dpu->state.depthBounds[0], dpu->state.depthBounds[1]); _ZglThrowErrorOccuried();
-        }
-        else
-        {
-            gl->Disable(DEPTH_BOUNDS_TEST_EXT); _ZglThrowErrorOccuried();
-        }
+        gl->DepthBoundsEXT(dpu->nextDepthBounds[0], dpu->nextDepthBounds[1]); _ZglThrowErrorOccuried();
+        dpu->depthBounds[0] = dpu->nextDepthBounds[0];
+        dpu->depthBounds[1] = dpu->nextDepthBounds[1];
     }
 #endif
 
     // STENCIL TEST
 
 #ifndef _ZGL_DBG_IGNORE_STENCIL_TEST
-
-    afxBool stencilTestEnabled = dpu->nextRs.stencilTestEnabled;
-
-    if (dpu->activeRs.stencilTestEnabled != stencilTestEnabled)
+    afxBool nextStencilTestEnabled = dpu->nextStencilTestEnabled;
+#ifndef FORCE_STENCIL_TEST
+    if (nextStencilTestEnabled != dpu->stencilTestEnabled)
+#endif
     {
         /*
             GL_STENCIL_TEST
             If enabled, do stencil testing and update the stencil buffer. See glStencilFunc and glStencilOp.
         */
 
-        if (stencilTestEnabled)
+        if (nextStencilTestEnabled)
         {
-            AFX_ASSERT(!dpu->activeRs.stencilTestEnabled);
+#ifndef FORCE_STENCIL_TEST
+            AFX_ASSERT(!dpu->stencilTestEnabled);
+#endif
             gl->Enable(GL_STENCIL_TEST); _ZglThrowErrorOccuried();
         }
         else
         {
-            AFX_ASSERT(dpu->activeRs.stencilTestEnabled);
+#ifndef FORCE_STENCIL_TEST
+            AFX_ASSERT(dpu->stencilTestEnabled);
+#endif
             gl->Disable(GL_STENCIL_TEST); _ZglThrowErrorOccuried();
         }
-        dpu->activeRs.stencilTestEnabled = stencilTestEnabled;
+        dpu->stencilTestEnabled = nextStencilTestEnabled;
     }
 
     // STENCIL FUNC
-    
-    if (stencilTestEnabled)
+
+    if (nextStencilTestEnabled)
     {
         /*
             glStencilFuncSeparate — set front and/or back function and reference value for stencil testing
@@ -408,40 +372,41 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             If there is no stencil buffer, no stencil modification can occur and it is as if the stencil test always passes.
         */
 
-        afxUnit32 compareMask = dpu->nextRs.stencilFront.compareMask;
-        avxCompareOp compareOp = dpu->nextRs.stencilFront.compareOp;
-        afxUnit32 reference = dpu->nextRs.stencilFront.reference;
+        afxUnit32 nextStencilFrontCompareMask = dpu->nextStencilFront.compareMask;
+        avxCompareOp nextStencilFrontCompareOp = dpu->nextStencilFront.compareOp;
+        afxUnit32 nextStencilFrontRef = dpu->nextStencilFront.reference;
 
-        if (
-            (dpu->activeRs.stencilFront.compareMask != compareMask) ||
-            (dpu->activeRs.stencilFront.compareOp != compareOp) ||
-            (dpu->activeRs.stencilFront.reference != reference)
-            )
+#ifndef FORCE_STENCIL_FUNC
+        if ((nextStencilFrontCompareMask != dpu->stencilFront.compareMask) ||
+            (nextStencilFrontCompareOp != dpu->stencilFront.compareOp) ||
+            (nextStencilFrontRef != dpu->stencilFront.reference))
+#endif
         {
-            gl->StencilFuncSeparate(GL_FRONT, ZglToGlCompareOp(compareOp), reference, compareMask); _ZglThrowErrorOccuried();
+            gl->StencilFuncSeparate(GL_FRONT, ZglToGlCompareOp(nextStencilFrontCompareOp), nextStencilFrontRef, nextStencilFrontCompareMask); _ZglThrowErrorOccuried();
 
-            dpu->activeRs.stencilFront.compareMask = compareMask;
-            dpu->activeRs.stencilFront.compareOp = compareOp;
-            dpu->activeRs.stencilFront.reference = reference;
+            dpu->stencilFront.compareMask = nextStencilFrontCompareMask;
+            dpu->stencilFront.compareOp = nextStencilFrontCompareOp;
+            dpu->stencilFront.reference = nextStencilFrontRef;
         }
 
-        compareMask = dpu->nextRs.stencilBack.compareMask;
-        compareOp = dpu->nextRs.stencilBack.compareOp;
-        reference = dpu->nextRs.stencilBack.reference;
+        afxUnit32 nextStencilBackCompareMask = dpu->nextStencilBack.compareMask;
+        avxCompareOp nextStencilBackCompareOp = dpu->nextStencilBack.compareOp;
+        afxUnit32 nextStencilBackRef = dpu->nextStencilBack.reference;
 
-        if (
-            (dpu->activeRs.stencilBack.compareMask != compareMask) ||
-            (dpu->activeRs.stencilBack.compareOp != compareOp) ||
-            (dpu->activeRs.stencilBack.reference != reference)
-            )
+#ifndef FORCE_STENCIL_FUNC
+        if ((nextStencilBackCompareMask != dpu->stencilBack.compareMask) ||
+            (nextStencilBackCompareOp != dpu->stencilBack.compareOp) ||
+            (nextStencilBackRef != dpu->stencilBack.reference))
+#endif
         {
-            gl->StencilFuncSeparate(GL_BACK, ZglToGlCompareOp(compareOp), reference, compareMask); _ZglThrowErrorOccuried();
+            gl->StencilFuncSeparate(GL_BACK, ZglToGlCompareOp(nextStencilBackCompareOp), nextStencilBackRef, nextStencilBackCompareMask); _ZglThrowErrorOccuried();
 
-            dpu->activeRs.stencilBack.compareMask = compareMask;
-            dpu->activeRs.stencilBack.compareOp = compareOp;
-            dpu->activeRs.stencilBack.reference = reference;
+            dpu->stencilBack.compareMask = nextStencilBackCompareMask;
+            dpu->stencilBack.compareOp = nextStencilBackCompareOp;
+            dpu->stencilBack.reference = nextStencilBackRef;
         }
     }
+#endif
 
     // STENCIL WRITE
 
@@ -470,39 +435,171 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             GL_BACK,
             GL_FRONT_AND_BACK
         };
+        AFX_ASSERT(faces[avxCullMode_BACK] == GL_BACK);
 
         afxMask facesAffected;
-        afxUnit32 writeMask = dpu->nextRs.stencilFront.writeMask;
+        afxUnit32 nextStencilFrontWriteMask = dpu->nextStencilFront.writeMask;
+        afxUnit32 nextStencilBackWriteMask = dpu->nextStencilBack.writeMask;
 
-        if (dpu->activeRs.stencilFront.writeMask != writeMask)
+#if 0
+        if (dpu->dsDts[1].storeOp != avxStoreOp_STORE)
         {
-            gl->StencilMaskSeparate(GL_FRONT, writeMask); _ZglThrowErrorOccuried();
-            dpu->activeRs.stencilFront.writeMask = writeMask;
+            // disable stencil writing
+            nextStencilFrontWriteMask = 0;
+            nextStencilBackWriteMask = 0;
         }
+#endif
 
-        writeMask = dpu->nextRs.stencilBack.writeMask;
-
-        if (dpu->activeRs.stencilBack.writeMask != writeMask)
+        if ((nextStencilFrontWriteMask == nextStencilBackWriteMask)
+#ifndef FORCE_STENCIL_MASK
+            && (nextStencilFrontWriteMask != dpu->stencilFront.writeMask) ||
+            (nextStencilBackWriteMask != dpu->stencilBack.writeMask)
+#endif
+            )
         {
-            gl->StencilMaskSeparate(GL_BACK, writeMask); _ZglThrowErrorOccuried();
-            dpu->activeRs.stencilBack.writeMask = writeMask;
+            gl->StencilMaskSeparate(GL_FRONT_AND_BACK, nextStencilFrontWriteMask); _ZglThrowErrorOccuried();
+            dpu->stencilFront.writeMask = nextStencilFrontWriteMask;
+            dpu->stencilBack.writeMask = nextStencilBackWriteMask;
+        }
+        else
+        {
+#ifndef FORCE_STENCIL_MASK
+            if (nextStencilFrontWriteMask != dpu->stencilFront.writeMask)
+#endif
+            {
+                gl->StencilMaskSeparate(GL_FRONT, nextStencilFrontWriteMask); _ZglThrowErrorOccuried();
+                dpu->stencilFront.writeMask = nextStencilFrontWriteMask;
+            }
+
+#ifndef FORCE_STENCIL_MASK
+            if (nextStencilBackWriteMask != dpu->stencilBack.writeMask)
+#endif
+            {
+                gl->StencilMaskSeparate(GL_BACK, nextStencilBackWriteMask); _ZglThrowErrorOccuried();
+                dpu->stencilBack.writeMask = nextStencilBackWriteMask;
+            }
+        }
+    }
+}
+
+_ZGL void _ZglFlushRsChanges(zglDpu* dpu)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+#ifndef _ZGL_DBG_IGNORE_RASTERIZER_DISCARD
+
+    afxBool nextRasterizationDisabled = dpu->nextRasterizationDisabled;
+    if (nextRasterizationDisabled != dpu->rasterizationDisabled)
+    {
+        /*
+            GL_RASTERIZER_DISCARD
+            If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization.
+            Furthermore, when enabled, glClear, glClearBufferData, glClearBufferSubData, glClearTexImage, and glClearTexSubImage are ignored.
+        */
+
+        if (nextRasterizationDisabled)
+        {
+            gl->Enable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
+        }
+        else
+        {
+            gl->Disable(GL_RASTERIZER_DISCARD); _ZglThrowErrorOccuried();
+        }
+        dpu->rasterizationDisabled = nextRasterizationDisabled;
+    }
+#endif
+
+    avxFillMode nextFillMode = dpu->nextFillMode;
+#ifndef FORCE_FILL_MODE
+    if (nextFillMode != dpu->fillMode)
+#endif
+    {
+        /*
+            glPolygonMode — select a polygon rasterization mode.
+            void glPolygonMode(	GLenum face, GLenum mode);
+
+            face = Specifies the polygons that mode applies to. Must be GL_FRONT_AND_BACK for front- and back-facing polygons.
+            mode = Specifies how polygons will be rasterized. Accepted values are GL_POINT, GL_LINE, and GL_FILL. The initial value is GL_FILL for both front- and back-facing polygons.
+
+            glPolygonMode controls the interpretation of polygons for rasterization.
+            face describes which polygons mode applies to: both front and back-facing polygons (GL_FRONT_AND_BACK).
+            The polygon mode affects only the final rasterization of polygons.
+            In particular, a polygon's vertices are lit and the polygon is clipped and possibly culled before these modes are applied.
+
+            Three modes are defined and can be specified in mode:
+
+            GL_POINT Polygon vertices that are marked as the start of a boundary edge are drawn as points. Point attributes such as GL_POINT_SIZE and GL_POINT_SMOOTH control the rasterization of the points. Polygon rasterization attributes other than GL_POLYGON_MODE have no effect.
+            GL_LINE Boundary edges of the polygon are drawn as line segments. Line attributes such as GL_LINE_WIDTH and GL_LINE_SMOOTH control the rasterization of the lines. Polygon rasterization attributes other than GL_POLYGON_MODE have no effect.
+            GL_FILL The interior of the polygon is filled. Polygon attributes such as GL_POLYGON_SMOOTH control the rasterization of the polygon.
+
+            Vertices are marked as boundary or nonboundary with an edge flag. Edge flags are generated internally by the GL when it decomposes triangle stips and fans.
+        */
+        gl->PolygonMode(GL_FRONT_AND_BACK, AfxToGlFillMode(nextFillMode)); _ZglThrowErrorOccuried();
+        dpu->fillMode = nextFillMode;
+    }
+
+    // FLUSH DEPTH/STENCIL CHANGES
+    _ZglFlushDsChanges(dpu);
+
+#ifndef _ZGL_DBG_IGNORE_LINE_WIDTH
+    if (nextFillMode == avxFillMode_EDGE)
+    {
+        /*
+            glLineWidth — specify the width of rasterized lines.
+            void glLineWidth(GLfloat width);
+
+            width = Specifies the width of rasterized lines. The initial value is 1.
+
+            glLineWidth specifies the rasterized width of both aliased and antialiased lines.
+            Using a line width other than 1 has different effects, depending on whether line antialiasing is enabled.
+            To enable and disable line antialiasing, call glEnable and glDisable with argument GL_LINE_SMOOTH.
+            Line antialiasing is initially disabled.
+
+            If line antialiasing is disabled, the actual width is determined by rounding the supplied width to the nearest integer.
+            (If the rounding results in the value 0, it is as if the line width were 1.) If |delta x|>=|delta y|, i pixels are filled in each column that is rasterized, where i is the rounded value of width.
+            Otherwise, i pixels are filled in each row that is rasterized.
+
+            If antialiasing is enabled, line rasterization produces a fragment for each pixel square that intersects the region lying within the rectangle having width equal to the current line width, length equal to the actual length of the line, and centered on the mathematical line segment.
+            The coverage value for each fragment is the window coordinate area of the intersection of the rectangular region with the corresponding pixel square.
+            This value is saved and used in the final rasterization step.
+
+            Not all widths can be supported when line antialiasing is enabled.
+            If an unsupported width is requested, the nearest supported width is used.
+            Only width 1 is guaranteed to be supported; others depend on the implementation.
+            Likewise, there is a range for aliased line widths as well.
+            To query the range of supported widths and the size difference between supported widths within the range, call glGet with arguments GL_ALIASED_LINE_WIDTH_RANGE, GL_SMOOTH_LINE_WIDTH_RANGE, and GL_SMOOTH_LINE_WIDTH_GRANULARITY.
+
+            The line width specified by glLineWidth is always returned when GL_LINE_WIDTH is queried.
+            Clamping and rounding for aliased and antialiased lines have no effect on the specified value.
+
+            Nonantialiased line width may be clamped to an implementation-dependent maximum.
+            Call glGet with GL_ALIASED_LINE_WIDTH_RANGE to determine the maximum width.
+
+            In OpenGL 1.2, the tokens GL_LINE_WIDTH_RANGE and GL_LINE_WIDTH_GRANULARITY were replaced by GL_ALIASED_LINE_WIDTH_RANGE, GL_SMOOTH_LINE_WIDTH_RANGE, and GL_SMOOTH_LINE_WIDTH_GRANULARITY.
+            The old names are retained for backward compatibility, but should not be used in new code.
+        */
+
+        afxReal nextLineWidth = dpu->nextLineWidth;
+
+        if (nextLineWidth != dpu->lineWidth)
+        {
+            gl->LineWidth(nextLineWidth); _ZglThrowErrorOccuried();
+            dpu->lineWidth = nextLineWidth;
         }
     }
 #endif
 
-
 #ifndef _ZGL_DBG_IGNORE_MULTISAMPLING
-
-    afxBool msEnabled = dpu->nextRs.msEnabled;
-
-    if (dpu->activeRs.msEnabled != msEnabled)
+    afxBool nextMsEnabled = dpu->nextMsEnabled;
+    if (nextMsEnabled != dpu->activeRs.msEnabled)
     {
         /*
             GL_MULTISAMPLE
             If enabled, use multiple fragment samples in computing the final color of a pixel. See glSampleCoverage.
         */
 
-        if (msEnabled)
+        if (nextMsEnabled)
         {
             AFX_ASSERT(!dpu->activeRs.msEnabled);
             gl->Enable(GL_MULTISAMPLE); _ZglThrowErrorOccuried();
@@ -513,29 +610,29 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             gl->Disable(GL_MULTISAMPLE); _ZglThrowErrorOccuried();
 
         }
-        dpu->activeRs.msEnabled = msEnabled;
+        dpu->activeRs.msEnabled = nextMsEnabled;
     }
 
-    if (msEnabled)
+    if (nextMsEnabled)
     {
-        afxUnit sampleCnt = dpu->nextRs.sampleCnt;
+        afxUnit nextSampleCnt = dpu->nextSampleCnt;
 
-        if (dpu->activeRs.sampleCnt != sampleCnt)
+        if (nextSampleCnt != dpu->activeRs.sampleCnt)
         {
             /*
                 GL_SAMPLE_MASK
                 If enabled, the sample coverage mask generated for a fragment during rasterization will be ANDed with the value of GL_SAMPLE_MASK_VALUE before shading occurs. See glSampleMaski.
             */
 
-            if (sampleCnt)
+            if (nextSampleCnt)
             {
                 AFX_ASSERT(!dpu->activeRs.sampleCnt);
                 gl->Enable(GL_SAMPLE_MASK); _ZglThrowErrorOccuried();
 
-                for (afxUnit i = 0; i < sampleCnt; i++)
+                for (afxUnit i = 0; i < nextSampleCnt; i++)
                 {
-                    dpu->activeRs.sampleMasks[i] = dpu->nextRs.sampleMasks[i];
-                    gl->SampleMaski(i, dpu->nextRs.sampleMasks[i]); _ZglThrowErrorOccuried();
+                    dpu->activeRs.sampleMasks[i] = dpu->nextSampleMasks[i];
+                    gl->SampleMaski(i, dpu->nextSampleMasks[i]); _ZglThrowErrorOccuried();
                 }
             }
             else
@@ -543,20 +640,20 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 AFX_ASSERT(dpu->activeRs.sampleCnt);
                 gl->Disable(GL_SAMPLE_MASK); _ZglThrowErrorOccuried();
             }
-            dpu->activeRs.sampleCnt = sampleCnt;
+            dpu->activeRs.sampleCnt = nextSampleCnt;
         }
 
-        afxReal minSampleShadingValue = dpu->nextRs.minSampleShadingValue;
-        afxBool sampleShadingEnabled = dpu->nextRs.sampleShadingEnabled;
+        afxReal minSampleShadingValue = dpu->nextMinSampleShadingValue;
+        afxBool nextSampleShadingEnabled = dpu->nextSampleShadingEnabled;
 
-        if (sampleShadingEnabled != dpu->activeRs.sampleShadingEnabled)
+        if (nextSampleShadingEnabled != dpu->activeRs.sampleShadingEnabled)
         {
             /*
                 GL_SAMPLE_SHADING
                 If enabled, the active fragment shader is run once for each covered sample, or at fraction of this rate as determined by the current value of GL_MIN_SAMPLE_SHADING_VALUE. See glMinSampleShading.
             */
 
-            if (sampleShadingEnabled)
+            if (nextSampleShadingEnabled)
             {
                 AFX_ASSERT(dpu->activeRs.sampleShadingEnabled);
                 gl->Enable(GL_SAMPLE_SHADING); _ZglThrowErrorOccuried();
@@ -572,20 +669,19 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 gl->MinSampleShading(minSampleShadingValue); _ZglThrowErrorOccuried();
             }
 
-            dpu->activeRs.sampleShadingEnabled = sampleShadingEnabled;
+            dpu->activeRs.sampleShadingEnabled = nextSampleShadingEnabled;
             dpu->activeRs.minSampleShadingValue = minSampleShadingValue;
         }
 
-        afxBool alphaToOneEnabled = dpu->nextRs.alphaToOneEnabled;
-
-        if (dpu->activeRs.alphaToOneEnabled != alphaToOneEnabled)
+        afxBool nextAlphaToOneEnabled = dpu->nextAlphaToOneEnabled;
+        if (nextAlphaToOneEnabled != dpu->activeRs.alphaToOneEnabled)
         {
             /*
                 GL_SAMPLE_ALPHA_TO_ONE
                 If enabled, each sample alpha value is replaced by the maximum representable alpha value.
             */
 
-            if (alphaToOneEnabled)
+            if (nextAlphaToOneEnabled)
             {
                 AFX_ASSERT(!dpu->activeRs.alphaToOneEnabled);
                 gl->Enable(GL_SAMPLE_ALPHA_TO_ONE); _ZglThrowErrorOccuried();
@@ -595,12 +691,11 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 AFX_ASSERT(dpu->activeRs.alphaToOneEnabled);
                 gl->Disable(GL_SAMPLE_ALPHA_TO_ONE); _ZglThrowErrorOccuried();
             }
-            dpu->activeRs.alphaToOneEnabled = alphaToOneEnabled;
+            dpu->activeRs.alphaToOneEnabled = nextAlphaToOneEnabled;
         }
 
-        afxBool alphaToCoverageEnabled = dpu->nextRs.alphaToCoverageEnabled;
-
-        if (dpu->activeRs.alphaToCoverageEnabled != alphaToCoverageEnabled)
+        afxBool nextAlphaToCoverageEnabled = dpu->nextAlphaToCoverageEnabled;
+        if (nextAlphaToCoverageEnabled != dpu->activeRs.alphaToCoverageEnabled)
         {
             /*
                 GL_SAMPLE_ALPHA_TO_COVERAGE
@@ -608,7 +703,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 The temporary coverage value is then ANDed with the fragment coverage value.
             */
 
-            if (alphaToCoverageEnabled)
+            if (nextAlphaToCoverageEnabled)
             {
                 AFX_ASSERT(!dpu->activeRs.alphaToCoverageEnabled);
                 gl->Enable(GL_SAMPLE_ALPHA_TO_COVERAGE); _ZglThrowErrorOccuried();
@@ -618,37 +713,54 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 AFX_ASSERT(dpu->activeRs.alphaToCoverageEnabled);
                 gl->Disable(GL_SAMPLE_ALPHA_TO_COVERAGE); _ZglThrowErrorOccuried();
             }
-            dpu->activeRs.alphaToCoverageEnabled = alphaToCoverageEnabled;
+            dpu->activeRs.alphaToCoverageEnabled = nextAlphaToCoverageEnabled;
         }
-
     }
 #endif
 
     // SCISSOR
 #ifndef _ZGL_DBG_IGNORE_SCISSOR_TEST
+    
+    afxUnit32 nextScisUpdMask = dpu->nextScisUpdMask;
 
-    if (dpu->nextRs.scisUpdMask)
+#ifndef FORCE_SCISSOR_TEST
+    if (nextScisUpdMask)
+#endif
     {
-        afxUnit vpCnt = dpu->activeTs.vpCnt;
+        dpu->nextScisUpdMask = NIL;
 
-        afxMask scisUpdMask = dpu->nextRs.scisUpdMask;
-        dpu->nextRs.scisUpdMask = NIL;
-
+        afxUnit vpCnt = dpu->vpCnt;
         GLint v[ZGL_MAX_VIEWPORTS][4];
+
+        GLuint first = GL_INVALID_INDEX;
+        GLuint cnt = 0;
 
 #if FORCE_GL_GENERIC_FUNCS
         for (afxUnit i = 0; i < vpCnt; i++)
         {
-            if (scisUpdMask & AFX_BIT(i))
+#ifndef FORCE_SCISSOR_TEST
+            if (nextScisUpdMask & AFX_BIT(i))
+#endif
             {
-                v[i][0] = dpu->nextRs.scisRects[i].origin[0];
-                v[i][1] = dpu->nextRs.scisRects[i].origin[1];
-                v[i][2] = dpu->nextRs.scisRects[i].extent[0];
-                v[i][3] = dpu->nextRs.scisRects[i].extent[1];
-                gl->ScissorArrayv(i, 1, &v[i][0]); _ZglThrowErrorOccuried();
+                if (first == GL_INVALID_INDEX)
+                    first = i;
+
+                cnt = i + 1 - first;
+
+                dpu->scisRects[i] = dpu->nextScisRects[i];
             }
+
+            v[i][0] = dpu->scisRects[i].x;
+            v[i][1] = dpu->scisRects[i].y;
+            v[i][2] = dpu->scisRects[i].w;
+            v[i][3] = dpu->scisRects[i].h;
         }
-        //gl->ScissorArrayv(0, cnt, &v[0][0]); _ZglThrowErrorOccuried();
+
+        if (cnt)
+        {
+            //gl->ScissorArrayv(0, cnt, &v[0][0]); _ZglThrowErrorOccuried();
+            gl->ScissorArrayv(first, cnt, &v[first][0]); _ZglThrowErrorOccuried();
+        }
 #else
         for (afxUnit i = 0; i < ZGL_MAX_VIEWPORTS; i++)
         {
@@ -680,60 +792,41 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         }
 #endif
     }
-
 #endif
 
-    afxBool blendNoUsed = TRUE;
+    afxBool blendUsed = FALSE;
+    afxBool blendConstantsUsed = FALSE;
+    afxUnit nextOutCnt = dpu->outCnt;
 
-    afxUnit outCnt = dpu->nextRs.outCnt;
-
-    for (afxUnit i = 0; i < outCnt; i++)
+    for (afxUnit i = 0; i < nextOutCnt; i++)
     {
-        avxColorOutput const*ch = &dpu->nextRs.outs[i];
-        //AfxGetColorOutputChannels(ras, 0, outCnt, ch);
+        avxColorOutput const* nextOut = &dpu->nextOuts[i];
+        //AvxGetColorOutputs(ras, 0, outCnt, ch);
 
 #ifndef _ZGL_DBG_IGNORE_BLEND
 
-        if (ch->blendEnabled && !blendNoUsed)
+        if (nextOut->blendEnabled != dpu->outs[i].blendEnabled)
+            dpu->outs[i].blendEnabled = nextOut->blendEnabled;
+
+        if (nextOut->blendEnabled)
         {
-            blendNoUsed = FALSE;
-
-            /*
-                GL_BLEND
-                If enabled, blend the computed fragment color values with the values in the color buffers. See glBlendFunc.
-            */
-
-            if (!dpu->activeRs.anyBlendEnabled)
+            if (!blendUsed)
             {
-                gl->Enable(GL_BLEND); _ZglThrowErrorOccuried();
-                dpu->activeRs.anyBlendEnabled = TRUE;
+                blendUsed = TRUE;
+                if (!dpu->anyBlendEnabled)
+                {
+                    /*
+                        GL_BLEND
+                        If enabled, blend the computed fragment color values with the values in the color buffers. See glBlendFunc.
+                    */
+                    gl->Enable(GL_BLEND); _ZglThrowErrorOccuried();
+                    dpu->anyBlendEnabled = TRUE;
+                }
             }
-        }
 
-        if (ch->blendEnabled != dpu->activeRs.outs[i].blendEnabled)
-        {
-
-            dpu->activeRs.outs[i].blendEnabled = ch->blendEnabled;
-        }
-
-        if (ch->blendEnabled)
-        {
-            //if (dpu->nextBlendConstUpd)
-            {
-                /*
-                    glBlendColor — set the blend color.
-
-                    The GL_BLEND_COLOR may be used to calculate the source and destination blending factors. The color components are clamped to the range [0,1] before being stored.
-                    See glBlendFunc for a complete description of the blending operations. Initially the GL_BLEND_COLOR is set to (0, 0, 0, 0).
-                */
-
-                AfxColorCopy(dpu->activeRs.blendConstants, dpu->nextRs.blendConstants);
-                gl->BlendColor(dpu->activeRs.blendConstants[0], dpu->activeRs.blendConstants[1], dpu->activeRs.blendConstants[2], dpu->activeRs.blendConstants[3]);
-                //dpu->nextBlendConstUpd = NIL;
-            }
-#if 0
-            if ((dpu->activeRs.outs[i].blendConfig.rgbBlendOp != ch->blendConfig.rgbBlendOp) ||
-                (dpu->activeRs.outs[i].blendConfig.aBlendOp != ch->blendConfig.aBlendOp))
+#ifndef FORCE_BLEND_EQUATION
+            if ((nextOut->blendConfig.rgbBlendOp != dpu->outs[i].blendConfig.rgbBlendOp) ||
+                (nextOut->blendConfig.aBlendOp != dpu->outs[i].blendConfig.aBlendOp))
 #endif
             {
                 /*
@@ -746,15 +839,17 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                     The blend equations use the source and destination blend factors specified by either glBlendFunc or glBlendFuncSeparate.
                     See glBlendFunc or glBlendFuncSeparate for a description of the various blend factors.
                 */
-                gl->BlendEquationSeparatei(i, AfxToGlBlendOp(ch->blendConfig.rgbBlendOp), AfxToGlBlendOp(ch->blendConfig.aBlendOp)); _ZglThrowErrorOccuried();
-                dpu->activeRs.outs[i].blendConfig.rgbBlendOp = ch->blendConfig.rgbBlendOp;
-                dpu->activeRs.outs[i].blendConfig.aBlendOp = ch->blendConfig.aBlendOp;
+                gl->BlendEquationSeparatei(i,   AfxToGlBlendOp(nextOut->blendConfig.rgbBlendOp),
+                                                AfxToGlBlendOp(nextOut->blendConfig.aBlendOp)); _ZglThrowErrorOccuried();
+
+                dpu->outs[i].blendConfig.rgbBlendOp = nextOut->blendConfig.rgbBlendOp;
+                dpu->outs[i].blendConfig.aBlendOp = nextOut->blendConfig.aBlendOp;
             }
-#if 0
-            if ((dpu->activeRs.outs[i].blendConfig.rgbSrcFactor != ch->blendConfig.rgbSrcFactor) ||
-                (dpu->activeRs.outs[i].blendConfig.rgbDstFactor != ch->blendConfig.rgbDstFactor) ||
-                (dpu->activeRs.outs[i].blendConfig.aSrcFactor != ch->blendConfig.aSrcFactor) ||
-                (dpu->activeRs.outs[i].blendConfig.aDstFactor != ch->blendConfig.aDstFactor))
+#ifndef FORCE_BLEND_FUNC
+            if ((nextOut->blendConfig.rgbSrcFactor != dpu->outs[i].blendConfig.rgbSrcFactor) ||
+                (nextOut->blendConfig.rgbDstFactor != dpu->outs[i].blendConfig.rgbDstFactor) ||
+                (nextOut->blendConfig.aSrcFactor != dpu->outs[i].blendConfig.aSrcFactor) ||
+                (nextOut->blendConfig.aDstFactor != dpu->outs[i].blendConfig.aDstFactor))
 #endif
             {
                 /*
@@ -769,11 +864,31 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                     Likewise, srcAlpha specifies which method is used to scale the source alpha color component, and dstAlpha specifies which method is used to scale the destination alpha component.
                     The possible methods are described in the following table. Each method defines four scale factors, one each for red, green, blue, and alpha.
                 */
-                gl->BlendFuncSeparatei(i, AfxToGlBlendFactor(ch->blendConfig.rgbSrcFactor), AfxToGlBlendFactor(ch->blendConfig.rgbDstFactor), AfxToGlBlendFactor(ch->blendConfig.aSrcFactor), AfxToGlBlendFactor(ch->blendConfig.aDstFactor)); _ZglThrowErrorOccuried();
-                dpu->activeRs.outs[i].blendConfig.rgbSrcFactor = ch->blendConfig.rgbSrcFactor;
-                dpu->activeRs.outs[i].blendConfig.rgbDstFactor = ch->blendConfig.rgbDstFactor;
-                dpu->activeRs.outs[i].blendConfig.aSrcFactor = ch->blendConfig.aSrcFactor;
-                dpu->activeRs.outs[i].blendConfig.aDstFactor = ch->blendConfig.aDstFactor;
+                gl->BlendFuncSeparatei(i,   AfxToGlBlendFactor(nextOut->blendConfig.rgbSrcFactor),
+                                            AfxToGlBlendFactor(nextOut->blendConfig.rgbDstFactor),
+                                            AfxToGlBlendFactor(nextOut->blendConfig.aSrcFactor),
+                                            AfxToGlBlendFactor(nextOut->blendConfig.aDstFactor)); _ZglThrowErrorOccuried();
+
+                dpu->outs[i].blendConfig.rgbSrcFactor = nextOut->blendConfig.rgbSrcFactor;
+                dpu->outs[i].blendConfig.rgbDstFactor = nextOut->blendConfig.rgbDstFactor;
+                dpu->outs[i].blendConfig.aSrcFactor = nextOut->blendConfig.aSrcFactor;
+                dpu->outs[i].blendConfig.aDstFactor = nextOut->blendConfig.aDstFactor;
+            }
+
+            // do it at pipeline binding?
+            if (!blendConstantsUsed)
+            {
+                if ((nextOut->blendConfig.aDstFactor == avxBlendFactor_CONST_A) ||
+                    (nextOut->blendConfig.aSrcFactor == avxBlendFactor_CONST_A) ||
+                    (nextOut->blendConfig.rgbDstFactor == avxBlendFactor_CONST_RGB) ||
+                    (nextOut->blendConfig.rgbSrcFactor == avxBlendFactor_CONST_RGB) ||
+                    (nextOut->blendConfig.aDstFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
+                    (nextOut->blendConfig.aSrcFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
+                    (nextOut->blendConfig.rgbDstFactor == avxBlendFactor_ONE_MINUS_CONST_RGB) ||
+                    (nextOut->blendConfig.rgbSrcFactor == avxBlendFactor_ONE_MINUS_CONST_RGB))
+                {
+                    blendConstantsUsed = TRUE;
+                }
             }
         }
 #endif
@@ -784,56 +899,88 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         
         // The color write mask operation is applied only if Color Write Enable is enabled for the respective attachment. 
         // Otherwise the color write mask is ignored and writes to all components of the attachment are disabled.
-
-        if (ch->discardMask != dpu->activeRs.outs[i].discardMask)
+#ifndef FORCE_COLOR_WRITE_MASK
+        if (nextOut->discardMask != dpu->outs[i].discardMask)
+#endif
         {
+#if 0
             if (dpu->activeRs.colDts[i].storeOp == avxStoreOp_STORE)
-            /*
-                glColorMask, glColorMaski — enable and disable writing of frame buffer color components.
+#endif
+            {
+                /*
+                    glColorMask, glColorMaski — enable and disable writing of frame buffer color components.
 
-                glColorMask and glColorMaski specify whether the individual color components in the frame buffer can or cannot be written.
-                glColorMaski sets the mask for a specific draw buffer, whereas glColorMask sets the mask for all draw buffers.
-                If red is GL_FALSE, for example, no change is made to the red component of any pixel in any of the color buffers, regardless of the drawing operation attempted.
+                    glColorMask and glColorMaski specify whether the individual color components in the frame buffer can or cannot be written.
+                    glColorMaski sets the mask for a specific draw buffer, whereas glColorMask sets the mask for all draw buffers.
+                    If red is GL_FALSE, for example, no change is made to the red component of any pixel in any of the color buffers, regardless of the drawing operation attempted.
 
-                Changes to individual bits of components cannot be controlled. Rather, changes are either enabled or disabled for entire color components.
-            */
-            gl->ColorMaski(i, !(ch->discardMask & avxRgbaMask_R), !(ch->discardMask & avxRgbaMask_G), !(ch->discardMask & avxRgbaMask_B), !(ch->discardMask & avxRgbaMask_A)); _ZglThrowErrorOccuried();
-            dpu->activeRs.outs[i].discardMask = ch->discardMask;
+                    Changes to individual bits of components cannot be controlled. Rather, changes are either enabled or disabled for entire color components.
+                */
+                gl->ColorMaski(i,   (nextOut->discardMask & avxColorMask_R) != avxColorMask_R,
+                                    (nextOut->discardMask & avxColorMask_G) != avxColorMask_G,
+                                    (nextOut->discardMask & avxColorMask_B) != avxColorMask_B,
+                                    (nextOut->discardMask & avxColorMask_A) != avxColorMask_A); _ZglThrowErrorOccuried();
+                dpu->outs[i].discardMask = nextOut->discardMask;
+            }
         }
 #endif
     }
 
 #ifndef _ZGL_DBG_IGNORE_BLEND
-    if (blendNoUsed && dpu->activeRs.anyBlendEnabled)
+    if ((!blendUsed) && dpu->anyBlendEnabled)
     {
         gl->Disable(GL_BLEND); _ZglThrowErrorOccuried();
-        dpu->activeRs.anyBlendEnabled = FALSE;
+        dpu->anyBlendEnabled = FALSE;
+    }
+
+    if (blendUsed && blendConstantsUsed)
+    {
+        /*
+            glBlendColor — set the blend color.
+
+            The GL_BLEND_COLOR may be used to calculate the source and destination blending factors. The color components are clamped to the range [0,1] before being stored.
+            See glBlendFunc for a complete description of the blending operations. Initially the GL_BLEND_COLOR is set to (0, 0, 0, 0).
+        */
+
+        AvxCopyColor(dpu->blendConstants, dpu->nextBlendConstants);
+        gl->BlendColor(dpu->nextBlendConstants[0],
+            dpu->nextBlendConstants[1],
+            dpu->nextBlendConstants[2],
+            dpu->nextBlendConstants[3]); _ZglThrowErrorOccuried();
     }
 #endif
 
 #ifndef _ZGL_DBG_IGNORE_LOGICAL_OP
 
-    avxLogicOp logicOp = dpu->nextRs.logicOp;
-    afxBool logicOpEnabled = dpu->nextRs.logicOpEnabled;
+    avxLogicOp nextLogicOp = dpu->nextLogicOp;
+    afxBool nextLogicOpEnabled = dpu->nextLogicOpEnabled;
 
-    if (dpu->activeRs.logicOpEnabled != logicOpEnabled)
+#ifndef FORCE_LOGIC_OP
+    if (nextLogicOpEnabled != dpu->logicOpEnabled)
+#endif
     {
-        if (logicOpEnabled)
+        if (nextLogicOpEnabled)
         {
-            AFX_ASSERT(!dpu->activeRs.logicOpEnabled);
+#ifndef FORCE_LOGIC_OP
+            AFX_ASSERT(!dpu->logicOpEnabled);
+#endif
             gl->Enable(GL_COLOR_LOGIC_OP); _ZglThrowErrorOccuried();
         }
         else
         {
-            AFX_ASSERT(dpu->activeRs.logicOpEnabled);
+#ifndef FORCE_LOGIC_OP
+            AFX_ASSERT(dpu->logicOpEnabled);
+#endif
             gl->Disable(GL_COLOR_LOGIC_OP); _ZglThrowErrorOccuried();
         }
-        dpu->activeRs.logicOpEnabled = logicOpEnabled;
+        dpu->logicOpEnabled = nextLogicOpEnabled;
     }
 
-    if (logicOpEnabled)
+    if (nextLogicOpEnabled)
     {
-        if (dpu->activeRs.logicOp != logicOp)
+#ifndef FORCE_LOGIC_OP
+        if (nextLogicOp != dpu->logicOp)
+#endif
         {
             /*
                 glLogicOp — specify a logical pixel operation for rendering.
@@ -848,8 +995,8 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                 Logic operations have no effect on floating point draw buffers.
                 However, if GL_COLOR_LOGIC_OP is enabled, blending is still disabled in this case.
             */
-            gl->LogicOp(AfxToGlLogicOp(logicOp)); _ZglThrowErrorOccuried();
-            dpu->activeRs.logicOp = logicOp;
+            gl->LogicOp(AfxToGlLogicOp(nextLogicOp)); _ZglThrowErrorOccuried();
+            dpu->logicOp = nextLogicOp;
         }
     }
 #endif

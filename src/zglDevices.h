@@ -23,8 +23,8 @@ AFX_DEFINE_STRUCT(zglVertexInputState)
 {
     struct
     {
-        GLuint          bufGpuHandle;
-        afxBuffer       buf;
+        afxUnit          bufUniqueId;
+        avxBuffer       buf;
         afxUnit32        offset;
         afxUnit32        range;
         afxUnit32        stride;
@@ -33,70 +33,132 @@ AFX_DEFINE_STRUCT(zglVertexInputState)
     afxMask             sourcesUpdMask;
     afxUnit              sourcesUpdCnt;
 
+    afxUnit             iboUniqueId;
     GLuint              idxSrcGpuHandle;
-    afxBuffer           idxSrcBuf;
+    avxBuffer           idxSrcBuf;
     afxUnit32            idxSrcOff;
     afxUnit32            idxSrcRange;
     afxUnit32            idxSrcSiz;
     afxBool             iboUpdReq;
 };
 
-typedef struct zglXfrmState
+AFX_DEFINE_STRUCT(zglDpu)
 {
-    afxUnit              vpCnt; /// 0
-    afxViewport         vps[ZGL_MAX_VIEWPORTS];
-    afxMask             vpsUpdMask;
+    avxDpu              m;
+    glVmt const*        gl;
+    //afxUnit                  exuIdx;
+    //afxUnit                  portId; // exuIdx
+    //afxDrawSystem          activeDsys;
 
-    avxTopology         primTop; /// is a option defining the primitive topology. /// avxTopology_TRI_LIST
-    afxBool             primRestartEnabled; /// controls whether a special vertex index value (0xFF, 0xFFFF, 0xFFFFFFFF) is treated as restarting the assembly of primitives. /// FALSE
-    afxUnit              patchControlPoints; /// is the number of control points per patch.
+    //afxSize                 numOfFedVertices, numOfFedIndices, numOfFedInstances;
 
-    afxBool             depthClampEnabled; /// controls whether to clamp the fragment's depth values as described in Depth Test. /// FALSE
+    //afxBool                 running;
 
-    avxCullMode         cullMode; /// is the triangle facing direction used for primitive culling. /// avxCullMode_BACK
-    afxBool             cwFrontFacing; /// If this member is TRUE, a triangle will be considered front-facing if its vertices are clockwise. /// FALSE (CCW)
+    //afxBool         instanced;
 
-} zglXfrmState;
+    afxUnit             dbgScopeStackTop;
 
-typedef struct zglRasterizerState
-{
+    // NEXT TRANSFORMATION AND CLIPPING STATE
+    afxUnit             nextVpCnt; // 0
+    avxViewport         nextVps[ZGL_MAX_VIEWPORTS];
+    afxMask             nextVpUpdMask;
+    avxTopology         nextPrimTop; // is a option defining the primitive topology. // avxTopology_TRI_LIST
+    afxBool             nextPrimRestartEnabled; // controls whether a special vertex index value (0xFF, 0xFFFF, 0xFFFFFFFF) is treated as restarting the assembly of primitives. // FALSE
+    afxUnit             nextPatchControlPoints; // is the number of control points per patch.
+    afxBool             nextDepthClampEnabled; // controls whether to clamp the fragment's depth values as described in Depth Test. // FALSE
+    avxCullMode         nextCullMode; // is the triangle facing direction used for primitive culling. // avxCullMode_BACK
+    afxBool             nextFrontFaceCw; // If this member is TRUE, a triangle will be considered front-facing if its vertices are clockwise. // FALSE (CCW)
+    // ACTIVE/CURRENT TRANSFORMATION AND CLIPPING STATE
+    afxUnit             vpCnt; // 0
+    avxViewport         vps[ZGL_MAX_VIEWPORTS];
+    avxTopology         primTop; // is a option defining the primitive topology. // avxTopology_TRI_LIST
+    afxBool             primRestartEnabled; // controls whether a special vertex index value (0xFF, 0xFFFF, 0xFFFFFFFF) is treated as restarting the assembly of primitives. // FALSE
+    afxUnit             patchControlPoints; // is the number of control points per patch.
+    afxBool             depthClampEnabled; // controls whether to clamp the fragment's depth values as described in Depth Test. // FALSE
+    avxCullMode         cullMode; // is the triangle facing direction used for primitive culling. // avxCullMode_BACK
+    afxBool             frontFaceCw; // If this member is TRUE, a triangle will be considered front-facing if its vertices are clockwise. // FALSE (CCW)
+
+    // NEXT RASTERIZATION STATE
+    afxBool             nextRasterizationDisabled; // controls whether primitives are discarded immediately before the rasterization stage. // FALSE
+    avxFillMode         nextFillMode; // is the triangle rendering mode. // avxFillMode_SOLID
+    afxReal             nextLineWidth; // is the width of rasterized line segments. // 1.f    
+
+    afxBool             nextDepthBiasEnabled; // controls whether to bias fragment depth values. // FALSE
+    afxReal             nextDepthBiasSlopeScale; // is a scalar factor applied to a fragment's slope in depth bias calculations. // 0.f
+    afxReal             nextDepthBiasConstFactor; // is a scalar factor controlling the constant depth value added to each fragment. // 0.f
+    afxReal             nextDepthBiasClamp; // is the maximum (or minimum) depth bias of a fragment. // 0.f
+
+    afxBool             nextMsEnabled; // If enabld, multisample rasterization will be used. FALSE
+    afxUnit             nextSampleLvl; // is a value specifying the number of samples used in rasterization. // 0
+    afxMask             nextSampleMasks[32]; // an array of sample mask values used in the sample mask test. // [ 1, ]
+    afxBool             nextSampleShadingEnabled; // used to enable Sample Shading. // FALSE
+    afxReal             nextMinSampleShadingValue; // specifies a minimum fraction of sample shading if sampleShadingEnable is set to TRUE. // 0.f
+    afxBool             nextAlphaToCoverageEnabled; // controls whether a temporary coverage value is generated based on the alpha component of the fragment's first color output. // FALSE
+    afxBool             nextAlphaToOneEnabled; // controls whether the alpha component of the fragment's first color output is replaced with one. // FALSE
+
+    afxBool             nextDepthTestEnabled; // controls whether depth testing is enabled. // FALSE
+    avxCompareOp        nextDepthCompareOp; // is a value specifying the comparison operator to use in the Depth Comparison step of the depth test. // avxCompareOp_LESS
+    afxBool             nextDepthWriteDisabled; // controls whether depth writes are enabled when depthTestEnable is TRUE. Depth writes are always disabled when depthTestEnable is FALSE. // FALSE
+    afxBool             nextDepthBoundsTestEnabled; // controls whether depth bounds testing is enabled. // FALSE
+    afxV2d              nextDepthBounds; // is the minimum depth bound used in the depth bounds test. // [ min, max ]
+    afxBool             nextStencilTestEnabled; // FALSE
+    avxStencilInfo      nextStencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
+    avxStencilInfo      nextStencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
+
+    afxRect             nextScisRects[ZGL_MAX_VIEWPORTS];
+    afxUnit32           nextScisUpdMask;
+    afxRect             nextCurtainRects[ZGL_MAX_VIEWPORTS];
+    afxUnit32           nextCurtainUpdMask;
+
+    avxFormat           nextDsFmt; // is the format of depth/stencil surface this pipeline will be compatible with.
+    avxColorOutput      nextOuts[8];
+    afxMask             nextOutUpdMask;
+    afxReal             nextBlendConstants[4]; // [ 0, 0, 0, 1 ]
+    afxBool             nextLogicOpEnabled; // FALSE
+    avxLogicOp          nextLogicOp; // avxLogicOp_NOP
+
+    // ACTIVE RASTERIZATION STATE
     avxCanvas       canv;
     GLuint          canvGpuHandle;
     afxBool         canvIsDefFbo;
     afxRect         drawArea;
-    afxUnit32        baseLayer;
-    afxUnit32        layerCnt;
-    afxUnit32        colDtCnt;
+    afxBool         drawAreaClipped;
+    afxBool         mustCloseDrawScopeDgbGrp;
+    afxUnit32       baseLayer;
+    afxUnit32       layerCnt;
+    afxUnit32       colDtCnt;
     avxDrawTarget   colDts[ZGL_MAX_COLOR_ATTACHMENTS];
     avxDrawTarget   dsDts[2];
+    afxUnit         invalidDrawBufCnt;
+    GLenum          invalidDrawBufs[10];
 
-    afxBool         rasterizationDisabled; /// controls whether primitives are discarded immediately before the rasterization stage. /// FALSE
-    avxFillMode         fillMode; /// is the triangle rendering mode. /// avxFillMode_SOLID
-    afxReal             lineWidth; /// is the width of rasterized line segments. /// 1.f    
+    afxBool             rasterizationDisabled; // controls whether primitives are discarded immediately before the rasterization stage. // FALSE
+    avxFillMode         fillMode; // is the triangle rendering mode. // avxFillMode_SOLID
+    afxReal             lineWidth; // is the width of rasterized line segments. // 1.f    
 
-    afxBool             depthBiasEnabled; /// controls whether to bias fragment depth values. /// FALSE
-    afxReal             depthBiasSlopeScale; /// is a scalar factor applied to a fragment's slope in depth bias calculations. /// 0.f
-    afxReal             depthBiasConstFactor; /// is a scalar factor controlling the constant depth value added to each fragment. /// 0.f
-    afxReal             depthBiasClamp; /// is the maximum (or minimum) depth bias of a fragment. /// 0.f
+    afxBool             depthBiasEnabled; // controls whether to bias fragment depth values. // FALSE
+    afxReal             depthBiasSlopeScale; // is a scalar factor applied to a fragment's slope in depth bias calculations. // 0.f
+    afxReal             depthBiasConstFactor; // is a scalar factor controlling the constant depth value added to each fragment. // 0.f
+    afxReal             depthBiasClamp; // is the maximum (or minimum) depth bias of a fragment. // 0.f
 
-    afxBool             msEnabled; /// If enabld, multisample rasterization will be used. FALSE
-    afxUnit             sampleLvl; /// is a value specifying the number of samples used in rasterization. /// 0
-    afxMask             sampleMasks[32]; /// an array of sample mask values used in the sample mask test. /// [ 1, ]
-    afxBool             sampleShadingEnabled; /// used to enable Sample Shading. /// FALSE
-    afxReal             minSampleShadingValue; /// specifies a minimum fraction of sample shading if sampleShadingEnable is set to TRUE. /// 0.f
-    afxBool             alphaToCoverageEnabled; /// controls whether a temporary coverage value is generated based on the alpha component of the fragment's first color output. /// FALSE
-    afxBool             alphaToOneEnabled; /// controls whether the alpha component of the fragment's first color output is replaced with one. /// FALSE
+    afxBool             msEnabled; // If enabld, multisample rasterization will be used. FALSE
+    afxUnit             sampleLvl; // is a value specifying the number of samples used in rasterization. // 0
+    afxMask             sampleMasks[32]; // an array of sample mask values used in the sample mask test. // [ 1, ]
+    afxBool             sampleShadingEnabled; // used to enable Sample Shading. // FALSE
+    afxReal             minSampleShadingValue; // specifies a minimum fraction of sample shading if sampleShadingEnable is set to TRUE. // 0.f
+    afxBool             alphaToCoverageEnabled; // controls whether a temporary coverage value is generated based on the alpha component of the fragment's first color output. // FALSE
+    afxBool             alphaToOneEnabled; // controls whether the alpha component of the fragment's first color output is replaced with one. // FALSE
 
-    avxFormat           dsFmt; /// is the format of depth/stencil surface this pipeline will be compatible with.
+    avxFormat           dsFmt; // is the format of depth/stencil surface this pipeline will be compatible with.
 
-    afxBool             depthTestEnabled; /// controls whether depth testing is enabled. /// FALSE
-    avxCompareOp        depthCompareOp; /// is a value specifying the comparison operator to use in the Depth Comparison step of the depth test. /// avxCompareOp_LESS
-    afxBool             depthWriteDisabled; /// controls whether depth writes are enabled when depthTestEnable is TRUE. Depth writes are always disabled when depthTestEnable is FALSE. /// FALSE
-    afxBool             depthBoundsTestEnabled; /// controls whether depth bounds testing is enabled. /// FALSE
-    afxV2d              depthBounds; /// is the minimum depth bound used in the depth bounds test. /// [ min, max ]
-    afxBool             stencilTestEnabled; /// FALSE
-    avxStencilInfo  stencilFront; /// is the configuration values controlling the corresponding parameters of the stencil test.
-    avxStencilInfo  stencilBack; /// is the configuration controlling the corresponding parameters of the stencil test.
+    afxBool             depthTestEnabled; // controls whether depth testing is enabled. // FALSE
+    avxCompareOp        depthCompareOp; // is a value specifying the comparison operator to use in the Depth Comparison step of the depth test. // avxCompareOp_LESS
+    afxBool             depthWriteDisabled; // controls whether depth writes are enabled when depthTestEnable is TRUE. Depth writes are always disabled when depthTestEnable is FALSE. // FALSE
+    afxBool             depthBoundsTestEnabled; // controls whether depth bounds testing is enabled. // FALSE
+    afxV2d              depthBounds; // is the minimum depth bound used in the depth bounds test. // [ min, max ]
+    afxBool             stencilTestEnabled; // FALSE
+    avxStencilInfo  stencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
+    avxStencilInfo  stencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
 
     afxUnit              scisCnt; // must be the same as viewport
     afxRect             scisRects[ZGL_MAX_VIEWPORTS];
@@ -110,33 +172,15 @@ typedef struct zglRasterizerState
     afxMask             outUpdMask;
 
     afxBool             anyBlendEnabled;
-    afxReal             blendConstants[4]; /// [ 0, 0, 0, 1 ]
-    afxBool             logicOpEnabled; /// FALSE
-    avxLogicOp          logicOp; /// avxLogicOp_NOP
-} zglRasterizerState;
+    afxReal             blendConstants[4]; // [ 0, 0, 0, 1 ]
+    afxBool             logicOpEnabled; // FALSE
+    avxLogicOp          logicOp; // avxLogicOp_NOP
 
-
-typedef struct
-{
-    avxDpu                  m;
-    glVmt                   gl;
-    //afxUnit                  exuIdx;
-    //afxUnit                  portId; // exuIdx
-    //afxDrawSystem          activeDsys;
-
-    //afxSize                 numOfFedVertices, numOfFedIndices, numOfFedInstances;
-
-    //afxBool                 running;
-
-    //afxBool         instanced;
-
-    zglXfrmState            activeTs, nextTs;
-    zglRasterizerState      activeRs, nextRs;
 
     avxLigature             activeLiga, nextLiga;
     avxPipeline             activePip, nextPip;
     GLuint                  activePipGpuHandle;
-    avxVertexDecl          activeVin, nextVin;
+    avxVertexInput          activeVin, nextVin;
     GLuint                  activeVinGpuHandle;
     zglVertexInputState     nextVinBindings;
 
@@ -144,21 +188,21 @@ typedef struct
     {
         struct
         {
-            afxBuffer       buf; // The GPUBuffer to bind.
-            afxUnit32        offset; // The offset, in bytes, from the beginning of buffer to the beginning of the range exposed to the shader by the buffer binding.
-            afxUnit32        range; // The size, in bytes, of the buffer binding. If undefined, specifies the range starting at offset and ending at the end of buffer.
-            
+            avxBuffer       buf; // The GPUBuffer to bind.
+            afxUnit32       offset; // The offset, in bytes, from the beginning of buffer to the beginning of the range exposed to the shader by the buffer binding.
+            afxUnit32       range; // The size, in bytes, of the buffer binding. If undefined, specifies the range starting at offset and ending at the end of buffer.
+            afxUnit         bufUniqId;
         };
         struct
         {
             avxSampler      smp;
-            afxRaster       ras;
-            afxUnit          subrasIdx;
+            avxRaster       ras;
+            afxUnit         smpUniqId;
+            afxUnit         rasUniqId;
         };
     }                       activeLs[_ZGL_MAX_LEGO_PER_BIND][_ZGL_MAX_ENTRY_PER_LEGO],
                             nextLs[_ZGL_MAX_LEGO_PER_BIND][_ZGL_MAX_ENTRY_PER_LEGO];
     afxMask                 nextLsUpdMask[_ZGL_MAX_LEGO_PER_BIND];
-
 
     // submission stuff
     afxBool         submissionSuspended;
@@ -176,16 +220,19 @@ typedef struct
 
     GLuint          emptyVao;
     GLuint          fboOpSrc;
-    afxRaster       fboOpSrcAnnex;
+    avxRaster       fboOpSrcAnnex;
     GLuint          fboOpDst;
-    afxRaster       fboOpDstAnnex;
+    avxRaster       fboOpDstAnnex;
 
     GLuint          pushConstUbo;
-    afxUnit          pushConstUboIdx;
+    afxUnit         pushConstUboIdx;
     afxByte*        pushConstMappedMem;
+    afxBool         shouldPushConsts;
+    afxUnit         shouldPushConstBase;
+    afxUnit         shouldPushConstRange;
 
     GLuint          timeElapsedQueryIdActive;
-} zglDpu;
+};
 
 #if 0
 struct _afxDdevIdd
@@ -205,9 +252,10 @@ struct _afxDdevIdd
 AFX_OBJECT(afxDrawDevice)
 {
     AFX_OBJ(_avxDrawDevice) m;
-    WNDCLASSEX      wndClss;
+    //WNDCLASSEX      wndClss;
     afxModule       oglDll;
     afxUnit         oglVerMajor, oglVerMinor, oglVerPatch;
+    DISPLAY_DEVICEA dd;
 
     afxModule       d3d9Dll;
     HRESULT(WINAPI*Direct3DCreate9Ex)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
@@ -236,6 +284,11 @@ AFX_OBJECT(afxDrawBridge)
     afxClassExtension canvExt;
 };
 
+AFX_OBJECT(afxDrawQueue)
+{
+    AFX_OBJ(_avxDrawQueue) m;
+};
+
 AFX_OBJECT(afxDrawSystem)
 {
     AFX_OBJECT(_avxDrawSystem) m;
@@ -247,17 +300,38 @@ AFX_OBJECT(afxDrawSystem)
 
     avxPipeline fntRazr;
     avxSampler  fntSamp;
-    afxRaster   fntRas;
-    afxBuffer   fntDataBuf;
-    afxBuffer   fntUnifBuf;
+    avxRaster   fntRas;
+    avxBuffer   fntDataBuf;
+    avxBuffer   fntUnifBuf;
 
-    //afxBuffer tristrippedQuad2dPosBuf;
+    //avxBuffer tristrippedQuad2dPosBuf;
     HWND                    hPrimeWnd;
     HDC                     hPrimeDC;
     int                     primeDcPixFmt;
     PIXELFORMATDESCRIPTOR   primeDcPfd;
     HGLRC                   hPrimeRC;
+    int                     glVerMaj;
+    int                     glVerMin;
+    afxBool                 robustCtx;
     glVmt                   gl;
+
+    // not atomic because it will be only incread with the class locked.
+    afxUnit rasUniqueId;
+    afxUnit smpUniqueId;
+    afxUnit bufUniqueId;
+    afxUnit pipUniqueId;
+    afxUnit shdUniqueId;
+    afxUnit vdecUniqueId;
+    afxUnit canvUniqueId;
+    afxUnit fencUniqueId;
+    afxUnit qrypUniqueId;
+};
+
+AFX_OBJECT(afxDisplay)
+{
+    AFX_OBJECT(_avxDisplay) m;
+    DISPLAY_DEVICEA ddinfo;
+    DISPLAY_DEVICEA ddminfo;
 };
 
 AFX_OBJECT(afxDrawOutput)
@@ -271,8 +345,12 @@ AFX_OBJECT(afxDrawOutput)
     int                     dcPixFmt;
     PIXELFORMATDESCRIPTOR   dcPfd;
     HGLRC                   hSwapRC; // only swaps it. This is needed because hGLRC are strictly bound to a pixel format.
-    GLuint*                 swapFbo;
-    afxBool8*               swapFboReady;
+    glVmt const*            gl;
+    struct
+    {
+        GLuint      swapFbo;
+        afxBool8    swapFboReady;
+    } *gdiGlSwap;
 
     struct
     {
@@ -324,7 +402,14 @@ ZGL afxError _ZglOpenDexuCb(afxDrawDevice ddev, afxDrawBridge dexu, afxDrawBridg
 //ZGL afxBool _ZglDqueVmtSubmitCb(afxDrawSystem dsys, afxDrawBridge dexu, afxDrawSubmissionSpecification const *spec, afxUnit *submNo);
 ZGL afxBool _DexuProcCb(afxDrawBridge dexu, afxThread thr);
 
+ZGL afxError _DpuWork_SyncMaps(zglDpu* dpu, _avxIoReqPacket* subm);
+ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm);
+
 ZGL afxClassConfig const _ZglDsysMgrCfg;
+
+ZGL afxError _ZglViddDtorCb(afxDisplay vidd);
+ZGL afxError _ZglViddCtorCb(afxDisplay vidd, void** args, afxUnit invokeNo);
+ZGL afxResult _ZglViddIoctrlCb(afxDisplay vidd, afxUnit reqCode, va_list va);
 
 ZGL afxError _ZglDinCtorCb(afxDrawInput din, void** args, afxUnit invokeNo);
 ZGL afxError _ZglDoutCtorCb(afxDrawOutput dout, void** args, afxUnit invokeNo);
@@ -336,15 +421,17 @@ ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo);
 ZGL afxError _ZglDexuDtorCb(afxDrawBridge dexu);
 ZGL afxError _ZglDexuCtorCb(afxDrawBridge dexu, void** args, afxUnit invokeNo);
 
-ZGL afxError _ZglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
-ZGL afxError _ZglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl);
+ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
+ZGL afxError _ZglCreateHwContext(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool robust, HGLRC* phGLRC, glVmt* gl, afxBool echo);
 ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* ique);
 ZGL void    _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 
 
 _ZGL afxError _ZglSemCtorCb(afxSemaphore sem, void** args, afxUnit invokeNo);
 _ZGL afxError _ZglSemDtorCb(afxSemaphore sem);
-_ZGL afxError _ZglFencCtorCb(afxFence fenc, void** args, afxUnit invokeNo);
-_ZGL afxError _ZglFencDtorCb(afxFence fenc);
+_ZGL afxError _ZglFencCtorCb(avxFence fenc, void** args, afxUnit invokeNo);
+_ZGL afxError _ZglFencDtorCb(avxFence fenc);
+ZGL afxError _ZglSignalFence(zglDpu* dpu, avxFence fenc);
+ZGL afxError _ZglResetFence(zglDpu* dpu, avxFence fenc);
 
 #endif//ZGL_DEVICES_H

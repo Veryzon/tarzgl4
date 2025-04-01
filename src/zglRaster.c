@@ -18,194 +18,11 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-_ZGL void _ZglCopyTexSubImage(zglDpu* dpu, GLenum glDstTarget, GLenum glSrcTarget, GLuint glSrcHandle, afxUnit opCnt, afxRasterCopy const ops[])
-{
-    afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    afxBool srcIs3d = FALSE;
-
-    if (glSrcTarget == GL_TEXTURE_3D)
-        srcIs3d = TRUE;
-
-    gl->BindFramebuffer(GL_READ_FRAMEBUFFER, dpu->fboOpSrc);
-
-    for (afxUnit i = 0; i < opCnt; i++)
-    {
-        afxRasterCopy const* op = &ops[i];
-        afxRasterRegion const* srcRgn = &op->src;
-        //afxWhd const dstOrigin = op->dstOrigin;
-
-        _ZglBindFboAttachment(gl, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glSrcTarget, glSrcHandle, op->src.lodIdx, !srcIs3d ? op->src.origin.z : 0, srcIs3d ? op->src.origin.z : 0);
-        gl->ReadBuffer(GL_COLOR_ATTACHMENT0);
-
-        switch (glDstTarget)
-        {
-        case GL_TEXTURE_2D:
-        {
-            gl->CopyTexSubImage2D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            break;
-        }
-        case GL_TEXTURE_1D_ARRAY:
-        {
-            for (afxUnit i = op->src.extent.d; i < op->src.extent.d; i++)
-            {
-                gl->CopyTexSubImage2D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, i, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            }
-            break;
-        }
-        case GL_TEXTURE_1D:
-        {
-            gl->CopyTexSubImage1D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->src.origin.x, op->src.origin.y, op->src.extent.w);
-            break;
-        }
-        case GL_TEXTURE_3D:
-        {
-            for (afxUnit i = op->dstOrigin.z; i < op->src.extent.d; i++)
-            {
-                gl->CopyTexSubImage3D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, i, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            }
-            break;
-        }
-        case GL_TEXTURE_2D_ARRAY:
-        {
-            for (afxUnit i = op->dstOrigin.z; i < op->src.extent.d; i++)
-            {
-                gl->CopyTexSubImage3D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, i, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            }
-            break;
-        }
-        case GL_TEXTURE_CUBE_MAP_ARRAY:
-        {
-            for (afxUnit i = op->dstOrigin.z; i < op->src.extent.d; i++)
-            {
-                gl->CopyTexSubImage3D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, i, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            }
-            break;
-        }
-        case GL_TEXTURE_CUBE_MAP:
-        {
-            for (afxUnit i = op->dstOrigin.z; i < op->src.extent.d; i++)
-            {
-                gl->CopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-            }
-            break;
-        }
-        case GL_TEXTURE_RECTANGLE:
-        {
-            AFX_ASSERT(op->dstLodIdx == 0);
-            gl->CopyTexSubImage2D(glDstTarget, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.h); _ZglThrowErrorOccuried();
-        };
-        default:
-            AfxThrowError();
-            break;
-        }
-    }
-}
-
-_ZGL afxError _ZglTexSubImage(glVmt const* gl, GLenum glTarget, afxRasterRegion const* rgn, GLenum glFmt, GLenum glType, afxAddress const src)
-{
-    afxError err = NIL;
-
-    switch (glTarget)
-    {
-    case GL_TEXTURE_1D_ARRAY:
-    {
-        gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_2D:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-    {
-        gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_CUBE_MAP:
-    {
-        gl->TexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_1D:
-    {
-        gl->TexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_3D:
-    {
-        gl->TexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_2D_ARRAY:
-    {
-        gl->TexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, glType, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    default:
-    {
-        AfxThrowError();
-        break;
-    }
-    }
-    return err;
-}
-
-_ZGL afxError _ZglCompressedTexSubImage(glVmt const* gl, GLenum glTarget, afxRasterRegion const* rgn, GLenum glFmt, GLenum glType, afxUnit compressedSiz, afxAddress const src)
-{
-    afxError err = NIL;
-
-    switch (glTarget)
-    {
-    case GL_TEXTURE_1D_ARRAY:
-    {
-        gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_2D:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-    case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
-    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-    {
-        gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_CUBE_MAP:
-    {
-        gl->CompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_1D:
-    {
-        gl->CompressedTexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_3D:
-    {
-        gl->CompressedTexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    case GL_TEXTURE_2D_ARRAY:
-    {
-        gl->CompressedTexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, (void const*)src); _ZglThrowErrorOccuried();
-        break;
-    }
-    default:
-    {
-        AfxThrowError();
-        break;
-    }
-    }
-    return err;
-}
+#define UNBIND_GL_TEX TRUE
+#define RENDERBUFFER_ENABLED TRUE
 
 # if 0
-_ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, afxRaster ras) // ras must be bound
+_ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, avxRaster ras) // ras must be bound
 {
     afxError err = AFX_ERR_NONE;
 
@@ -215,17 +32,17 @@ _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, afxRaster ras
     //afxWhd extent;
     //AfxImage.GetExtent(&ras->img, whd);
 
-    //afxBool const isSurface = AfxTestRasterFlags(ras, afxRasterUsage_DRAW);
-    afxBool const isCubemap = AfxTestRasterFlags(ras, afxRasterFlag_CUBEMAP);
+    //afxBool const isSurface = AvxTestRasterFlags(ras, avxRasterUsage_DRAW);
+    afxBool const isCubemap = AvxTestRasterFlags(ras, avxRasterFlag_CUBEMAP);
     
     afxUnit const lvlCnt = AfxCountRasterMipmaps(ras);
     AFX_ASSERT(lvlCnt);
 
     afxPixelLayout pfd;
-    AfxDescribePixelFormat(ras->m.fmt, &pfd);
+    AvxDescribeFormat(ras->m.fmt, &pfd);
     GLint gpuUnpackAlign = 1;// (8 >= pfd.bpp ? 1 : ((16 >= pfd.bpp ? 2 : (pfd.bpp <= 32 ? 4 : (pfd.bpp <= 32))));
 
-    afxRasterRegion rgn;
+    avxRasterRegion rgn;
     afxUnit rgnSize, rowSiz;
     void const* data;
 
@@ -253,7 +70,7 @@ _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, afxRaster ras
                 data = NIL;
 
                 //if (!isSurface)
-                    data = AfxMapRaster(ras, &rgn, afxRasterAccess_R, &rgnSize, &rowSiz);
+                    data = AfxMapRaster(ras, &rgn, avxRasterAccess_R, &rgnSize, &rowSiz);
 
                 AFX_ASSERT(data);
                 gl->PixelStorei(GL_UNPACK_ALIGNMENT, gpuUnpackAlign);
@@ -284,7 +101,7 @@ _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, afxRaster ras
                 data = NIL;
 
                 //if (!isSurface)
-                data = AfxMapRaster(ras, &rgn, afxRasterAccess_R, &rgnSize, &rowSiz);
+                data = AfxMapRaster(ras, &rgn, avxRasterAccess_R, &rgnSize, &rowSiz);
 
                 AFX_ASSERT(data);
                 gl->PixelStorei(GL_UNPACK_ALIGNMENT, gpuUnpackAlign);
@@ -301,49 +118,142 @@ _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, afxRaster ras
 }
 #endif
 
-_ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, afxRaster ras)
+_ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster ras, afxBool keepBound)
 {
     //AfxEntry("img=%p", img);
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
     
     if (!ras)
     {
-        gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
-        gl->BindTexture(GL_TEXTURE_2D, 0); _ZglThrowErrorOccuried();
+        if (gl->BindTextureUnit)
+        {
+            gl->BindTextureUnit(glUnit, NIL); _ZglThrowErrorOccuried();
+        }
+        else
+        {
+            gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
+            gl->BindTexture(GL_TEXTURE_2D, NIL); _ZglThrowErrorOccuried();
+        }
     }
     else
     {
         AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
         zglUpdateFlags devUpdReq = (ras->updFlags & ZGL_UPD_FLAG_DEVICE);
-
         GLuint glHandle = ras->glHandle;
-        GLenum glTarget = ras->glTarget;            
         afxBool bound = FALSE;
 
-        _ZglThrowErrorOccuried();
-        gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
-
-        if ((ras->m.usage & afxRasterUsage_ALL) == afxRasterUsage_DRAW)
+#ifdef RENDERBUFFER_ENABLED
+        if (ras->glTarget == GL_RENDERBUFFER)
         {
-            if ((!ras->glRboHandle) || (devUpdReq & ZGL_UPD_FLAG_DEVICE_INST))
+            if (glHandle && !(devUpdReq & ZGL_UPD_FLAG_DEVICE_INST))
             {
-                if (ras->glRboHandle)
+                if (keepBound)
                 {
-                    gl->DeleteRenderbuffers(1, &ras->glRboHandle); _ZglThrowErrorOccuried();
-                    ras->glRboHandle = NIL;
+                    gl->BindRenderbuffer(GL_RENDERBUFFER, glHandle); _ZglThrowErrorOccuried();
                 }
-                gl->GenRenderbuffers(1, &ras->glRboHandle); _ZglThrowErrorOccuried();
-                gl->BindRenderbuffer(GL_RENDERBUFFER, ras->glRboHandle); _ZglThrowErrorOccuried();
-                AfxLogEcho("GPU RBO %p ready. %x, %x, [%u,%u,%u]", ras, ras->glTarget, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d);
+            }
+            else
+            {
+                if (glHandle)
+                {
+                    gl->DeleteRenderbuffers(1, &glHandle); _ZglThrowErrorOccuried();
+                    ras->glHandle = NIL;
+                }
+
+                afxUnit samples = (ras->m.lodCnt > 1) ? ras->m.lodCnt : 0;
+
+                if ((!keepBound) && 
+                    gl->CreateRenderbuffers && 
+                    (((samples == 0) && gl->NamedRenderbufferStorage) ||
+                    (samples && gl->NamedRenderbufferStorageMultisample)))
+                {
+                    gl->CreateRenderbuffers(1, &glHandle); _ZglThrowErrorOccuried();
+
+                    if (ras->m.tag.len)
+                    {
+                        gl->ObjectLabel(GL_RENDERBUFFER, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                    }
+
+                    if (1 >= samples)
+                    {
+                        gl->NamedRenderbufferStorage(glHandle, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->NamedRenderbufferStorageMultisample(glHandle, samples, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h); _ZglThrowErrorOccuried();
+                    }
+                }
+                else
+                {
+                    gl->GenRenderbuffers(1, &glHandle); _ZglThrowErrorOccuried();
+                    gl->BindRenderbuffer(GL_RENDERBUFFER, glHandle); _ZglThrowErrorOccuried();
+                    bound = TRUE;
+
+                    if (ras->m.tag.len)
+                    {
+                        gl->ObjectLabel(GL_RENDERBUFFER, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                    }
+                    if (1 >= samples)
+                    {
+                        gl->RenderbufferStorage(GL_RENDERBUFFER, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->RenderbufferStorageMultisample(GL_RENDERBUFFER, samples, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h); _ZglThrowErrorOccuried();
+                    }
+                }
 
                 if (!err)
+                {
+                    ras->glHandle = glHandle;
                     ras->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
+                    //AfxReportMessage("GPU RBO %p ready. %x, %x, [%u,%u,%u]", ras, ras->glTarget, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d);
+                }
+
+                if (!keepBound)
+                {
+                    if (bound)
+                    {
+                        // if bound and is to be kept bound, unbind it.
+                        gl->BindRenderbuffer(GL_RENDERBUFFER, 0); _ZglThrowErrorOccuried();
+                        bound = FALSE;
+                    }
+                }
+                else
+                {
+                    if (!bound)
+                    {
+                        // if not bound and is to be kept bound, bind it.
+                        gl->BindRenderbuffer(GL_RENDERBUFFER, glHandle); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
+                }
             }
         }
         else
+#endif
         {
-            if ((!glHandle && !ras->glRboHandle) || (devUpdReq & ZGL_UPD_FLAG_DEVICE_INST))
+            GLuint glHandle = ras->glHandle;
+            GLenum glTarget = ras->glTarget;
+            afxBool bound = FALSE;
+
+            if (glHandle && !(devUpdReq & ZGL_UPD_FLAG_DEVICE_INST))
+            {
+                if (keepBound)
+                {
+                    if (gl->BindTextureUnit)
+                    {
+                        gl->BindTextureUnit(glUnit, glHandle); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                    }
+                }
+            }
+            else
             {
                 if (glHandle)
                 {
@@ -353,99 +263,271 @@ _ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, afxRaster ras)
                     glHandle = NIL;
                 }
 
-                gl->GenTextures(1, &(glHandle)); _ZglThrowErrorOccuried();
-                gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
-                AFX_ASSERT(gl->IsTexture(glHandle));
-                bound = TRUE;
-                ras->glHandle = glHandle;
-
-                //gl->TextureParameteri(glHandle, GL_TEXTURE_TILING_EXT, GL_OPTIMAL_TILING_EXT); _ZglThrowErrorOccuried();
-
-                GLenum glIntFmt = ras->glIntFmt;
+                afxUnit width = ras->m.extent.w;
+                afxUnit height = ras->m.extent.h;
+                afxUnit depth = ras->m.extent.d;
+                afxUnit levelsOrSamples = ras->m.lodCnt;
+                GLboolean fixedsamplelocations = GL_FALSE;
 
                 switch (glTarget)
                 {
-                case GL_TEXTURE_1D:
-                case GL_PROXY_TEXTURE_1D:
-                {
-                    AFX_ASSERT(gl->TexStorage1D);
-                    gl->TexStorage1D(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w); _ZglThrowErrorOccuried();
-                    break;
-                }
                 case GL_TEXTURE_2D:
-                case GL_TEXTURE_RECTANGLE:
                 case GL_TEXTURE_CUBE_MAP:
-                case GL_PROXY_TEXTURE_2D:
-                case GL_PROXY_TEXTURE_RECTANGLE:
-                case GL_PROXY_TEXTURE_CUBE_MAP:
                 {
-                    AFX_ASSERT(gl->TexStorage2D);
-                    gl->TexStorage2D(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.h); _ZglThrowErrorOccuried();
-                    break;
-                }
-                case GL_TEXTURE_1D_ARRAY:
-                case GL_PROXY_TEXTURE_1D_ARRAY:
-                {
-                    AFX_ASSERT(gl->TexStorage2D);
-                    gl->TexStorage2D(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.d); _ZglThrowErrorOccuried();
-                    break;
-                }
-                case GL_TEXTURE_3D:
-                {
-                    AFX_ASSERT(gl->TexStorage3D);
-                    gl->TexStorage3D(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d); _ZglThrowErrorOccuried();
+                    AFX_ASSERT((1 >= depth) || (glTarget == GL_TEXTURE_CUBE_MAP));
+
+                    if (gl->CreateTextures && gl->TextureStorage2D)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage2D(glHandle, levelsOrSamples, ras->glIntFmt, width, height); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage2D(glTarget, levelsOrSamples, ras->glIntFmt, width, height); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
                     break;
                 }
                 case GL_TEXTURE_2D_ARRAY:
+                case GL_TEXTURE_CUBE_MAP_ARRAY:
+                case GL_TEXTURE_3D:
                 {
-                    AFX_ASSERT(gl->TexStorage3D);
-                    gl->TexStorage3D(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d); _ZglThrowErrorOccuried();
+                    if (gl->CreateTextures && gl->TextureStorage3D)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage3D(glHandle, levelsOrSamples, ras->glIntFmt, width, height, depth); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage3D(glTarget, levelsOrSamples, ras->glIntFmt, width, height, depth); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
+                    break;
+                }
+                case GL_TEXTURE_1D_ARRAY:
+                {
+                    AFX_ASSERT(1 >= height);
+
+                    if (gl->CreateTextures && gl->TextureStorage2D)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage2D(glHandle, levelsOrSamples, ras->glIntFmt, width, depth); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage2D(glTarget, levelsOrSamples, ras->glIntFmt, width, depth); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
+                    break;
+                }
+                case GL_TEXTURE_1D:
+                {
+                    AFX_ASSERT(1 >= height);
+                    AFX_ASSERT(1 >= depth);
+
+                    if (gl->CreateTextures && gl->TextureStorage1D)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage1D(glHandle, levelsOrSamples, ras->glIntFmt, width); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage1D(glTarget, levelsOrSamples, ras->glIntFmt, width); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
                     break;
                 }
                 case GL_TEXTURE_2D_MULTISAMPLE:
-                case GL_PROXY_TEXTURE_2D_MULTISAMPLE:
                 {
-                    AFX_ASSERT(gl->TexStorage2DMultisample);
-                    gl->TexStorage2DMultisample(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.h, GL_FALSE); _ZglThrowErrorOccuried();
+                    AFX_ASSERT(1 >= depth);
+
+                    if (gl->CreateTextures && gl->TextureStorage2DMultisample)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage2DMultisample(glHandle, levelsOrSamples, ras->glIntFmt, width, height, fixedsamplelocations); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage2DMultisample(glTarget, levelsOrSamples, ras->glIntFmt, width, height, fixedsamplelocations); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
                     break;
                 }
                 case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-                case GL_PROXY_TEXTURE_2D_MULTISAMPLE_ARRAY:
                 {
-                    AFX_ASSERT(gl->TexStorage3DMultisample);
-                    gl->TexStorage3DMultisample(glTarget, ras->m.lodCnt, glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d, GL_FALSE); _ZglThrowErrorOccuried();
+                    if (gl->CreateTextures && gl->TextureStorage3DMultisample)
+                    {
+                        gl->CreateTextures(glTarget, 1, &glHandle); _ZglThrowErrorOccuried();
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TextureStorage3DMultisample(glHandle, levelsOrSamples, ras->glIntFmt, width, height, depth, fixedsamplelocations); _ZglThrowErrorOccuried();
+                    }
+                    else
+                    {
+                        gl->GenTextures(1, &glHandle); _ZglThrowErrorOccuried();
+                        gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
+                        gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(gl->IsTexture(glHandle));
+
+                        if (ras->m.tag.len)
+                        {
+                            gl->ObjectLabel(GL_TEXTURE, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                        }
+                        gl->TexStorage3DMultisample(glTarget, levelsOrSamples, ras->glIntFmt, width, height, depth, fixedsamplelocations); _ZglThrowErrorOccuried();
+                        bound = TRUE;
+                    }
                     break;
                 }
                 default: AfxThrowError(); break;
                 }
-                AfxLogEcho("GPU RO %p ready. %x, %x, [%u,%u,%u]", ras, glTarget, glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d);
 
                 if (!err)
+                {
                     ras->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
-            }
-            else
-            {
-                gl->BindTexture(glTarget, glHandle); _ZglThrowErrorOccuried();
+                    ras->glHandle = glHandle;
+                    //AfxReportMessage("GPU RAS %p ready. %x, %x, [%u,%u,%u]", ras, glTarget, ras->glIntFmt, ras->m.extent.w, ras->m.extent.h, ras->m.extent.d);
+                }
+
+                if (keepBound)
+                {
+                    if (!bound)
+                    {
+                        if (gl->BindTextureUnit)
+                        {
+                            gl->BindTextureUnit(glUnit, glHandle); _ZglThrowErrorOccuried();
+                        }
+                        else
+                        {
+                            gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
+                            gl->BindTexture(ras->glTarget, glHandle); _ZglThrowErrorOccuried();
+                        }
+                    }
+                }
+                else
+                {
+                    if (bound)
+                    {
+                        if (gl->BindTextureUnit)
+                        {
+                            gl->BindTextureUnit(glUnit, 0); _ZglThrowErrorOccuried();
+                        }
+                        else
+                        {
+                            gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
+                            gl->BindTexture(ras->glTarget, 0); _ZglThrowErrorOccuried();
+                        }
+                        bound = FALSE;
+                    }
+                }
             }
         }
     }
     return err;
 }
 
-_ZGL afxError _DpuUnpackRasFromMem(zglDpu* dpu, afxRaster ras, afxByte const* src, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError _DpuUpdateRaster(zglDpu* dpu, avxRaster ras, afxByte const* src, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, NIL);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    glVmt const* gl = dpu->gl;
+    
+
+    GLenum glTarget = ras->glTarget;
+    GLenum glFmt = ras->glFmt;
+    GLenum glType = ras->glType;
+
+    afxBool rasSynced = FALSE;
+    afxBool rasBound = FALSE;
+
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, NIL, TRUE); // KEEP IT HERE?
+    //DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+    rasSynced = TRUE;
+
+    avxFormatDescription pfd;
+    AvxDescribeFormats(1, &ras->m.fmt, &pfd);
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
+        avxRasterRegion const* rgn = &op->rgn;
 
         // GL_UNPACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
-        afxUnit rowLen = op->rowStride ? op->rowStride / (op->rowStride / op->rgn.extent.w) : 0;
+        afxUnit rowLen = 0;// op->rowStride ? op->rowStride / (op->rowStride / op->rgn.extent.w) : 0;
+
+        rowLen = op->rowStride ? op->rowStride / pfd.stride : 0;
 
         if (rowLen == op->rgn.extent.w)
             rowLen = 0; // zero it to let the implementation handling with default behavior.
@@ -453,33 +535,316 @@ _ZGL afxError _DpuUnpackRasFromMem(zglDpu* dpu, afxRaster ras, afxByte const* sr
         gl->PixelStorei(GL_UNPACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
-        
+
         if (!AfxIsPixelFormatCompressed(ras->m.fmt))
         {
-            if (_ZglTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, (afxAddress const)&(src[op->offset])))
-                AfxThrowError();
+            switch (glTarget)
+            {
+            case GL_TEXTURE_2D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->TextureSubImage2D)
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_2D_ARRAY:
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
+            case GL_TEXTURE_3D:
+            {
+                if (gl->TextureSubImage3D)
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D_ARRAY:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+
+                if (gl->TextureSubImage2D)
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->TextureSubImage1D)
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage1D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->extent.w, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, ras->glFmt, ras->glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_CUBE_MAP:
+            {
+                if (gl->TextureSubImage3D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->TextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z + i + (glTarget - GL_TEXTURE_CUBE_MAP_POSITIVE_X), rgn->extent.w, rgn->extent.h, 1, glFmt, glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                    }
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->TexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                    }
+                }
+                break;
+            }
+            default: AfxThrowError(); break;
+            }
         }
         else
         {
-            afxUnit compSiz = AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
-            
-            if (_ZglCompressedTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, compSiz, (afxAddress const)&(src[op->offset])))
-                AfxThrowError();
+            afxUnit compressedSiz = AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
+
+            switch (glTarget)
+            {
+            case GL_TEXTURE_2D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, glTarget, ras->glHandle);
+                    gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_2D_ARRAY:
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
+            case GL_TEXTURE_3D:
+            {
+                if (gl->CompressedTextureSubImage3D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, glTarget, ras->glHandle);
+                    gl->CompressedTexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D_ARRAY:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, glTarget, ras->glHandle);
+                    gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->CompressedTextureSubImage1D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage1D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, glTarget, ras->glHandle);
+                    gl->CompressedTexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_CUBE_MAP:
+            {
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->CompressedTextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z + i, rgn->extent.w, rgn->extent.h, 1, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                    }
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->CompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, &src[op->offset]); _ZglThrowErrorOccuried();
+                    }
+                }
+                break;
+            }
+            default: AfxThrowError(); break;
+            }
         }
     }
+
+#if UNBIND_GL_TEX
+    if (rasBound)
+    {
+        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, NIL, TRUE);
+    }
+#endif
     return err;
 }
 
-_ZGL afxError _DpuPackRasToMem(zglDpu* dpu, afxRaster ras, afxByte* dst, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError _DpuDumpRaster(zglDpu* dpu, avxRaster ras, afxByte* dst, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    //DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, NIL);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    glVmt const* gl = dpu->gl;
+    
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, NIL, TRUE);
+    //DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
+
+    GLenum glTarget = ras->glTarget;
+
+    afxBool rasSynced = FALSE;
+    afxBool rasBound = FALSE;
+    afxBool pixStoreChanged = FALSE;
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
+        avxRasterRegion const* rgn = &op->rgn;
 
         // GL_PACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
@@ -494,54 +859,171 @@ _ZGL afxError _DpuPackRasToMem(zglDpu* dpu, afxRaster ras, afxByte* dst, afxUnit
         gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
-#if 0
-        afxBool is3d = AfxTestRasterFlags(ras, afxRasterFlag_3D);
-
-        gl->BindFramebuffer(GL_READ_FRAMEBUFFER, dpu->fboOpSrc); _ZglThrowErrorOccuried();
-        
-        if (_ZglBindFboAttachment(&dpu->gl, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ras->glTarget, ras->glHandle, op->rgn.lodIdx, is3d ? 0 : op->rgn.origin.z, is3d ? op->rgn.origin.z : 0))
-            AfxThrowError();
-
-        gl->ReadBuffer(GL_COLOR_ATTACHMENT0); _ZglThrowErrorOccuried();
-        gl->ReadPixels(op->rgn.origin.x, op->rgn.origin.y, op->rgn.extent.w, op->rgn.extent.h, ras->glFmt, ras->glType, NIL); _ZglThrowErrorOccuried();
-#endif
-        gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
-        gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
-        gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
-
         if (AfxIsPixelFormatCompressed(ras->m.fmt))
         {
-            // pack into PBO
-            gl->GetCompressedTexImage(ras->glTarget, op->rgn.lodIdx, dst); _ZglThrowErrorOccuried();
+            if (gl->GetCompressedTextureSubImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->GetCompressedTextureSubImage(ras->glHandle, op->rgn.lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, bufSiz, &dst[op->offset]); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetnCompressedTexImage)
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, rgn->origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, rgn->origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, rgn->origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, rgn->extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rgn->extent.h); _ZglThrowErrorOccuried();
+                gl->GetnCompressedTexImage(glTarget, op->rgn.lodIdx, bufSiz, &dst[op->offset]); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, rgn->origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, rgn->origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, rgn->origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, rgn->extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rgn->extent.h); _ZglThrowErrorOccuried();
+                gl->GetCompressedTexImage(glTarget, op->rgn.lodIdx, &dst[op->offset]); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
         }
         else
         {
-            // pack into PBO
-            gl->GetTexImage(ras->glTarget, op->rgn.lodIdx, ras->glFmt, ras->glType, dst); _ZglThrowErrorOccuried();
+            if (gl->GetTextureSubImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->GetTextureSubImage(ras->glHandle, op->rgn.lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, bufSiz, &dst[op->offset]); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetTextureImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, rgn->origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, rgn->origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, rgn->origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, rgn->extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rgn->extent.h); _ZglThrowErrorOccuried();
+                gl->GetTextureImage(ras->glHandle, rgn->lodIdx, ras->glFmt, ras->glType, bufSiz, &dst[op->offset]); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetnTexImage)
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, rgn->origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, rgn->origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, rgn->origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, rgn->extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rgn->extent.h); _ZglThrowErrorOccuried();
+                gl->GetnTexImage(glTarget, rgn->lodIdx, ras->glFmt, ras->glType, bufSiz, &dst[op->offset]); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, rgn->origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, rgn->origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, rgn->origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, rgn->extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rgn->extent.h); _ZglThrowErrorOccuried();
+                gl->GetTexImage(glTarget, rgn->lodIdx, ras->glFmt, ras->glType, &dst[op->offset]); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
         }
     }
 
-    // Restore pixel pack settings to avoid troubles.
-    gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
-    gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
-    gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+#if UNBIND_GL_TEX
+    if (rasBound)
+    {
+        DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
+    }
+#endif
     return err;
 }
 
-_ZGL afxError _DpuUnpackRasFromBuf(zglDpu* dpu, afxRaster ras, afxBuffer buf, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError DpuUnpackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, buf);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    glVmt const* gl = dpu->gl;
+
+    GLenum glTarget = ras->glTarget;
+    GLenum glType = ras->glType;
+    GLenum glFmt = ras->glFmt;
+
+    afxBool rasSynced = FALSE;
+    afxBool bufSynced = FALSE;
+    afxBool rasBound = FALSE;
+    afxBool bufBound = FALSE;
+
+    //DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE);
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, buf, TRUE);
+    bufBound = TRUE; // required for all ops.
+
+    avxFormatDescription pfd;
+    AvxDescribeFormats(1, &ras->m.fmt, &pfd);
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
+        avxRasterRegion const* rgn = &op->rgn;
 
         // GL_UNPACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
-        afxUnit rowLen = op->rowStride ? op->rowStride / (op->rowStride / op->rgn.extent.w) : 0;
+        afxUnit rowLen = 0;// op->rowStride ? op->rowStride / (op->rowStride / op->rgn.extent.w) : 0;
+
+        rowLen = op->rowStride ? op->rowStride / pfd.stride : 0;
 
         if (rowLen == op->rgn.extent.w)
             rowLen = 0; // zero it to let the implementation handling with default behavior.
@@ -550,32 +1032,308 @@ _ZGL afxError _DpuUnpackRasFromBuf(zglDpu* dpu, afxRaster ras, afxBuffer buf, af
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
+        // load from PBO
+
         if (!AfxIsPixelFormatCompressed(ras->m.fmt))
         {
-            if (_ZglTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, (afxAddress const)op->offset))
-                AfxThrowError();
+            switch (glTarget)
+            {
+            case GL_TEXTURE_2D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->TextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_2D_ARRAY:
+            case GL_TEXTURE_3D:
+            {
+                if (gl->TextureSubImage3D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D_ARRAY:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+
+                if (gl->TextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.z, rgn->extent.w, rgn->extent.d, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D:
+            {
+                AFX_ASSERT(1 >= rgn->extent.h);
+                AFX_ASSERT(1 >= rgn->extent.d);
+
+                if (gl->TextureSubImage1D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage1D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->extent.w, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->TexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_CUBE_MAP:
+            {
+                if (gl->TextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->TextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->TexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, (void const*)op->offset); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(1 >= rgn->extent.d);
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+            }
         }
         else
         {
-            afxUnit compSiz = AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
+            afxUnit compressedSiz = AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
             
-            if (_ZglCompressedTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, compSiz, (afxAddress const)op->offset))
-                AfxThrowError();
+            switch (glTarget)
+            {
+            case GL_TEXTURE_2D:
+            {
+                AFX_ASSERT(1 >= op->rgn.extent.d);
+
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_2D_ARRAY:
+            case GL_TEXTURE_3D:
+            {
+                if (gl->CompressedTextureSubImage3D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->CompressedTexSubImage3D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D_ARRAY:
+            {
+                AFX_ASSERT(1 >= op->rgn.extent.h);
+
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->CompressedTexSubImage2D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_1D:
+            {
+                AFX_ASSERT(1 >= op->rgn.extent.h);
+                AFX_ASSERT(1 >= op->rgn.extent.d);
+
+                if (gl->CompressedTextureSubImage1D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage1D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    gl->CompressedTexSubImage1D(glTarget, rgn->lodIdx, rgn->origin.x, rgn->extent.w, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                break;
+            }
+            case GL_TEXTURE_CUBE_MAP:
+            {
+                if (gl->CompressedTextureSubImage2D)
+                {
+                    if (!rasSynced)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
+                        rasSynced = TRUE;
+                    }
+                    gl->CompressedTextureSubImage2D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    if (!rasBound)
+                    {
+                        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE); // bind
+                        rasSynced = TRUE;
+                        rasBound = TRUE;
+                    }
+                    for (afxUnit i = 0; i < rgn->extent.d; i++)
+                    {
+                        gl->CompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)op->offset); _ZglThrowErrorOccuried();
+                        AFX_ASSERT(1 >= op->rgn.extent.d);
+                    }
+                }
+                break;
+            }
+            default: AfxThrowError(); break;
+            }
         }
     }
+#if UNBIND_GL_TEX
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, NIL, TRUE);
+    if (rasBound)
+    {
+        DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, NIL, TRUE);
+    }
+#endif
     return err;
 }
 
-_ZGL afxError _DpuPackRasToBuf(zglDpu* dpu, afxRaster ras, afxBuffer buf, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError DpuPackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, buf);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    glVmt const* gl = dpu->gl;
+
+    GLenum glTarget = ras->glTarget;
+    GLenum glType = ras->glType;
+    GLenum glFmt = ras->glFmt;
+
+    afxBool rasSynced = FALSE;
+    afxBool rasBound = FALSE;
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, buf, TRUE);
+    //DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
+        avxRasterRegion const* rgn = &op->rgn;
 
         // GL_PACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
@@ -588,56 +1346,159 @@ _ZGL afxError _DpuPackRasToBuf(zglDpu* dpu, afxRaster ras, afxBuffer buf, afxUni
         gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
-#if 0
-        afxBool is3d = AfxTestRasterFlags(ras, afxRasterFlag_3D);
-
-        gl->BindFramebuffer(GL_READ_FRAMEBUFFER, dpu->fboOpSrc); _ZglThrowErrorOccuried();
-        
-        if (_ZglBindFboAttachment(&dpu->gl, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ras->glTarget, ras->glHandle, op->rgn.lodIdx, is3d ? 0 : op->rgn.origin.z, is3d ? op->rgn.origin.z : 0))
-            AfxThrowError();
-
-        gl->ReadBuffer(GL_COLOR_ATTACHMENT0); _ZglThrowErrorOccuried();
-        gl->ReadPixels(op->rgn.origin.x, op->rgn.origin.y, op->rgn.extent.w, op->rgn.extent.h, ras->glFmt, ras->glType, (void*)op->offset); _ZglThrowErrorOccuried();
-#else
-        gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
-        gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
-        gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+        // store into PBO at @op.offset
+        afxUnit bufSiz = op->rowStride * op->rowStride;
+        // TODO: obrigar a especificação de um tamanho sempre que for exportar?
 
         if (AfxIsPixelFormatCompressed(ras->m.fmt))
         {
-            // pack into PBO
-            gl->GetCompressedTexImage(ras->glTarget, op->rgn.lodIdx, NIL); _ZglThrowErrorOccuried();
+            if (gl->GetCompressedTextureSubImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->GetCompressedTextureSubImage(ras->glHandle, op->rgn.lodIdx, op->rgn.origin.x, op->rgn.origin.y, op->rgn.origin.z, op->rgn.extent.w, op->rgn.extent.h, op->rgn.extent.d, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetnCompressedTexImage)
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, op->rgn.extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, op->rgn.extent.h); _ZglThrowErrorOccuried();
+                gl->GetnCompressedTexImage(glTarget, op->rgn.lodIdx, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, op->rgn.extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, op->rgn.extent.h); _ZglThrowErrorOccuried();
+                gl->GetCompressedTexImage(glTarget, op->rgn.lodIdx, (void*)op->offset); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
         }
         else
         {
-            // pack into PBO
-            gl->GetTexImage(ras->glTarget, op->rgn.lodIdx, ras->glFmt, ras->glType, NIL); _ZglThrowErrorOccuried();
+            if (gl->GetTextureSubImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->GetTextureSubImage(ras->glHandle, op->rgn.lodIdx, op->rgn.origin.x, op->rgn.origin.y, op->rgn.origin.z, op->rgn.extent.w, op->rgn.extent.h, op->rgn.extent.d, ras->glFmt, ras->glType, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetTextureImage)
+            {
+                if (!rasSynced)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+                    rasSynced = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, op->rgn.extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, op->rgn.extent.h); _ZglThrowErrorOccuried();
+                gl->GetTextureImage(ras->glHandle, op->rgn.lodIdx, ras->glFmt, ras->glType, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else if (gl->GetnTexImage)
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, op->rgn.extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, op->rgn.extent.h); _ZglThrowErrorOccuried();
+                gl->GetnTexImage(glTarget, op->rgn.lodIdx, ras->glFmt, ras->glType, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                if (!rasBound)
+                {
+                    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE); // bind
+                    rasSynced = TRUE;
+                    rasBound = TRUE;
+                }
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, op->rgn.extent.w); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, op->rgn.extent.h); _ZglThrowErrorOccuried();
+                gl->GetTexImage(ras->glHandle, op->rgn.lodIdx, ras->glFmt, ras->glType, (void*)op->offset); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+                gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+            }
         }
-#endif
-        //GLenum pboTarget = GL_PIXEL_PACK_BUFFER;
-        //gl->GetBufferSubData(pboTarget, 0, bufSiz, (void*)op->offset); _ZglThrowErrorOccuried();
     }
 
-    // Restore pixel pack settings to avoid troubles.
-    gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
-    gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
-    gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
-    
+#if UNBIND_GL_TEX
+    DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, NIL, TRUE);
+    if (rasBound)
+    {
+        DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
+    }
+#endif
     return err;
 }
 
-_ZGL afxError _DpuPackRasToIob(zglDpu* dpu, afxRaster ras, afxStream out, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError _DpuDownloadRaster(zglDpu* dpu, avxRaster ras, afxStream out, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
-    afxBool is3d = AfxTestRasterFlags(ras, afxRasterFlag_3D);
+    glVmt const* gl = dpu->gl;
+
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
+    afxBool is3d = AvxTestRasterFlags(ras, avxRasterFlag_3D);
+
     avxFormatDescription pfd;
-    AfxDescribePixelFormat(ras->m.fmt, &pfd);
+    AvxDescribeFormats(1, &ras->m.fmt, &pfd);
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
 
         // GL_PACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
@@ -645,86 +1506,21 @@ _ZGL afxError _DpuPackRasToIob(zglDpu* dpu, afxRaster ras, afxStream out, afxUni
 
         if (rowLen == op->rgn.extent.w)
             rowLen = 0; // zero it to let the implementation handling with default behavior.
-#if 0
-        GLint compressed;
-        gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED, &compressed);
 
-        if (compressed)
-        {
-            GLint lodSiz, blockSiz, intFmt;
-            gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &lodSiz); _ZglThrowErrorOccuried();
-            gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_INTERNAL_FORMAT, &intFmt); _ZglThrowErrorOccuried();
-            
-            blockSiz = pfd.stride;
-
-            GLuint pbo;
-            GLenum pboTarget = GL_PIXEL_PACK_BUFFER;
-            gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
-            gl->BindBuffer(pboTarget, pbo); _ZglThrowErrorOccuried();
-            gl->BufferStorage(pboTarget, lodSiz, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
-
-            gl->GetCompressedTexImage(ras->glTarget, op->rgn.lodIdx, NIL); _ZglThrowErrorOccuried();
-            
-            afxUnit depthPitch = is3d ? op->rgn.extent.d : 1;
-            afxUnit rowPitch = ras->m.extent.w + lodSiz / blockSiz % ras->m.extent.h;
-
-            afxUnit num_blocks_x = (op->rgn.extent.w + 3) / 4;
-            afxUnit num_blocks_y = (op->rgn.extent.h + 3) / 4;
-            afxUnit block_address = (op->rgn.origin.y * ((ras->m.extent.w + 3) / 4) + op->rgn.origin.x) * pfd.stride;
-            
-            afxSize bufSiz = num_blocks_x * num_blocks_y * pfd.stride;
-
-            afxByte* bytemap = gl->MapBuffer(pboTarget, GL_READ_ONLY); _ZglThrowErrorOccuried();
-            AfxWriteStreamAt(out, op->offset, bufSiz, 0, &bytemap[block_address]);
-            gl->UnmapBuffer(pboTarget); _ZglThrowErrorOccuried();
-            gl->BindBuffer(pboTarget, 0); _ZglThrowErrorOccuried();
-            gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
-        }
-        else
-        {
-#if 0
-            afxUnit bufSiz = AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
-
-            GLuint pbo;
-            GLenum pboTarget = GL_PIXEL_PACK_BUFFER;
-            gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
-            gl->BindBuffer(pboTarget, pbo); _ZglThrowErrorOccuried();
-            gl->BufferStorage(pboTarget, bufSiz, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
-
-
-
-            gl->BindFramebuffer(GL_READ_FRAMEBUFFER, dpu->fboOpSrc); _ZglThrowErrorOccuried();
-
-            if (_ZglBindFboAttachment(&dpu->gl, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ras->glTarget, ras->glHandle, op->rgn.lodIdx, is3d ? 0 : op->rgn.origin.z, is3d ? op->rgn.origin.z : 0))
-                AfxThrowError();
-
-            gl->ReadBuffer(GL_COLOR_ATTACHMENT0); _ZglThrowErrorOccuried();
-            gl->ReadPixels(op->rgn.origin.x, op->rgn.origin.y, op->rgn.extent.w, op->rgn.extent.h, ras->glFmt, ras->glType, NIL); _ZglThrowErrorOccuried();
-
-            afxByte* bytemap = gl->MapBuffer(pboTarget, GL_READ_ONLY); _ZglThrowErrorOccuried();
-            AfxWriteStreamAt(out, op->offset, bufSiz, 0, bytemap);
-            gl->UnmapBuffer(pboTarget); _ZglThrowErrorOccuried();
-            gl->BindBuffer(pboTarget, 0); _ZglThrowErrorOccuried();
-            gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
-#endif
-
-        }
-#endif
+        gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
         GLuint pbo;
-        GLenum pboTarget = GL_PIXEL_PACK_BUFFER;
-        gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
-        gl->BindBuffer(pboTarget, pbo); _ZglThrowErrorOccuried();
+        zglCreateBuffers(gl, GL_PIXEL_PACK_BUFFER, 1, &pbo); _ZglThrowErrorOccuried();
+        
+        avxRasterLayout lay;
+        AvxQueryRasterLayout(ras, op->rgn.lodIdx, (is3d ? 0 : op->rgn.origin.z), &lay);
 
         GLint lodSiz = 0;
+
+        afxUnit bufSiz = op->rowStride * op->rowStride;
+        // TODO: obrigar a especificação de um tamanho sempre que for exportar?
 
         if (AfxIsPixelFormatCompressed(ras->m.fmt))
         {
@@ -733,45 +1529,34 @@ _ZGL afxError _DpuPackRasToIob(zglDpu* dpu, afxRaster ras, afxStream out, afxUni
             AFX_ASSERT(compressed);
             gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &lodSiz); _ZglThrowErrorOccuried();
 
-            gl->BufferStorage(pboTarget, lodSiz * 2, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+            zglMakeBufferStorage(gl, GL_PIXEL_PACK_BUFFER, pbo, lodSiz * 2, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
 
             // pack into PBO
-            gl->GetCompressedTexImage(ras->glTarget, op->rgn.lodIdx, NIL); _ZglThrowErrorOccuried();
+            if (zglPackTextureSubImageCompressed(gl, ras->glTarget, ras->glHandle, op->rgn.lodIdx, op->rgn.origin.x, op->rgn.origin.y, op->rgn.origin.z, op->rgn.extent.w, op->rgn.extent.h, op->rgn.extent.d, bufSiz, pbo, 0))
+                AfxThrowError();
 
-            afxByte* bytemap = gl->MapBuffer(pboTarget, GL_READ_ONLY); _ZglThrowErrorOccuried();
+            afxByte* bytemap;
+            zglMapBuffer(gl, GL_PIXEL_PACK_BUFFER, pbo, GL_READ_ONLY, (void**)&bytemap); _ZglThrowErrorOccuried();
             
-            AfxWriteStreamAt(out, op->offset, op->rgn.extent.d * op->rgn.extent.h * (op->rowStride? op->rowStride : op->rgn.extent.w * pfd.stride), 0, bytemap);
+            AfxWriteStreamAt(out, op->offset, op->rgn.extent.d * op->rgn.extent.h * AFX_ALIGNED_SIZE(op->rgn.extent.w * pfd.stride, AFX_SIMD_ALIGNMENT), 0, bytemap);
         }
         else
         {
-            AFX_ASSERT(pfd.stride);
-            lodSiz = op->rgn.extent.d * AFX_ALIGNED_SIZE(op->rgn.extent.h, pfd.bcWh[1]) * op->rgn.extent.w * pfd.stride;
-            gl->BufferStorage(pboTarget, lodSiz * 2, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
-
-            gl->PixelStorei(GL_PACK_SKIP_PIXELS, op->rgn.origin.x); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_SKIP_ROWS, op->rgn.origin.y); _ZglThrowErrorOccuried();
-            gl->PixelStorei(GL_PACK_SKIP_IMAGES, op->rgn.origin.z); _ZglThrowErrorOccuried();
+            lodSiz = lay.size;
+            zglMakeBufferStorage(gl, GL_PIXEL_PACK_BUFFER, pbo, lodSiz * 2, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT); _ZglThrowErrorOccuried();
 
             // pack into PBO
-            gl->GetTexImage(ras->glTarget, op->rgn.lodIdx, ras->glFmt, ras->glType, NIL); _ZglThrowErrorOccuried();
-            afxByte* bytemap = gl->MapBuffer(pboTarget, GL_READ_ONLY); _ZglThrowErrorOccuried();
-            AfxWriteStreamAt(out, op->offset, op->rgn.extent.d * op->rgn.extent.h * op->rgn.extent.w * pfd.stride, 0, bytemap);
+            if (zglPackTextureSubImage(gl, ras->glTarget, ras->glHandle, op->rgn.lodIdx, op->rgn.origin.x, op->rgn.origin.y, op->rgn.origin.z, op->rgn.extent.w, op->rgn.extent.h, op->rgn.extent.d, ras->glFmt, ras->glType, bufSiz, pbo, 0))
+                AfxThrowError();
+            
+            afxByte* bytemap;
+            zglMapBuffer(gl, GL_PIXEL_PACK_BUFFER, pbo, GL_READ_ONLY, (void**)&bytemap); _ZglThrowErrorOccuried();
+
+            AfxWriteStreamAt(out, op->offset, op->rgn.extent.d * op->rgn.extent.h * AFX_ALIGNED_SIZE(op->rgn.extent.w * pfd.stride, AFX_SIMD_ALIGNMENT), 0, bytemap);
         }
 
-        gl->UnmapBuffer(pboTarget); _ZglThrowErrorOccuried();
-        gl->BindBuffer(pboTarget, 0); _ZglThrowErrorOccuried();
+        gl->UnmapBuffer(GL_PIXEL_PACK_BUFFER); _ZglThrowErrorOccuried();
+        gl->BindBuffer(GL_PIXEL_PACK_BUFFER, 0); _ZglThrowErrorOccuried();
         gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
     }
 
@@ -779,18 +1564,26 @@ _ZGL afxError _DpuPackRasToIob(zglDpu* dpu, afxRaster ras, afxStream out, afxUni
     gl->PixelStorei(GL_PACK_SKIP_PIXELS, 0); _ZglThrowErrorOccuried();
     gl->PixelStorei(GL_PACK_SKIP_ROWS, 0); _ZglThrowErrorOccuried();
     gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
+
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
     return err;
 }
 
-_ZGL afxError _DpuUnpackRasFromIob(zglDpu* dpu, afxRaster ras, afxStream in, afxUnit opCnt, afxRasterIo const* ops)
+_ZGL afxError _DpuUploadRaster(zglDpu* dpu, avxRaster ras, afxStream in, afxUnit opCnt, avxRasterIo const* ops)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    glVmt const* gl = dpu->gl;
+    DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE);
+    afxBool is3d = AvxTestRasterFlags(ras, avxRasterFlag_3D);
+
+    GLenum glTarget = ras->glTarget;
+    GLenum glType = ras->glType;
+    GLenum glFmt = ras->glFmt;
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
-        afxRasterIo const* op = &ops[i];
+        avxRasterIo const* op = &ops[i];
+        avxRasterRegion const* rgn = &op->rgn;
 
         // GL_UNPACK_ROW_LENGTH is NOT row stride. It is the number of texel blocks per row of a image.
         afxUnit rowsPerImg = op->rowsPerImg && (op->rowsPerImg != op->rgn.extent.h) ? op->rowsPerImg : 0;
@@ -802,52 +1595,220 @@ _ZGL afxError _DpuUnpackRasFromIob(zglDpu* dpu, afxRaster ras, afxStream in, afx
         if (rowsPerImg == op->rgn.extent.h)
             rowsPerImg = 0;
 
-        afxUnit bufSiz = op->decSiz ? op->decSiz : AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
-        
+        avxRasterLayout lay;
+        AvxQueryRasterLayout(ras, op->rgn.lodIdx, (is3d ? 0 : op->rgn.origin.z), &lay);
+        afxUnit bufSiz = lay.size;
+
         GLuint pbo;
-        GLenum pboTarget = GL_PIXEL_UNPACK_BUFFER;
         gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
-        gl->BindBuffer(pboTarget, pbo); _ZglThrowErrorOccuried();
-        gl->BufferStorage(pboTarget, bufSiz, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT); _ZglThrowErrorOccuried();
-        afxByte* bytemap = gl->MapBuffer(pboTarget, GL_WRITE_ONLY); _ZglThrowErrorOccuried();
+        gl->BindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo); _ZglThrowErrorOccuried();
+        gl->BufferStorage(GL_PIXEL_UNPACK_BUFFER, bufSiz, NIL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT); _ZglThrowErrorOccuried();
+
+        afxByte* bytemap = gl->MapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY); _ZglThrowErrorOccuried();
         AfxReadStreamAt(in, op->offset, op->encSiz ? op->encSiz : bufSiz, 0, bytemap);
-        gl->UnmapBuffer(pboTarget); _ZglThrowErrorOccuried();
+        gl->UnmapBuffer(GL_PIXEL_UNPACK_BUFFER); _ZglThrowErrorOccuried();
+
         gl->PixelStorei(GL_UNPACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
         if (!AfxIsPixelFormatCompressed(ras->m.fmt))
         {
-            if (_ZglTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, NIL))
+            if (zglUnpackTextureSubImage(gl, ras->glTarget, ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, ras->glFmt, ras->glType, pbo, 0))
+                AfxThrowError();
+#if 0
+            case GL_TEXTURE_CUBE_MAP:
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
+            {
+                for (afxUnit i = 0; i < rgn->extent.d; i++)
+                {
+                    if (zglTextureSubImage2D(gl, GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, ras->glFmt, ras->glType, (void const*)0))
+                        AfxThrowError();
+                }
+                break;
+            }
+#endif
+        }
+        else
+        {
+            GLint compressed;
+            GLint compressedSiz;
+            gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED, &compressed);
+            gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &compressedSiz); _ZglThrowErrorOccuried();
+            AFX_ASSERT(compressed);
+
+            if (zglUnpackTextureSubImageCompressed(gl, ras->glTarget, ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->extent.w, rgn->extent.h, rgn->extent.d, glFmt, compressedSiz, pbo, 0))
+                AfxThrowError();
+
+#if 0
+            case GL_TEXTURE_CUBE_MAP:
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
+            {
+                for (afxUnit i = 0; i < rgn->extent.d; i++)
+                {
+                    if (zglCompressedTextureSubImage2D(gl, GL_TEXTURE_CUBE_MAP_POSITIVE_X + rgn->origin.z + i, ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->extent.w, rgn->extent.h, glFmt, compressedSiz, (void const*)0))
+                        AfxThrowError();
+                }
+                break;
+            }
+#endif
+        }
+        
+        gl->BindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); _ZglThrowErrorOccuried();
+        gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
+    }
+
+    DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, NIL, TRUE);
+    return err;
+}
+
+_ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterCopy const ops[])
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &dst);
+    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &src);
+
+    avxFormatDescription srcPfd, dstPfd;
+    AvxDescribeFormats(1, &src->m.fmt, &srcPfd);
+    AvxDescribeFormats(1, &dst->m.fmt, &dstPfd);
+
+    for (afxUnit i = 0; i < opCnt; i++)
+    {
+        avxRasterCopy const* op = &ops[i];
+
+        avxRasterLayout lay;
+        AvxQueryRasterLayout(src, 0, 0, &lay);
+        
+        GLuint pbo;
+        gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
+        gl->BindBuffer(GL_PIXEL_PACK_BUFFER, pbo); _ZglThrowErrorOccuried();
+        gl->BufferStorage(GL_PIXEL_PACK_BUFFER, lay.size, NIL, GL_DYNAMIC_STORAGE_BIT); _ZglThrowErrorOccuried();
+
+        gl->PixelStorei(GL_PACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_PACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+
+        gl->PixelStorei(GL_UNPACK_ALIGNMENT, 1); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_UNPACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
+        gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
+
+        if ((srcPfd.flags & avxFormatFlag_COMPRESSED) == avxFormatFlag_COMPRESSED)
+        {
+            if (zglPackTextureSubImageCompressed(gl, src->glTarget, src->glHandle, op->src.lodIdx, op->src.origin.x, op->src.origin.y, op->src.origin.z, op->src.extent.w, op->src.extent.h, op->src.extent.d, lay.size, pbo, 0))
+                AfxThrowError();
+
+            if (zglUnpackTextureSubImageCompressed(gl, dst->glTarget, dst->glHandle, op->dstLodIdx, op->dstOrigin.x, op->dstOrigin.y, op->dstOrigin.z, op->src.extent.w, op->src.extent.h, op->src.extent.d, /*dst->glFmt*/src->glFmt, lay.size, pbo, 0))
                 AfxThrowError();
         }
         else
         {
-            afxUnit compSiz = op->decSiz ? op->decSiz : AfxElse(rowLen, op->rgn.extent.w) * AfxElse(rowsPerImg, op->rgn.extent.h) * AfxElse(op->rgn.extent.d, 1);
+            if (zglPackTextureSubImage(gl, src->glTarget, src->glHandle, op->src.lodIdx, op->src.origin.x, op->src.origin.y, op->src.origin.z, op->src.extent.w, op->src.extent.h, op->src.extent.d, src->glFmt, src->glType, lay.size, pbo, 0))
+                AfxThrowError();
 
-            if (_ZglCompressedTexSubImage(gl, ras->glTarget, &op->rgn, ras->glFmt, ras->glType, compSiz, NIL))
+            if (zglUnpackTextureSubImage(gl, src->glTarget, src->glHandle, op->src.lodIdx, op->src.origin.x, op->src.origin.y, op->src.origin.z, op->src.extent.w, op->src.extent.h, op->src.extent.d, src->glFmt, src->glType, pbo, 0))
                 AfxThrowError();
         }
-        
-        gl->BindBuffer(pboTarget, 0); _ZglThrowErrorOccuried();
+
+        gl->BindBuffer(GL_PIXEL_PACK_BUFFER, 0); _ZglThrowErrorOccuried();
+        gl->BindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); _ZglThrowErrorOccuried();
         gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
     }
     return err;
 }
 
-_ZGL afxError _DpuCopyRas(zglDpu* dpu, afxRaster src, afxRaster dst, afxUnit opCnt, afxRasterCopy const ops[])
+_ZGL afxError _ZglDpuResolveRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterCopy const ops[])
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &dst);
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &src);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, src);
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT - 1, dst);
-    _ZglCopyTexSubImage(dpu, dst->glTarget, src->glTarget, src->glHandle, opCnt, ops);
+
+    for (afxUnit i = 0; i < opCnt; i++)
+    {
+        avxRasterCopy const* op = &ops[i];
+
+
+    }
+
     return err;
 }
 
-_ZGL afxError _ZglRasDtor(afxRaster ras)
+_ZGL afxError _ZglDpuBlitRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterBlit const ops[], avxTexelFilter flt)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &dst);
+    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &src);
+
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, src, FALSE); // sync
+    DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, dst, FALSE); // sync
+
+    GLenum filter = ZglToGlTexelFilterMode(flt);
+
+    gl->BindFramebuffer(GL_READ_FRAMEBUFFER, dpu->fboOpSrc);
+    gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, dpu->fboOpDst);
+
+    GLbitfield blitMask = 0;
+
+    switch (src->glAttachment)
+    {
+    case GL_DEPTH_ATTACHMENT: blitMask |= GL_DEPTH_BUFFER_BIT; break;
+    case GL_DEPTH_STENCIL_ATTACHMENT: blitMask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT; break;
+    case GL_STENCIL_ATTACHMENT: blitMask |= GL_STENCIL_BUFFER_BIT; break;
+    case GL_COLOR_ATTACHMENT0:
+    default: blitMask |= GL_COLOR_BUFFER_BIT; break;
+    }
+    switch (dst->glAttachment)
+    {
+    case GL_DEPTH_ATTACHMENT: blitMask |= GL_DEPTH_BUFFER_BIT; break;
+    case GL_DEPTH_STENCIL_ATTACHMENT: blitMask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT; break;
+    case GL_STENCIL_ATTACHMENT: blitMask |= GL_STENCIL_BUFFER_BIT; break;
+    case GL_COLOR_ATTACHMENT0:
+    default: blitMask |= GL_COLOR_BUFFER_BIT; break;
+    }
+
+    for (afxUnit i = 0; i < opCnt; i++)
+    {
+        avxRasterBlit const* op = &ops[i];
+
+        for (afxUnit j = 0, k = 0; (j < op->src.extent.d) && (k < op->dst.extent.d); j++, k++)
+        {
+            if (gl->BlitNamedFramebuffer)
+            {
+                _ZglBindFboAttachmentDirect(gl, dpu->fboOpSrc, src->glAttachment, src->glTarget, src->glHandle, op->src.lodIdx, src->m.baseLayer + op->src.origin.z + j);
+                _ZglBindFboAttachmentDirect(gl, dpu->fboOpDst, dst->glAttachment, dst->glTarget, dst->glHandle, op->dst.lodIdx, dst->m.baseLayer + op->dst.origin.z + k);
+
+                gl->BlitNamedFramebuffer(dpu->fboOpSrc, dpu->fboOpDst, op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.d, op->dst.origin.x, op->dst.origin.y, op->dst.extent.w, op->dst.extent.h, blitMask, filter); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                _ZglBindFboAttachment(gl, GL_READ_FRAMEBUFFER, src->glAttachment, src->glTarget, src->glHandle, op->src.lodIdx, src->m.baseLayer + op->src.origin.z + j);
+                _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, dst->glAttachment, dst->glTarget, dst->glHandle, op->dst.lodIdx, dst->m.baseLayer + op->dst.origin.z + k);
+
+                gl->BlitFramebuffer(op->src.origin.x, op->src.origin.y, op->src.extent.w, op->src.extent.d, op->dst.origin.x, op->dst.origin.y, op->dst.extent.w, op->dst.extent.h, blitMask, filter); _ZglThrowErrorOccuried();
+            }
+        }
+    }
+
+    if (gl->BlitNamedFramebuffer)
+    {
+        _ZglBindFboAttachmentDirect(gl, dpu->fboOpSrc, src->glAttachment, src->glTarget, NIL, 0, 0);
+        _ZglBindFboAttachmentDirect(gl, dpu->fboOpDst, dst->glAttachment, dst->glTarget, NIL, 0, 0);
+    }
+    else
+    {
+        _ZglBindFboAttachment(gl, GL_READ_FRAMEBUFFER, src->glAttachment, src->glTarget, NIL, 0, 0);
+        _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, dst->glAttachment, dst->glTarget, NIL, 0, 0);
+    }
+
+    gl->BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    return err;
+}
+
+_ZGL afxError _ZglRasDtor(avxRaster ras)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
@@ -856,14 +1817,12 @@ _ZGL afxError _ZglRasDtor(afxRaster ras)
 
     if (ras->glHandle)
     {
-        _ZglDsysEnqueueDeletion(dsys, 0, GL_TEXTURE, (afxSize)ras->glHandle);
-        ras->glHandle = 0;
-    }
+        if (ras->glTarget == GL_RENDERBUFFER)
+            _ZglDsysEnqueueDeletion(dsys, 0, GL_RENDERBUFFER, (afxSize)ras->glHandle);
+        else
+            _ZglDsysEnqueueDeletion(dsys, 0, GL_TEXTURE, (afxSize)ras->glHandle);
 
-    if (ras->glRboHandle)
-    {
-        _ZglDsysEnqueueDeletion(dsys, 0, GL_RENDERBUFFER, (afxSize)ras->glRboHandle);
-        ras->glRboHandle = 0;
+        ras->glHandle = 0;
     }
 
     if (_AVX_RAS_CLASS_CONFIG.dtor(ras))
@@ -872,18 +1831,48 @@ _ZGL afxError _ZglRasDtor(afxRaster ras)
     return err;
 }
 
-_ZGL afxError _ZglRasCtor(afxRaster ras, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglRasCtor(avxRaster ras, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
 
     if (_AVX_RAS_CLASS_CONFIG.ctor(ras, args, invokeNo)) AfxThrowError();
     else
     {
+        afxDrawSystem dsys = AfxGetProvider(ras);
+        ras->rasUniqueId = ++dsys->rasUniqueId;
+
         ras->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
         GLint glIntFmt;
         ZglDetermineGlTargetInternalFormatType(ras, &ras->glTarget, &ras->glIntFmt, &ras->glFmt, &ras->glType);
         
+        if ((ras->m.usage & avxRasterUsage_DRAW) == avxRasterUsage_DRAW)
+        {
+            avxFormatDescription pfd;
+            AvxDescribeRasterFormat(ras, 0, &pfd);
+
+            if ((pfd.flags & (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL)) == (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL))
+                ras->glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
+            if ((pfd.flags & avxFormatFlag_DEPTH) == avxFormatFlag_DEPTH)
+                ras->glAttachment = GL_DEPTH_ATTACHMENT;
+            else if ((pfd.flags & avxFormatFlag_STENCIL) == avxFormatFlag_STENCIL)
+                ras->glAttachment = GL_STENCIL_ATTACHMENT;
+            else if (pfd.flags & avxFormatFlag_COLOR)
+                ras->glAttachment = GL_COLOR_ATTACHMENT0;
+
+#ifdef RENDERBUFFER_ENABLED
+            if (((ras->m.usage & avxRasterUsage_ALL) == avxRasterUsage_DRAW) && // RBO can not be read/written out of a draw pass.
+                (ras->m.extent.d == 1) && // RBO can not be layered
+                (!(ras->m.flags & avxRasterFlag_MIPMAP))) // RBO can not be subsampled
+            {
+                if (ras->glTarget == GL_TEXTURE_2D)
+                {
+                    ras->glTarget = GL_RENDERBUFFER;
+                }
+            }
+#endif
+        }
+
         if (err && _AVX_RAS_CLASS_CONFIG.dtor(ras))
             AfxThrowError();
     }

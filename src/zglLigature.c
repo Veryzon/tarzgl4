@@ -43,19 +43,19 @@ _ZGL afxError _ZglDqueBindAndSyncLigaSub(afxDrawBridge dexu, afxUnit unit, avxLi
 
         switch (entry->type)
         {
-        case avxShaderParam_SAMPLER_UNIT:
+        case avxShaderParam_SAMPLER:
         {
             AfxAssertObject(data->smp, afxFcc_SAMP);
             _ZglDqueBindAndSyncSmp(dexu, binding, data->smp);
             break;
         }
-        case avxShaderParam_IMAGE_UNIT:
+        case avxShaderParam_RASTER:
         {
             AfxAssertObject(data->tex, afxFcc_RAS);
             _ZglDqueBindAndSyncTex(dexu, binding, data->tex);
             break;
         }
-        case avxShaderParam_COMBINED_IMAGE_SAMPLER:
+        case avxShaderParam_TEXTURE:
         {
             AfxAssertObject(data->tex, afxFcc_RAS);
             _ZglDqueBindAndSyncTex(dexu, binding, data->tex);
@@ -65,11 +65,11 @@ _ZGL afxError _ZglDqueBindAndSyncLigaSub(afxDrawBridge dexu, afxUnit unit, avxLi
 #if 0
             afxUri128 uri;
             AfxMakeUri128(&uri, NIL);
-            AfxPrintRaster(point->resource.img.tex, AfxFormatUri(&uri.uri, "system/tex-%u-%u.tga", i, entry->binding));
+            AvxPrintRaster(point->resource.img.tex, AfxFormatUri(&uri.uri, "system/tex-%u-%u.tga", i, entry->binding));
 #endif
             break;
         }
-        case avxShaderParam_UNIFORM_UNIT:
+        case avxShaderParam_UNIFORM:
         {
             AfxAssertObject(data->buf, afxFcc_BUF);
 
@@ -84,7 +84,7 @@ _ZGL afxError _ZglDqueBindAndSyncLigaSub(afxDrawBridge dexu, afxUnit unit, avxLi
         }
         default:
         {
-            AfxLogError("");
+            AfxReportError("");
         }
         }
     }
@@ -131,7 +131,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
     AFX_ASSERT(glHandle);
     
     afxString32 tmp;
@@ -151,7 +151,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
         else
         {
             //AfxThrowError();
-            AfxLogError("Uniform buffer unit '%s' not found in ligature %p.", "pushable", liga);
+            AfxReportError("Uniform buffer unit '%s' not found in ligature %p.", "pushable", liga);
         }
     }
 
@@ -177,7 +177,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
             AFX_ASSERT(entry->type);
             switch (entry->type)
             {
-            case avxShaderParam_SAMPLER_UNIT:
+            case avxShaderParam_SAMPLER:
             {
                 loc = gl->GetUniformLocation(glHandle, rawName); _ZglThrowErrorOccuried();
 
@@ -188,11 +188,11 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Sampler unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Sampler unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
-            case avxShaderParam_IMAGE_UNIT:
+            case avxShaderParam_RASTER:
             {
                 loc = gl->GetUniformLocation(glHandle, rawName); _ZglThrowErrorOccuried();
 
@@ -203,11 +203,11 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Raster unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Raster unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
-            case avxShaderParam_COMBINED_IMAGE_SAMPLER:
+            case avxShaderParam_TEXTURE:
             {
                 loc = gl->GetUniformLocation(glHandle, rawName); _ZglThrowErrorOccuried();
 
@@ -218,11 +218,11 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Combined raster/sampler unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Combined raster/sampler unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
-            case avxShaderParam_UNIFORM_UNIT:
+            case avxShaderParam_UNIFORM:
             {
                 // https://stackoverflow.com/questions/44629165/bind-multiple-uniform-buffer-objects
 
@@ -235,11 +235,11 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Uniform buffer unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Uniform buffer unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
-            case avxShaderParam_STORAGE_UNIT:
+            case avxShaderParam_BUFFER:
             {
                 GLuint storBlckIdx = gl->GetUniformBlockIndex(glHandle, rawName); _ZglThrowErrorOccuried();
 
@@ -250,11 +250,11 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Storage buffer unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Storage buffer unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
-            case avxShaderParam_FETCH_UNIT:
+            case avxShaderParam_FETCH:
             {
                 loc = gl->GetUniformLocation(glHandle, rawName); _ZglThrowErrorOccuried();
 
@@ -265,13 +265,28 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
                 else
                 {
                     //AfxThrowError();
-                    AfxLogError("Matrix buffer unit '%s' not found in ligature %p.", rawName, liga);
+                    AfxReportError("Tensor buffer unit '%s' not found in ligature %p.", rawName, liga);
+                }
+                break;
+            }
+            case avxShaderParam_TSBO:
+            {
+                loc = gl->GetUniformLocation(glHandle, rawName); _ZglThrowErrorOccuried();
+
+                if (loc != GL_INVALID_INDEX)
+                {
+                    gl->Uniform1i(loc, glBinding); _ZglThrowErrorOccuried();
+                }
+                else
+                {
+                    //AfxThrowError();
+                    AfxReportError("Storage tensor buffer unit '%s' not found in ligature %p.", rawName, liga);
                 }
                 break;
             }
             default:
             {
-                AfxLogError("");
+                AfxReportError("");
             }
             }
         }

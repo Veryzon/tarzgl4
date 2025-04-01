@@ -27,6 +27,7 @@
 #include <d3d11.h>
 #include <windows.h>
 #include <dxgi1_2.h>
+#include <dxva2api.h>
 
 #include <winddi.h>
 #include <d3d11.h>
@@ -45,16 +46,28 @@
 #include <shellapi.h>
 #include <assert.h>
 
- //#include "../src/e2coree/deps/gl/glcorearb.h"
- //#include "../src/e2coree/deps/gl/wglext.h"
+#include "afx/src/draw/impl/avxImplementation.h"
+#include "qwadro/inc/afxQwadro.h"
+
+//#include "../dep/gl/_glcorearb.h"
+//#include "../dep/gl/_wglext.h"
 
 #define Assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
 #define AssertHR(hr) Assert(SUCCEEDED(hr))
 
-#include "../dep/gl/glad.h"
-#include "../dep/gl/glad_wgl.h"
-#include "qwadro/inc/afxQwadro.h"
-#include "afx/src/draw/impl/avxImplementation.h"
+#ifndef GLAPI
+#if defined(EXPORT_GL_SYMBOLS)
+#define GLAPI DLLEXPORT  
+#else
+#define GLAPI DLLEXPORT extern 
+#endif
+#endif
+
+//#include <gl/GL.h>
+//#include "../dep/gl/glad.h"
+//#include "../dep/gl/glad_wgl.h"
+
+#include "../dep/gl/wgl.h"
 
 #ifndef AVX_DRV_SRC
 #   ifdef _DEBUG
@@ -64,6 +77,8 @@
 #       define ZGL DLLIMPORT extern 
 #       define ZGLINL DLLIMPORT EMBED
 #   endif
+#   define _ZGL ZGL
+#   define _ZGLINL ZGLINL
 #else
 #   ifdef _DEBUG
 #       define _ZGL DLLEXPORT
@@ -96,8 +111,57 @@ ZGL BOOL(WINAPI* _wglSwapBuffers)(HDC);
 #endif
 #endif
 
-#define ZGL_DEFAULT_CTX_VER_MAJOR 3
-#define ZGL_DEFAULT_CTX_VER_MINOR 3
+
+ZGL BOOL(WINAPI*wglCopyContextGDI)(HGLRC, HGLRC, UINT);
+ZGL HGLRC(WINAPI*wglCreateContextGDI)(HDC);
+ZGL HGLRC(WINAPI*wglCreateLayerContextGDI)(HDC, int);
+ZGL BOOL(WINAPI*wglDeleteContextGDI)(HGLRC);
+ZGL HGLRC(WINAPI*wglGetCurrentContextGDI)(VOID);
+ZGL HDC(WINAPI*wglGetCurrentDCGDI)(VOID);
+ZGL PROC(WINAPI*wglGetProcAddressGDI)(LPCSTR);
+ZGL BOOL(WINAPI*wglMakeCurrentGDI)(HDC, HGLRC);
+ZGL BOOL(WINAPI*wglSwapBuffersGDI)(HDC);
+ZGL BOOL(WINAPI*wglSwapLayerBuffersGDI)(HDC, UINT);
+
+ZGL int(WINAPI*wglChoosePixelFormatGDI)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
+ZGL int(WINAPI*wglDescribePixelFormatGDI)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+ZGL BOOL(WINAPI*wglSetPixelFormatGDI)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
+ZGL int(WINAPI*wglGetPixelFormatGDI)(HDC hdc);
+
+// ARB/EXT
+#if 0
+ZGL PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
+ZGL PFNWGLGETEXTENSIONSSTRINGEXTPROC wglGetExtensionsStringEXT;
+ZGL PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB;
+ZGL PFNWGLGETPIXELFORMATATTRIBFVARBPROC wglGetPixelFormatAttribfvARB;
+ZGL PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
+ZGL PFNWGLGETCURRENTREADDCARBPROC wglGetCurrentReadDCARB;
+ZGL PFNWGLMAKECONTEXTCURRENTARBPROC wglMakeContextCurrentARB;
+ZGL PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+ZGL PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+ZGL PFNWGLDXOPENDEVICENVPROC wglDXOpenDeviceNV;
+ZGL PFNWGLDXCLOSEDEVICENVPROC wglDXCloseDeviceNV;
+ZGL PFNWGLDXREGISTEROBJECTNVPROC wglDXRegisterObjectNV;
+ZGL PFNWGLDXUNREGISTEROBJECTNVPROC wglDXUnregisterObjectNV;
+ZGL PFNWGLDXLOCKOBJECTSNVPROC wglDXLockObjectsNV;
+ZGL PFNWGLDXUNLOCKOBJECTSNVPROC wglDXUnlockObjectsNV;
+#endif
+
+ZGL signed int(*__stdcall zglDrvCopyContext)(void *a1, void *a2, int a3);
+ZGL int(*__stdcall zglDrvCreateContext)(HDC hDC);
+ZGL int(*__stdcall zglDrvCreateLayerContext)(HDC hDC, int a2); // ignore layer
+ZGL signed int(*__stdcall zglDrvDeleteContext)(void *a1);
+ZGL LONG(*__stdcall zglDrvDescribePixelFormat)(/*DHPDEV*/HDC dhpdev, LONG iPixelFormat, ULONG cjpfd, PIXELFORMATDESCRIPTOR *ppfd);
+ZGL int(*__stdcall zglDrvGetProcAddress)(int Key); // key is a string
+ZGL int(*__stdcall zglDrvPresentBuffers)(HDC hDC, int a2);
+ZGL signed int(*__stdcall zglDrvReleaseContext)(void *a1);
+ZGL int(*__stdcall zglDrvSetContext)(HGDIOBJ h, int a2, int a3); // h = HDC, a2 = new ctx
+ZGL BOOL(*__stdcall zglDrvSetPixelFormat)(/*SURFOBJ**/ void*pso, LONG iPixelFormat, HWND hwnd);
+ZGL BOOL(*__stdcall zglDrvSwapBuffers)(/*SURFOBJ**/ void*pso, /*WNDOBJ**/ void*pwo); // pso = HDC, pwo = HWND
+
+
+#define ZGL_DEFAULT_CTX_VER_MAJOR 4
+#define ZGL_DEFAULT_CTX_VER_MINOR 0
 #define ZGL_DEFAULT_CTX_LEGACY_SUPPORT FALSE
 #define ZGL_DEFAULT_CTX_EXTENSIBLE_SUPPORT TRUE
 
@@ -846,7 +910,7 @@ typedef union glVmt
 } glVmt;
 
 #ifdef _AFX_DEBUG
-#   define _ZglThrowErrorOccuried() { GLenum err = gl->GetError(); switch (err) { case GL_NO_ERROR: break; case 1280: AfxLogError("GL: INVAL_PARAM"); break; case 1281: AfxLogError("GL: INVAL_VALUE"); break; case 1282: AfxLogError("GL: INVAL_OP"); break; case 1283: AfxLogError("GL: STACK_OVERFLOW"); break; case 1284: AfxLogError("GL: STACK_UNDERFLOW"); break; case 1285: AfxLogError("GL: OUT_OF_MEM"); break; default: AfxLogError("GL: %d", err); break; }}
+#   define _ZglThrowErrorOccuried() { GLenum err = gl->GetError(); switch (err) { case GL_NO_ERROR: break; case 1280: AfxReportError("GL: INVAL_PARAM"); break; case 1281: AfxReportError("GL: INVAL_VALUE"); break; case 1282: AfxReportError("GL: INVAL_OP"); break; case 1283: AfxReportError("GL: STACK_OVERFLOW"); break; case 1284: AfxReportError("GL: STACK_UNDERFLOW"); break; case 1285: AfxReportError("GL: OUT_OF_MEM"); break; default: AfxReportError("GL: %d", err); break; }}
 #else
 #   define _ZglThrowErrorOccuried()
 #endif//AFX_DONT_DEBUG
@@ -910,29 +974,22 @@ ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum seve
 ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
 ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits);
 
-ZGL wglVmt wgl;
+//ZGL wglVmt wgl;
 
-ZGL PROC __stdcall      wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName);
+ZGL afxError TestCoreSymbols(HMODULE opengl32, glVmt const* vmt);
+ZGL afxError wglLoadCoreSymbols(HMODULE opengl32, glVmt* gl);
+
+ZGL PROC                wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName);
 _ZGL void __stdcall     wglLoadWsiSymbolsSIG(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMinor, afxUnit* verPatch);
-ZGL afxBool __stdcall   wglHasExtensionSIG(HDC hDc, afxChar const* ext);
+ZGL afxBool             wglHasExtensionSIG(HDC hDc, afxChar const* ext);
 ZGL afxError __stdcall  wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUnit cnt, void* vmt[], afxBool echo);
 
-ZGL int __stdcall       wglChoosePixelFormatSIG(HDC hDC, CONST PIXELFORMATDESCRIPTOR* ppfd);
-ZGL BOOL __stdcall      wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
-ZGL int __stdcall       wglDescribePixelFormatSIG(HDC hDC, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
-ZGL BOOL __stdcall      wglSetPixelFormatSIG(HDC hDC, int format, HWND hWnd, CONST PIXELFORMATDESCRIPTOR* ppfd);
-ZGL int __stdcall       wglGetPixelFormatSIG(HDC hDC);
+ZGL BOOL __stdcall      wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats, afxBool* byWgl);
 
-ZGL HDC __stdcall       wglGetCurrentDrawDCSIG(void);
-ZGL HDC __stdcall       wglGetCurrentReadDCSIG(void);
-ZGL HGLRC __stdcall     wglGetCurrentContextSIG(void);
-ZGL BOOL __stdcall      wglMakeContextCurrentSIG(HDC hDrawDC, HDC hReadDC, HGLRC hglrc);
+ZGL afxBool vgiWndClssRegistered;
+ZGL WNDCLASSEXA vgiWndClss;
+ZGL HMODULE hOpengl32Dll;
 
-ZGL HGLRC __stdcall     wglCreateContextAttribsSIG(HDC hDC, HGLRC hShareContext, int const attribList[]);
-ZGL BOOL __stdcall      wglDeleteContextSIG(HGLRC hGlrc);
-
-ZGL BOOL __stdcall      wglSwapIntervalSIG(int interval);
-ZGL BOOL __stdcall      wglSwapBuffersSIG(HDC hDC, HWND hWnd);
-ZGL BOOL __stdcall      wglPresentBuffersSIG(HDC hDC, int a2);
+ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMinor, afxUnit* verPatch);
 
 #endif//ZGL_WGL_H

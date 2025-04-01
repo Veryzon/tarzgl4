@@ -63,7 +63,7 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
                     AfxThrowError();
                     afxChar str[1024];
                     gl->GetShaderInfoLog(shd->glHandle, sizeof(str), NIL, (GLchar*)str); _ZglThrowErrorOccuried();
-                    AfxLogError(str);
+                    AfxReportError(str);
                     gl->DeleteShader(shd->glHandle); _ZglThrowErrorOccuried();
                     shd->glHandle = NIL;
                 }
@@ -72,7 +72,7 @@ _ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVm
                     shd->glProgHandle = 0;
                     shd->compiled = TRUE;
                     shd->updFlags &= ~(ZGL_UPD_FLAG_DEVICE_INST | ZGL_UPD_FLAG_DEVICE_FLUSH);
-                    AfxLogEcho("avxShader %p hardware-side data instanced.", shd);
+                    AfxReportMessage("avxShader %p hardware-side data instanced.", shd);
                 }
             }
         }
@@ -122,6 +122,9 @@ _ZGL afxError _ZglShdCtor(avxShader shd, void** args, afxUnit invokeNo)
         shd->glProgHandle = NIL;
         shd->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
         shd->compiled = FALSE;
+
+        afxDrawSystem dsys = AfxGetProvider(shd);
+        shd->shdUniqueId = ++dsys->shdUniqueId;
 
         if (err && _AVX_SHD_CLASS_CONFIG.dtor(shd))
             AfxThrowError();

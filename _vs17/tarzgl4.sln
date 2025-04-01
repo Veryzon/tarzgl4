@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.33423.255
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tarzgl4", "tarzgl4\tarzgl4.vcxproj", "{1BAFD2AD-9548-4FA9-B268-6AFE5087845D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "e2draw", "..\..\afx\_vs17\e2draw\e2draw.vcxproj", "{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "e2coree", "..\..\afx\_vs17\e2coree\e2coree.vcxproj", "{973A60FF-EA6C-4D62-A302-BF610CABAB8C}"
 EndProject
 Global
@@ -25,14 +23,6 @@ Global
 		{1BAFD2AD-9548-4FA9-B268-6AFE5087845D}.Release|x64.Build.0 = Release|x64
 		{1BAFD2AD-9548-4FA9-B268-6AFE5087845D}.Release|x86.ActiveCfg = Release|Win32
 		{1BAFD2AD-9548-4FA9-B268-6AFE5087845D}.Release|x86.Build.0 = Release|Win32
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Debug|x64.ActiveCfg = Debug|x64
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Debug|x64.Build.0 = Debug|x64
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Debug|x86.ActiveCfg = Debug|Win32
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Debug|x86.Build.0 = Debug|Win32
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Release|x64.ActiveCfg = Release|x64
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Release|x64.Build.0 = Release|x64
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Release|x86.ActiveCfg = Release|Win32
-		{2D93C9E6-A8BD-40E6-8FFE-CD15319B0241}.Release|x86.Build.0 = Release|Win32
 		{973A60FF-EA6C-4D62-A302-BF610CABAB8C}.Debug|x64.ActiveCfg = Debug|x64
 		{973A60FF-EA6C-4D62-A302-BF610CABAB8C}.Debug|x64.Build.0 = Debug|x64
 		{973A60FF-EA6C-4D62-A302-BF610CABAB8C}.Debug|x86.ActiveCfg = Debug|Win32

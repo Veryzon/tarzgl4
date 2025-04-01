@@ -22,157 +22,145 @@
 ////////////////////////////////////////////////////////////////////////////////
 // BIND RESOURCES
 
-_ZGL void _DecodeCmdStampDebug(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdStampDebug(zglDpu* dpu, _avxCmd const* cmd)
 {
     //
 }
 
-_ZGL void _DecodeCmdBindPipeline(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindPipeline(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuBindPipeline(dpu, cmd->BindPipeline.pip, cmd->BindPipeline.vin, cmd->BindPipeline.dynamics);
+    DpuBindPipeline(dpu, cmd->BindPipeline.pip, cmd->BindPipeline.vin, cmd->BindPipeline.dynamics);
 }
 
-_ZGL void _DecodeCmdBindBuffers(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindBuffers(zglDpu* dpu, _avxCmd const* cmd)
 {
-    for (afxUnit i = 0; i < cmd->BindBuffers.cnt; i++)
-        _DpuBindBuffers(dpu, cmd->BindBuffers.set, cmd->BindBuffers.baseIdx + i, 1, (afxBuffer*)&cmd->BindBuffers.items[i].buf, &cmd->BindBuffers.items[i].offset, &cmd->BindBuffers.items[i].range);
+    DpuBindBuffers(dpu, cmd->BindBuffers.set, cmd->BindBuffers.baseIdx, cmd->BindBuffers.cnt, cmd->BindBuffers.maps);
 }
 
-_ZGL void _DecodeCmdBindRasters(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindRasters(zglDpu* dpu, _avxCmd const* cmd)
 {
-    for (afxUnit i = 0; i < cmd->BindRasters.cnt; i++)
-        _DpuBindRasters(dpu, cmd->BindRasters.set, cmd->BindRasters.baseIdx + i, 1, (afxRaster*)&cmd->BindRasters.items[i].ras, &cmd->BindRasters.items[i].subIdx);
+    DpuBindRasters(dpu, cmd->BindRasters.set, cmd->BindRasters.baseIdx, cmd->BindRasters.cnt, cmd->BindRasters.rasters);
 }
 
-_ZGL void _DecodeCmdBindSamplers(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindSamplers(zglDpu* dpu, _avxCmd const* cmd)
 {
-    for (afxUnit i = 0; i < cmd->BindSamplers.cnt; i++)
-        _DpuBindSamplers(dpu, cmd->BindSamplers.set, cmd->BindSamplers.baseIdx + i, 1, (avxSampler*)&cmd->BindSamplers.samplers[i]);
+    DpuBindSamplers(dpu, cmd->BindSamplers.set, cmd->BindSamplers.baseIdx, cmd->BindSamplers.cnt, cmd->BindSamplers.samplers);
 }
 
-_ZGL void _DecodeCmdBindVertexSources(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindVertexBuffers(zglDpu* dpu, _avxCmd const* cmd)
 {
-    for (afxUnit i = 0; i < cmd->BindVertexSources.slotCnt; i++)
-    {
-        zglBufferInfo info = { 0 };
-        info.buf = cmd->BindVertexSources.items[i].buf;
-        info.offset = cmd->BindVertexSources.items[i].offset;
-        info.range = cmd->BindVertexSources.items[i].range;
-        info.stride = cmd->BindVertexSources.items[i].stride;
-        _DpuBindVertexSources(dpu, cmd->BindVertexSources.baseSlotIdx + i, 1, &info);
-    }
+    DpuBindVertexBuffers(dpu, cmd->BindVertexBuffers.baseSlotIdx, cmd->BindVertexBuffers.cnt, cmd->BindVertexBuffers.src);
 }
 
-_ZGL void _DecodeCmdBindIndexSource(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindIndexBuffer(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuBindIndexSource(dpu, cmd->BindIndexSource.buf, cmd->BindIndexSource.offset, cmd->BindIndexSource.range, cmd->BindIndexSource.idxSiz);
+    DpuBindIndexBuffer(dpu, cmd->BindIndexBuffer.buf, cmd->BindIndexBuffer.offset, cmd->BindIndexBuffer.range, cmd->BindIndexBuffer.idxSiz);
 }
 
-_ZGL void _DecodeCmdBindVertexInput(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBindVertexInput(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuBindVertexInput(dpu, cmd->BindVertexInput.vin);
+    DpuBindVertexInput(dpu, cmd->DeclareVertex.vin);
 }
 
-_ZGL void _DecodeCmdPushConstants(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdPushConstants(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuPushConstants(dpu, cmd->PushConstants.offset, cmd->PushConstants.siz, cmd->PushConstants.data);
+    DpuPushConstants(dpu, cmd->PushConstants.offset, cmd->PushConstants.siz, cmd->PushConstants.data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 // DO WORK
 
-_ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, avxCmd const* cmd);
+_ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, _avxCmd const* cmd);
 
-_ZGL void _DecodeCmdDraw(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDraw(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDraw(dpu, &cmd->Draw.data);
+    DpuDraw(dpu, &cmd->Draw.data);
 }
 
-_ZGL void _DecodeCmdDrawIndirect(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDrawIndirect(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDrawIndirect(dpu, cmd->DrawIndirect.buf, cmd->DrawIndirect.offset, cmd->DrawIndirect.drawCnt, cmd->DrawIndirect.stride);
+    DpuDrawIndirect(dpu, cmd->DrawIndirect.buf, cmd->DrawIndirect.offset, cmd->DrawIndirect.drawCnt, cmd->DrawIndirect.stride);
 }
 
-_ZGL void _DecodeCmdDrawIndirectCount(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDrawIndirectCount(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDrawIndirectCount(dpu, cmd->DrawIndirectCount.buf, cmd->DrawIndirectCount.offset, cmd->DrawIndirectCount.cntBuf, cmd->DrawIndirectCount.cntBufOff, cmd->DrawIndirectCount.maxDrawCnt, cmd->DrawIndirectCount.stride);
+    DpuDrawIndirectCount(dpu, cmd->DrawIndirectCount.buf, cmd->DrawIndirectCount.offset, cmd->DrawIndirectCount.cntBuf, cmd->DrawIndirectCount.cntBufOff, cmd->DrawIndirectCount.maxDrawCnt, cmd->DrawIndirectCount.stride);
 }
 
-_ZGL void _DecodeCmdDrawIndexed(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDrawIndexed(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDrawIndexed(dpu, &cmd->DrawIndexed.data);
+    DpuDrawIndexed(dpu, &cmd->DrawIndexed.data);
 }
 
-_ZGL void _DecodeCmdDrawIndexedIndirect(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDrawIndexedIndirect(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDrawIndexedIndirect(dpu, cmd->DrawIndexedIndirect.buf, cmd->DrawIndexedIndirect.offset, cmd->DrawIndexedIndirect.drawCnt, cmd->DrawIndexedIndirect.stride);
+    DpuDrawIndexedIndirect(dpu, cmd->DrawIndexedIndirect.buf, cmd->DrawIndexedIndirect.offset, cmd->DrawIndexedIndirect.drawCnt, cmd->DrawIndexedIndirect.stride);
 }
 
-_ZGL void _DecodeCmdDrawIndexedIndirectCount(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDrawIndexedIndirectCount(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDrawIndexedIndirectCount(dpu, cmd->DrawIndexedIndirectCount.buf, cmd->DrawIndexedIndirectCount.offset, cmd->DrawIndexedIndirectCount.cntBuf, cmd->DrawIndexedIndirectCount.cntBufOff, cmd->DrawIndexedIndirectCount.maxDrawCnt, cmd->DrawIndexedIndirectCount.stride);
+    DpuDrawIndexedIndirectCount(dpu, cmd->DrawIndexedIndirectCount.buf, cmd->DrawIndexedIndirectCount.offset, cmd->DrawIndexedIndirectCount.cntBuf, cmd->DrawIndexedIndirectCount.cntBufOff, cmd->DrawIndexedIndirectCount.maxDrawCnt, cmd->DrawIndexedIndirectCount.stride);
 }
 
-_ZGL void _DecodeCmdDispatch(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDispatch(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDispatch(dpu, cmd->Dispatch.data.x, cmd->Dispatch.data.y, cmd->Dispatch.data.z);
+    DpuDispatch(dpu, cmd->Dispatch.data.x, cmd->Dispatch.data.y, cmd->Dispatch.data.z);
 }
 
-_ZGL void _DecodeCmdDispatchIndirect(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDispatchIndirect(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuDispatchIndirect(dpu, cmd->DispatchIndirect.buf, cmd->DispatchIndirect.offset);
+    DpuDispatchIndirect(dpu, cmd->DispatchIndirect.buf, cmd->DispatchIndirect.offset);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // BUFFER OPERATIONS
 
-_ZGL void _DecodeCmdBufCpy(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBufCpy(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    DpuBufCpy(dpu, cmd->CopyBuffer.src, cmd->CopyBuffer.dst, cmd->CopyBuffer.opCnt, cmd->CopyBuffer.ops);
+    DpuCopyBuffer(dpu, cmd->CopyBuffer.src, cmd->CopyBuffer.dst, cmd->CopyBuffer.opCnt, cmd->CopyBuffer.ops);
 }
 
-_ZGL void _DecodeCmdBufClear(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBufFill(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    DpuBufSet(dpu, cmd->ClearBuffer.buf, cmd->ClearBuffer.offset, cmd->ClearBuffer.range, 0);
+    DpuFillBuffer(dpu, cmd->FillBuffer.buf, cmd->FillBuffer.offset, cmd->FillBuffer.range, cmd->FillBuffer.value);
 }
 
-_ZGL void _DecodeCmdBufFill(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdBufUpdate(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    DpuBufSet(dpu, cmd->FillBuffer.buf, cmd->FillBuffer.offset, cmd->FillBuffer.range, cmd->FillBuffer.value);
+    avxBufferIo iop = { 0 };
+    iop.srcStride = 1;
+    iop.dstStride = 1;
+    iop.rowCnt = cmd->UpdateBuffer.range;
+    iop.dstOffset = cmd->UpdateBuffer.offset;
+    DpuUpdateBuffer(dpu, cmd->UpdateBuffer.buf, cmd->UpdateBuffer.data, 1, &iop);
 }
 
-_ZGL void _DecodeCmdBufUpdate(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdRasCopy(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    DpuBufRw(dpu, cmd->UpdateBuffer.buf, cmd->UpdateBuffer.offset, cmd->UpdateBuffer.range, FALSE, (void*)&cmd->UpdateBuffer.data[0]);
+    DpuCopyRaster(dpu, cmd->CopyRaster.src, cmd->CopyRaster.dst, cmd->CopyRaster.opCnt, cmd->CopyRaster.ops);
 }
 
-_ZGL void _DecodeCmdRasCopy(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdRasPack(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    _DpuCopyRas(dpu, cmd->CopyRaster.src, cmd->CopyRaster.dst, cmd->CopyRaster.opCnt, cmd->CopyRaster.ops);
+    DpuPackRaster(dpu, cmd->PackRaster.ras, cmd->PackRaster.buf, cmd->PackRaster.opCnt, cmd->PackRaster.ops);
 }
 
-_ZGL void _DecodeCmdRasPack(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdRasUnpack(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    _DpuPackRasToBuf(dpu, cmd->PackRaster.ras, cmd->PackRaster.buf, cmd->PackRaster.opCnt, cmd->PackRaster.ops);
+    DpuUnpackRaster(dpu, cmd->UnpackRaster.ras, cmd->UnpackRaster.buf, cmd->UnpackRaster.opCnt, cmd->UnpackRaster.ops);
 }
 
-_ZGL void _DecodeCmdRasUnpack(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdRasSubsample(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    _DpuUnpackRasFromBuf(dpu, cmd->UnpackRaster.ras, cmd->UnpackRaster.buf, cmd->UnpackRaster.opCnt, cmd->UnpackRaster.ops);
-}
-
-_ZGL void _DecodeCmdRasSubsample(zglDpu* dpu, avxCmd const* cmd)
-{
-    afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    afxRaster ras = cmd->SubsampleRaster.ras;
+    glVmt const* gl = dpu->gl;
+    avxRaster ras = cmd->SubsampleRaster.ras;
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
     afxUnit lodCnt = cmd->SubsampleRaster.lodCnt;
     afxUnit baseLod = cmd->SubsampleRaster.baseLod;
@@ -181,9 +169,9 @@ _ZGL void _DecodeCmdRasSubsample(zglDpu* dpu, avxCmd const* cmd)
 
     afxUnit rasLodCnt = ras->m.lodCnt;
 
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras);
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
     gl->GenerateMipmap(ras->glTarget); _ZglThrowErrorOccuried();
-    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, NIL);
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
 
     AFX_ASSERT_RANGE(rasLodCnt, baseLod, lodCnt);
     AfxThrowError();
@@ -195,143 +183,153 @@ _ZGL void _DecodeCmdRasSubsample(zglDpu* dpu, avxCmd const* cmd)
 ////////////////////////////////////////////////////////////////////////////////
 // VERTEX TRANSFORMATION OPERATIONS
 
-_ZGL void _DecodeCmdSetViewports(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetViewports(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuSetViewports(dpu, cmd->AdjustViewports.baseIdx, cmd->AdjustViewports.cnt, &cmd->AdjustViewports.viewports[0]);
+    DpuSetViewports(dpu, cmd->AdjustViewports.baseIdx, cmd->AdjustViewports.cnt, &cmd->AdjustViewports.viewports[0]);
 }
 
-_ZGL void _DecodeCmdSetPrimitiveTopology(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetPrimitiveTopology(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextTs.primTop = cmd->SetPrimitiveTopology.topology;
+    dpu->nextPrimTop = cmd->SetPrimitiveTopology.topology;
 }
 
-_ZGL void _DecodeCmdSwitchFrontFace(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSwitchFrontFace(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextTs.cwFrontFacing = cmd->SwitchFrontFace.cw;
+    dpu->nextFrontFaceCw = cmd->SwitchFrontFace.cw;
 }
 
-_ZGL void _DecodeCmdSetCullMode(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetCullMode(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextTs.cullMode = cmd->SetCullMode.mode;
+    dpu->nextCullMode = cmd->SetCullMode.mode;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // RASTERIZATION OPERATIONS
 
-_ZGL void _DecodeCmdCommenceDrawScope(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdCommenceDrawScope(zglDpu* dpu, _avxCmd const* cmd)
 {
-    _DpuCommenceDrawScope(dpu, cmd->CommenceDrawScope.canv, &cmd->CommenceDrawScope.area, cmd->CommenceDrawScope.baseLayer, cmd->CommenceDrawScope.layerCnt, cmd->CommenceDrawScope.targetCnt, &cmd->CommenceDrawScope.targets[0], cmd->CommenceDrawScope.hasD ? &cmd->CommenceDrawScope.depth : NIL, cmd->CommenceDrawScope.hasS ? &cmd->CommenceDrawScope.stencil : NIL, FALSE);
+    DpuCommenceDrawScope(dpu, 
+        cmd->CommenceDrawScope.canv, 
+        &cmd->CommenceDrawScope.area, 
+        cmd->CommenceDrawScope.baseLayer, 
+        cmd->CommenceDrawScope.layerCnt, 
+        cmd->CommenceDrawScope.targetCnt, 
+        &cmd->CommenceDrawScope.targets[0], 
+        /*cmd->CommenceDrawScope.hasD ? &cmd->CommenceDrawScope.depth : NIL, */&cmd->CommenceDrawScope.depth,
+        /*cmd->CommenceDrawScope.hasS ? &cmd->CommenceDrawScope.stencil : NIL, */&cmd->CommenceDrawScope.stencil,
+        &cmd->CommenceDrawScope.dbgTag,
+        FALSE);
 }
 
-_ZGL void _DecodeCmdConcludeDrawScope(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdConcludeDrawScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     (void)cmd;
-    _DpuConcludeDrawScope(dpu);
+    DpuConcludeDrawScope(dpu);
 }
 
-_ZGL void _DecodeCmdNextPass(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdNextPass(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err;
     AfxThrowError();
 }
 
-_ZGL void _DecodeCmdDisableRasterization(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDisableRasterization(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.rasterizationDisabled = cmd->DisableRasterization.disable;
+    dpu->nextRasterizationDisabled = cmd->DisableRasterization.disable;
 }
 
-_ZGL void _DecodeCmdEnableDepthBias(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdEnableDepthBias(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.depthBiasEnabled = cmd->EnableDepthBias.enable;
+    dpu->nextDepthBiasEnabled = cmd->EnableDepthBias.enable;
 }
 
-_ZGL void _DecodeCmdSetDepthBias(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetDepthBias(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.depthBiasConstFactor = cmd->SetDepthBias.constFactor;
-    dpu->nextRs.depthBiasClamp = cmd->SetDepthBias.clamp;
-    dpu->nextRs.depthBiasSlopeScale = cmd->SetDepthBias.slopeFactor;
+    dpu->nextDepthBiasConstFactor = cmd->SetDepthBias.constFactor;
+    dpu->nextDepthBiasClamp = cmd->SetDepthBias.clamp;
+    dpu->nextDepthBiasSlopeScale = cmd->SetDepthBias.slopeFactor;
 }
 
-_ZGL void _DecodeCmdSetLineWidth(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetLineWidth(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.lineWidth = cmd->SetLineWidth.lineWidth;
+    dpu->nextLineWidth = cmd->SetLineWidth.lineWidth;
 }
 
-_ZGL void _DecodeCmdEnableStencilTest(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdEnableStencilTest(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.stencilTestEnabled = cmd->EnableStencilTest.enable;
+    dpu->nextStencilTestEnabled = cmd->EnableStencilTest.enable;
 }
 
-_ZGL void _DecodeCmdSetStencilCompareMask(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetStencilCompareMask(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_RANGE((AFX_BIT(0) | AFX_BIT(1)), AFX_BIT(0), cmd->SetStencilCompareMask.faceMask);
 
     if (cmd->SetStencilCompareMask.faceMask & AFX_BIT(0))
-        dpu->nextRs.stencilFront.compareMask = cmd->SetStencilCompareMask.compareMask;
+        dpu->nextStencilFront.compareMask = cmd->SetStencilCompareMask.compareMask;
 
     if (cmd->SetStencilCompareMask.faceMask & AFX_BIT(1))
-        dpu->nextRs.stencilBack.compareMask = cmd->SetStencilCompareMask.compareMask;
+        dpu->nextStencilBack.compareMask = cmd->SetStencilCompareMask.compareMask;
 }
 
-_ZGL void _DecodeCmdSetStencilWriteMask(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetStencilWriteMask(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_RANGE((AFX_BIT(0) | AFX_BIT(1)), AFX_BIT(0), cmd->SetStencilWriteMask.faceMask);
 
     if (cmd->SetStencilWriteMask.faceMask & AFX_BIT(0))
-        dpu->nextRs.stencilFront.writeMask = cmd->SetStencilWriteMask.writeMask;
+        dpu->nextStencilFront.writeMask = cmd->SetStencilWriteMask.writeMask;
 
     if (cmd->SetStencilWriteMask.faceMask & AFX_BIT(1))
-        dpu->nextRs.stencilBack.writeMask = cmd->SetStencilWriteMask.writeMask;
+        dpu->nextStencilBack.writeMask = cmd->SetStencilWriteMask.writeMask;
 }
 
-_ZGL void _DecodeCmdSetStencilReference(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetStencilReference(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_RANGE((AFX_BIT(0) | AFX_BIT(1)), AFX_BIT(0), cmd->SetStencilReference.faceMask);
 
     if (cmd->SetStencilReference.faceMask & AFX_BIT(0))
-        dpu->nextRs.stencilFront.reference = cmd->SetStencilReference.reference;
+        dpu->nextStencilFront.reference = cmd->SetStencilReference.reference;
 
     if (cmd->SetStencilReference.faceMask & AFX_BIT(1))
-        dpu->nextRs.stencilBack.reference = cmd->SetStencilReference.reference;
+        dpu->nextStencilBack.reference = cmd->SetStencilReference.reference;
 }
 
-_ZGL void _DecodeCmdEnableDepthTest(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdEnableDepthTest(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.depthTestEnabled = cmd->EnableDepthTest.enable;
+    dpu->nextDepthTestEnabled = cmd->EnableDepthTest.enable;
 }
 
-_ZGL void _DecodeCmdSetDepthCompareOp(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetDepthCompareOp(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.depthCompareOp = cmd->SetDepthCompareOp.compareOp;
+    dpu->nextDepthCompareOp = cmd->SetDepthCompareOp.compareOp;
 }
 
-_ZGL void _DecodeCmdDisableDepthWrite(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdDisableDepthWrite(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    dpu->nextRs.depthWriteDisabled = cmd->DisableDepthWrite.disable;
+    dpu->nextDepthWriteDisabled = cmd->DisableDepthWrite.disable;
 }
 
-_ZGL void _DecodeCmdSetBlendConstants(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetBlendConstants(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    AfxV4dCopy(dpu->nextRs.blendConstants, cmd->SetBlendConstants.blendContants);
+    AfxV4dCopy(dpu->nextBlendConstants, cmd->SetBlendConstants.blendContants);
     //dpu->nextBlendConstUpd = TRUE;
 }
 
-_ZGL void _DecodeCmdSetScissors(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetScissors(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     afxUnit first = cmd->AdjustScissors.baseIdx;
@@ -340,49 +338,59 @@ _ZGL void _DecodeCmdSetScissors(zglDpu* dpu, avxCmd const* cmd)
 
     for (afxUnit i = 0; i < cnt; i++)
     {
-        dpu->nextRs.scisRects[first + i] = cmd->AdjustScissors.rects[i];
-        dpu->nextRs.scisUpdMask |= AFX_BIT(first + i);
+        dpu->nextScisRects[first + i] = cmd->AdjustScissors.rects[i];
+        dpu->nextScisUpdMask |= AFX_BIT(first + i);
     }
 }
 
-_ZGL void _DecodeCmdSetCurtains(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdSetCurtains(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    afxUnit first = cmd->AdjustCurtains.baseIdx;
-    afxUnit cnt = cmd->AdjustCurtains.cnt;
+    afxUnit first = cmd->AdjustCurtainsSIGMA.baseIdx;
+    afxUnit cnt = cmd->AdjustCurtainsSIGMA.cnt;
     AFX_ASSERT_RANGE(ZGL_MAX_VIEWPORTS, first, cnt);
 
     for (afxUnit i = 0; i < cnt; i++)
     {
-        dpu->nextRs.curtainRects[first + i] = cmd->AdjustCurtains.rects[i];
-        dpu->nextRs.curtainUpdMask |= AFX_BIT(first + i);
+        dpu->nextCurtainRects[first + i] = cmd->AdjustCurtainsSIGMA.rects[i];
+        dpu->nextCurtainUpdMask |= AFX_BIT(first + i);
     }
 }
 
-_ZGL void _DecodeCmdPushDebugScope(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdPushDebugScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;    
-    gl->PushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, AfxGetColorAsRgba8(cmd->PushDebugScope.color), cmd->PushDebugScope.label.str.len, cmd->PushDebugScope.label.str.start); _ZglThrowErrorOccuried();
+    glVmt const* gl = dpu->gl;    
+    DpuPushDebugScope(dpu, cmd->PushDebugScope.color, &cmd->PushDebugScope.label.str);
 }
 
-_ZGL void _DecodeCmdPopDebugScope(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdMarkDebugStep(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-    gl->PopDebugGroup(); _ZglThrowErrorOccuried();
+    glVmt const* gl = dpu->gl;
+    DpuMarkDebugStep(dpu, cmd->MarkDebugStep.color, &cmd->MarkDebugStep.label.str);
 }
 
-_ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, avxCmd const* cmd)
+_ZGL void _DecodeCmdPopDebugScope(zglDpu* dpu, _avxCmd const* cmd)
+{
+    afxError err = AFX_ERR_NONE;
+    DpuPopDebugScope(dpu);
+}
+
+_ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
 
     for (afxUnit i = 0; i < cmd->ExecuteCommands.cnt; i++)
-        _AvxDpuRollContext(dpu, cmd->ExecuteCommands.contexts[i]);
+        _AvxDpuRollContext(&dpu->m, cmd->ExecuteCommands.contexts[i]);
 }
 
-_ZGL avxCmdList const cmdDevmt =
+_ZGL _avxCmdLut const cmdDevmt =
 {
+    .PushDebugScope = (void*)_DecodeCmdPopDebugScope,
+    .PopDebugScope = (void*)_DecodeCmdPopDebugScope,
+    .MarkDebugStep = (void*)_DecodeCmdMarkDebugStep,
+
     .BindPipeline = (void*)_DecodeCmdBindPipeline,
     .BindBuffers = (void*)_DecodeCmdBindBuffers,
     .BindRasters = (void*)_DecodeCmdBindRasters,
@@ -399,9 +407,9 @@ _ZGL avxCmdList const cmdDevmt =
     .DispatchIndirect = (void*)_DecodeCmdDispatchIndirect,
     .PushConstants = (void*)_DecodeCmdPushConstants,
 
-    .BindVertexInput = (void*)_DecodeCmdBindVertexInput,
-    .BindVertexSources = (void*)_DecodeCmdBindVertexSources,
-    .BindIndexSource = (void*)_DecodeCmdBindIndexSource,
+    .DeclareVertex = (void*)_DecodeCmdBindVertexInput,
+    .BindVertexBuffers = (void*)_DecodeCmdBindVertexBuffers,
+    .BindIndexBuffer = (void*)_DecodeCmdBindIndexBuffer,
     .SetPrimitiveTopology = (void*)_DecodeCmdSetPrimitiveTopology,
     .AdjustViewports = (void*)_DecodeCmdSetViewports,
     .SwitchFrontFace = (void*)_DecodeCmdSwitchFrontFace,
@@ -416,7 +424,7 @@ _ZGL avxCmdList const cmdDevmt =
     .SetDepthBias = (void*)_DecodeCmdSetDepthBias,
     .SetLineWidth = (void*)_DecodeCmdSetLineWidth,
     .AdjustScissors = (void*)_DecodeCmdSetScissors,
-    .AdjustCurtains = (void*)_DecodeCmdSetCurtains,
+    .AdjustCurtainsSIGMA = (void*)_DecodeCmdSetCurtains,
     .EnableDepthBoundsTest = NIL,
     .SetDepthBounds = NIL,
     .EnableStencilTest = (void*)_DecodeCmdEnableStencilTest,
@@ -435,6 +443,5 @@ _ZGL avxCmdList const cmdDevmt =
 
     .CopyBuffer = (void*)_DecodeCmdBufCpy,
     .FillBuffer = (void*)_DecodeCmdBufFill,
-    .ClearBuffer = (void*)_DecodeCmdBufClear,
     .UpdateBuffer = (void*)_DecodeCmdBufUpdate
 };

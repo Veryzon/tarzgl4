@@ -19,22 +19,38 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-_ZGL afxError _DpuBindAndSyncFenc(zglDpu* dpu, afxBool syncOnly, afxFence fenc)
+_ZGL afxError _DpuBindAndSyncFenc(zglDpu* dpu, afxBool syncOnly, avxFence fenc)
 {
     //AfxEntry("pip=%p", pip);
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
-
+    glVmt const* gl = dpu->gl;
+    
     gl->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     return err;
 }
 
-_ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxFence const fences[])
+_ZGL afxError _ZglResetFence(zglDpu* dpu, avxFence fenc)
+{
+    afxError err = AFX_ERR_NONE;
+    AfxStoreAtom32(&fenc->m.signaled, 0);
+    return err;
+}
+
+_ZGL afxError _ZglSignalFence(zglDpu* dpu, avxFence fenc)
+{
+    afxError err = AFX_ERR_NONE;
+    afxInt32 expected = 0;
+    AfxCasAtom32(&fenc->m.signaled, &expected, 1);
+    AfxStoreAtom32(&fenc->m.signaled, 1);
+    return err;
+}
+
+_ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, avxFence const fences[])
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, cnt, fences);
-    afxDrawSystem dsys = (void*)AfxGetFenceContext(fences[0]);
+    afxDrawSystem dsys = (void*)AvxGetFenceContext(fences[0]);
     afxUnit txuIdx = 0;
     glVmt const* gl = NIL;// &ddev->idd->dpus[txuIdx].gl;
 
@@ -46,7 +62,7 @@ _ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxF
 
         for (afxUnit i = 0; i < cnt; i++)
         {
-            afxFence fenc = fences[i];
+            avxFence fenc = fences[i];
             AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, fenc);
 
             // To block all CPU operations until a sync object is signaled, you call this function:
@@ -111,29 +127,29 @@ _ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, afxF
         */
 
         AfxGetClock(&currClock);
-    } while (timeout > AfxGetSecondsElapsed(&startClock, &currClock));
+    } while (timeout > AfxGetClockSecondsElapsed(&startClock, &currClock));
     return err;
 }
 
-_ZGL afxError _ZglResetFenc(afxUnit cnt, afxFence const fences[])
+_ZGL afxError _ZglResetFenc(afxUnit cnt, avxFence const fences[])
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, cnt, fences);
     
     for (afxUnit i = 0; i < cnt; i++)
     {
-        afxFence fenc = fences[i];
+        avxFence fenc = fences[i];
         AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, fenc);
         fenc->m.signaled = FALSE;
     }
     return err;
 }
 
-_ZGL afxError _ZglFencDtorCb(afxFence fenc)
+_ZGL afxError _ZglFencDtorCb(avxFence fenc)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, &fenc);
-    afxDrawSystem dsys = (void*)AfxGetFenceContext(fenc);
+    afxDrawSystem dsys = (void*)AvxGetFenceContext(fenc);
 
     if (fenc->glHandle)
     {
@@ -141,24 +157,27 @@ _ZGL afxError _ZglFencDtorCb(afxFence fenc)
         fenc->glHandle = 0;
     }
 
-    if (_AfxFencStdImplementation.dtor(fenc))
+    if (_AVX_FENC_CLASS_CONFIG.dtor(fenc))
         AfxThrowError();
 
     return err;
 }
 
-_ZGL afxError _ZglFencCtorCb(afxFence fenc, void** args, afxUnit invokeNo)
+_ZGL afxError _ZglFencCtorCb(avxFence fenc, void** args, afxUnit invokeNo)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, &fenc);
 
-    if (_AfxFencStdImplementation.ctor(fenc, args, invokeNo)) AfxThrowError();
+    if (_AVX_FENC_CLASS_CONFIG.ctor(fenc, args, invokeNo)) AfxThrowError();
     else
     {
+        afxDrawSystem dsys = AfxGetProvider(fenc);
+        fenc->fencUniqueId = ++dsys->fencUniqueId;
+
         fenc->glHandle = 0;
         fenc->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
-        if (_AfxFencStdImplementation.dtor(fenc))
+        if (_AVX_FENC_CLASS_CONFIG.dtor(fenc))
             AfxThrowError();
     }
     return err;
