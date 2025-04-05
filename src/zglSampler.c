@@ -18,6 +18,8 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
+//#define FORCE_GL_SAMPLER_SETTINGS 1
+
 ////////////////////////////////////////////////////////////////////////////////
 // SAMPLER                                                                    //
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +28,7 @@ _ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp)
 {
     //AfxEntry("smp=%p", smp);
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
     if (!samp)
     {
@@ -54,12 +56,16 @@ _ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp)
             samp->glHandle = glHandle;
             bound = TRUE;
 
-            GLenum magF = ZglToGlTexelFilterMode(samp->m.cfg.base.magnify);
-            GLenum minF = ZglToGlTexelFilterModeMipmapped(samp->m.cfg.base.minify, samp->m.cfg.base.mipify);
-            GLint wrapS = ZglToGlTexWrapMode(samp->m.cfg.base.uvw[0]);
-            GLint wrapT = ZglToGlTexWrapMode(samp->m.cfg.base.uvw[1]);
-            GLint wrapR = ZglToGlTexWrapMode(samp->m.cfg.base.uvw[2]);
-            GLint cop = ZglToGlCompareOp(samp->m.cfg.base.compareOp);
+            if (samp->m.tag.len)
+            {
+                gl->ObjectLabel(GL_SAMPLER, glHandle, samp->m.tag.len, (GLchar const*)samp->m.tag.start); _ZglThrowErrorOccuried();
+            }
+            GLenum magF = ZglToGlTexelFilterMode(samp->m.cfg.magnify);
+            GLenum minF = ZglToGlTexelFilterModeMipmapped(samp->m.cfg.minify, samp->m.cfg.mipFlt);
+            GLint wrapS = ZglToGlTexWrapMode(samp->m.cfg.uvw[0]);
+            GLint wrapT = ZglToGlTexWrapMode(samp->m.cfg.uvw[1]);
+            GLint wrapR = ZglToGlTexWrapMode(samp->m.cfg.uvw[2]);
+            GLint cop = ZglToGlCompareOp(samp->m.cfg.compareOp);
 
             gl->SamplerParameteri(glHandle, GL_TEXTURE_MAG_FILTER, magF); _ZglThrowErrorOccuried();
             gl->SamplerParameteri(glHandle, GL_TEXTURE_MIN_FILTER, minF); _ZglThrowErrorOccuried();
@@ -68,29 +74,57 @@ _ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp)
             gl->SamplerParameteri(glHandle, GL_TEXTURE_WRAP_T, wrapT); _ZglThrowErrorOccuried();
             gl->SamplerParameteri(glHandle, GL_TEXTURE_WRAP_R, wrapR); _ZglThrowErrorOccuried();
 
-            if (samp->m.cfg.base.anisotropyEnabled)
+#ifndef FORCE_GL_SAMPLER_SETTINGS
+            if (samp->m.cfg.anisotropyEnabled)
+#endif
             {
-                gl->SamplerParameterf(glHandle, GL_TEXTURE_MAX_ANISOTROPY, samp->m.cfg.base.anisotropyMaxDegree); _ZglThrowErrorOccuried();
+                gl->SamplerParameterf(glHandle, GL_TEXTURE_MAX_ANISOTROPY, samp->m.cfg.anisotropyMaxDegree); _ZglThrowErrorOccuried();
+            }
+
+            gl->SamplerParameterf(glHandle, GL_TEXTURE_LOD_BIAS, samp->m.cfg.lodBias); _ZglThrowErrorOccuried();
+            gl->SamplerParameterf(glHandle, GL_TEXTURE_MIN_LOD, samp->m.cfg.minLod); _ZglThrowErrorOccuried();
+            gl->SamplerParameterf(glHandle, GL_TEXTURE_MAX_LOD, samp->m.cfg.maxLod); _ZglThrowErrorOccuried();
+
+#ifndef FORCE_GL_SAMPLER_SETTINGS
+            if (!samp->m.cfg.compareEnabled)
+            {
+                gl->SamplerParameteri(glHandle, GL_TEXTURE_COMPARE_MODE, GL_NONE); _ZglThrowErrorOccuried();
             }
             else
-            {
-                //gl->SamplerParameterf(smp->glHandle, GL_TEXTURE_MAX_ANISOTROPY, 0); _ZglThrowErrorOccuried();
-            }
-
-            gl->SamplerParameterf(glHandle, GL_TEXTURE_LOD_BIAS, samp->m.cfg.base.lodBias); _ZglThrowErrorOccuried();
-            gl->SamplerParameterf(glHandle, GL_TEXTURE_MIN_LOD, samp->m.cfg.base.minLod); _ZglThrowErrorOccuried();
-            gl->SamplerParameterf(glHandle, GL_TEXTURE_MAX_LOD, samp->m.cfg.base.maxLod); _ZglThrowErrorOccuried();
-
-            if (samp->m.cfg.base.compareEnabled)
+#endif
             {
                 // what about GL_TEXTURE_COMPARE_MODE?
+                gl->SamplerParameteri(glHandle, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE); _ZglThrowErrorOccuried();
+                gl->SamplerParameteri(glHandle, GL_TEXTURE_COMPARE_FUNC, cop); _ZglThrowErrorOccuried();
             }
 
-            gl->SamplerParameteri(glHandle, GL_TEXTURE_COMPARE_MODE, GL_NONE); _ZglThrowErrorOccuried();
-            gl->SamplerParameteri(glHandle, GL_TEXTURE_COMPARE_FUNC, cop); _ZglThrowErrorOccuried();
-            gl->SamplerParameterfv(glHandle, GL_TEXTURE_BORDER_COLOR, (void*)samp->m.cfg.base.borderColor); _ZglThrowErrorOccuried();
+#ifndef FORCE_GL_SAMPLER_SETTINGS
+            if ((samp->m.cfg.uvw[0] == avxTexelWrap_BORDER) || 
+                (samp->m.cfg.uvw[1] == avxTexelWrap_BORDER) || 
+                (samp->m.cfg.uvw[2] == avxTexelWrap_BORDER))
+#endif
+            {
+                /*
+                    The GL_CLAMP_TO_BORDER requires a color that edge texels are blended when texture coordinates fall outside 
+                    of the valid area of the texture. When this this edge mode is used, a border color must be set by setting 
+                    the GL_TEXTURE_BORDER_COLOR parameter.
+                */
+                gl->SamplerParameterfv(glHandle, GL_TEXTURE_BORDER_COLOR, (void*)samp->m.cfg.borderColor.rgba); _ZglThrowErrorOccuried();
+            }
 
-            AfxLogEcho("Hardware-side sampler %p ready.", samp);
+#if 0
+            /*
+                As an OpenGL extension, seamless cubemap filtering can be manipulated on a per-texture or per-sampler object basis. 
+                Note that if you use the global version, it will still globally force seamless behavior on all cubemaps.
+
+                This is governed by a simple boolean sampler parameter, GL_TEXTURE_CUBE_MAP_SEAMLESS. Setting it to 0 turns it off 
+                for that texture/sampler; setting it to any other value causes accesses to the cubemap to be seamless.
+            */
+            // In Vulkan, there is a extension to do the opposite of it; to disable it.
+            gl->SamplerParameteri(glHandle, GL_TEXTURE_CUBE_MAP_SEAMLESS, TRUE); _ZglThrowErrorOccuried();
+#endif
+
+            //AfxReportMessage("Hardware-side sampler %p ready.", samp);
             samp->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
         }
         else

@@ -36,6 +36,8 @@
 #define _AVX_DRAW_SYSTEM_IMPL
 #define _AVX_DRAW_OUTPUT_C
 #define _AVX_DRAW_OUTPUT_IMPL
+#define _AVX_DISPLAY_C
+#define _AVX_DISPLAY_IMPL
 #define _AVX_DRAW_INPUT_C
 #define _AVX_DRAW_INPUT_IMPL
 #define _AVX_PIPELINE_C
@@ -47,7 +49,7 @@
 #define _AVX_RASTERIZER_C
 #define _AVX_RASTERIZER_IMPL
 #define _AVX_VERTEX_INPUT_C
-#define _AVX_VERTEX_INPUT_IMPL
+#define _AVX_VERTEX_DECL_IMPL
 #define _AVX_DRAW_CONTEXT_C
 #define _AVX_CMD_BUFFER_IMPL
 #define _AVX_SAMPLER_C
@@ -58,8 +60,8 @@
 #define _AVX_CANVAS_IMPL
 #define _AVX_LIGATURE_C
 #define _AVX_BIND_SCHEMA_IMPL
-#define _AFX_FENCE_C
-#define _AFX_FENCE_IMPL
+#define _AVX_FENCE_C
+#define _AVX_FENCE_IMPL
 #define _AFX_SEMAPHORE_C
 #define _AFX_SEMAPHORE_IMPL
 #define _AVX_QUERY_POOL_C
@@ -80,8 +82,8 @@
 #define _ZGL_MAX_STAGE_PER_PIP 8
 //#define _ZGL_MAX_VBO_PER_BIND 8
 
-#define ZGL_MAX_VERTEX_ATTRIBS 8
-#define ZGL_MAX_VERTEX_ATTRIB_BINDINGS 8
+#define ZGL_MAX_VERTEX_ATTRIBS 16
+#define ZGL_MAX_VERTEX_ATTRIB_BINDINGS 16
 #define ZGL_MAX_VERTEX_ATTRIB_STRIDE 4096
 #define ZGL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET 4096
 
@@ -90,14 +92,16 @@
 #define ZGL_MAX_VIEWPORTS 8
 #define ZGL_VIEWPORT_BOUNDS_RANGE 0
 #define ZGL_MAX_VIEWPORT_DIMS 0
-#define ZGL_MAX_CANVAS_WIDTH AFX_N16_MAX
-#define ZGL_MAX_CANVAS_HEIGHT AFX_N16_MAX
-#define ZGL_MAX_CANVAS_LAYERS AFX_N16_MAX
+#define ZGL_MAX_CANVAS_WIDTH AFX_U16_MAX
+#define ZGL_MAX_CANVAS_HEIGHT AFX_U16_MAX
+#define ZGL_MAX_CANVAS_LAYERS AFX_U16_MAX
 #define ZGL_DEPTH_RANGE
 
 
 #define ZGL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 80
 #define ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT (ZGL_MAX_COMBINED_TEXTURE_IMAGE_UNITS - 1)
+#define ZGL_COPY_READ_RASTER (ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT - 1)
+#define ZGL_COPY_WRITE_RASTER (ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT - 2)
 
 #define _ZGL_MAX_VAO_PER_TIME 8
 //#define _ZGL_MAX_VP_PER_SET 8
@@ -125,14 +129,14 @@ AFX_DEFINE_UNION(zglLegoData) // A GPUBindGroupEntry describes a single resource
 {
     struct
     {
-        afxBuffer           buf; // The GPUBuffer to bind.
+        avxBuffer           buf; // The GPUBuffer to bind.
         afxUnit              offset; // The offset, in bytes, from the beginning of buffer to the beginning of the range exposed to the shader by the buffer binding.
         afxUnit              range; // The size, in bytes, of the buffer binding. If undefined, specifies the range starting at offset and ending at the end of buffer.
     };
     struct
     {
         avxSampler          smp;
-        afxRaster          tex;
+        avxRaster          tex;
     };
 };
 

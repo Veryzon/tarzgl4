@@ -18,6 +18,10 @@
 #define _ZGL_DBG_IGNORE_PRIM_RESTART
 #define _ZGL_DBG_IGNORE_DEPTH_CLAMP
 
+//#define FORCE_CULL_MODE
+//#define FORCE_FRONT_FACE
+//#define FORCE_VIEWPORT
+
 #include "zglUtils.h"
 #include "zglCommands.h"
 #include "zglObjects.h"
@@ -25,31 +29,36 @@
 _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
-    dpu->activeTs.primTop = dpu->nextTs.primTop;
+    dpu->primTop = dpu->nextPrimTop;
 
-    avxCullMode cullMode = dpu->nextTs.cullMode;
-
-    if (dpu->activeTs.cullMode != cullMode)
+    avxCullMode nextCullMode = dpu->nextCullMode;
+#ifndef FORCE_CULL_MODE
+    if (nextCullMode != dpu->cullMode)
+#endif
     {
         /*
             GL_CULL_FACE
             If enabled, cull polygons based on their winding in window coordinates. See glCullFace.
         */
 
-        if (cullMode)
+        if (nextCullMode == avxCullMode_NONE)
         {
-            AFX_ASSERT(!dpu->activeTs.cullMode);
-            gl->Enable(GL_CULL_FACE); _ZglThrowErrorOccuried();
+#ifndef FORCE_CULL_MODE
+            AFX_ASSERT(dpu->cullMode);
+#endif
+            gl->Disable(GL_CULL_FACE); _ZglThrowErrorOccuried();
         }
         else
         {
-            AFX_ASSERT(dpu->activeTs.cullMode);
-            gl->Disable(GL_CULL_FACE); _ZglThrowErrorOccuried();
+#ifndef FORCE_CULL_MODE
+            AFX_ASSERT(!dpu->cullMode);
+#endif
+            gl->Enable(GL_CULL_FACE); _ZglThrowErrorOccuried();
         }
 
-        if (cullMode)
+        if (nextCullMode)
         {
             /*
                 glCullFace — specify whether front- or back-facing facets can be culled
@@ -65,16 +74,17 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
                 If mode is GL_FRONT_AND_BACK, no facets are drawn, but other primitives such as points and lines are drawn.
             */
-            gl->CullFace(AfxToGlCullMode(cullMode)); _ZglThrowErrorOccuried();
+            gl->CullFace(AfxToGlCullMode(nextCullMode)); _ZglThrowErrorOccuried();
         }
-        dpu->activeTs.cullMode = cullMode;
+        dpu->cullMode = nextCullMode;
     }
 
-    if (dpu->activeTs.cullMode)
+    if (nextCullMode)
     {
-        afxBool cwFrontFacing = dpu->nextTs.cwFrontFacing;
-
-        if (dpu->activeTs.cwFrontFacing != cwFrontFacing)
+        afxBool nextFrontFaceCw = dpu->nextFrontFaceCw;
+#ifndef FORCE_FRONT_FACE
+        if (nextFrontFaceCw != dpu->frontFaceCw)
+#endif
         {
             /*
                 glFrontFace — define front- and back-facing polygons
@@ -92,39 +102,54 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
                 Passing GL_CCW to mode selects counterclockwise polygons as front-facing; GL_CW selects clockwise polygons as front-facing.
                 By default, counterclockwise polygons are taken to be front-facing.
             */
-            gl->FrontFace(cwFrontFacing ? GL_CW : GL_CCW); _ZglThrowErrorOccuried();
-            dpu->activeTs.cwFrontFacing = cwFrontFacing;
+            gl->FrontFace(nextFrontFaceCw ? GL_CW : GL_CCW); _ZglThrowErrorOccuried();
+            dpu->frontFaceCw = nextFrontFaceCw;
         }
     }
 
-    if (dpu->nextTs.vpsUpdMask)
+    afxMask nextVpUpdMask = dpu->nextVpUpdMask;
+#ifndef FORCE_VIEWPORT
+    if (nextVpUpdMask)
+#endif
     {
+        dpu->nextVpUpdMask = NIL;
+
         afxUnit vpCnt = dpu->activePip->m.vpCnt;
         AFX_ASSERT(vpCnt);
-        afxMask vpsUpdMask = dpu->nextTs.vpsUpdMask;
-        dpu->nextTs.vpsUpdMask = NIL;
 
 #if FORCE_GL_GENERIC_FUNCS
         GLfloat v[ZGL_MAX_VIEWPORTS][4];
         GLdouble v2[ZGL_MAX_VIEWPORTS][2];
 
+        GLuint cnt = 0;
+        GLuint first = GL_INVALID_INDEX;
+
         for (afxUnit i = 0; i < vpCnt; i++)
         {
-            if (vpsUpdMask & AFX_BIT(i))
+            if (nextVpUpdMask & AFX_BIT(i))
             {
-                v[i][0] = dpu->nextTs.vps[i].origin[0];
-                v[i][1] = dpu->nextTs.vps[i].origin[1];
-                v[i][2] = dpu->nextTs.vps[i].extent[0];
-                v[i][3] = dpu->nextTs.vps[i].extent[1];
+                if (first == GL_INVALID_INDEX)
+                    first = i;
 
-                v2[i][0] = dpu->nextTs.vps[i].minDepth;
-                v2[i][1] = dpu->nextTs.vps[i].maxDepth;
-                gl->ViewportArrayv(i, 1, &v[i][0]); _ZglThrowErrorOccuried();
-                gl->DepthRangeArrayv(i, 1, &v2[i][0]); _ZglThrowErrorOccuried();
+                cnt = i + 1 - first;
+
+                dpu->vps[i] = dpu->nextVps[i];
             }
+            v[i][0] = dpu->vps[i].origin[0];
+            v[i][1] = dpu->vps[i].origin[1];
+            v[i][2] = dpu->vps[i].extent[0];
+            v[i][3] = dpu->vps[i].extent[1];
+            v2[i][0] = dpu->vps[i].minDepth;
+            v2[i][1] = dpu->vps[i].maxDepth;
         }
-        //gl->ViewportArrayv(0, vpCnt, &v[0][0]); _ZglThrowErrorOccuried();
-        //gl->DepthRangeArrayv(0, vpCnt, &v2[0][0]); _ZglThrowErrorOccuried();
+
+        if (cnt)
+        {
+            //gl->ViewportArrayv(0, vpCnt, &v[0][0]); _ZglThrowErrorOccuried();
+            //gl->DepthRangeArrayv(0, vpCnt, &v2[0][0]); _ZglThrowErrorOccuried();
+            gl->ViewportArrayv(first, cnt, &v[first][0]); _ZglThrowErrorOccuried();
+            gl->DepthRangeArrayv(first, cnt, &v2[first][0]); _ZglThrowErrorOccuried();
+        }
 #else
         if (1 < vpCnt)
         {
@@ -188,10 +213,8 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
     }
 
 #ifndef _ZGL_DBG_IGNORE_PRIM_RESTART
-
-    afxBool primRestartEnabled = dpu->nextTs.primTop;
-
-    if (dpu->activeTs.primRestartEnabled != primRestartEnabled)
+    afxBool nextPrimRestartEnabled = dpu->nextPrimRestartEnabled;
+    if (nextPrimRestartEnabled != dpu->primRestartEnabled)
     {
         /*
             GL_PRIMITIVE_RESTART
@@ -200,9 +223,9 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
             See glPrimitiveRestartIndex.
         */
 
-        if (primRestartEnabled)
+        if (nextPrimRestartEnabled)
         {
-            AFX_ASSERT(!dpu->activeTs.primRestartEnabled);
+            AFX_ASSERT(!dpu->primRestartEnabled);
             gl->Enable(GL_PRIMITIVE_RESTART); _ZglThrowErrorOccuried();
 
             /*
@@ -232,40 +255,38 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
         }
         else
         {
-            AFX_ASSERT(dpu->activeTs.primRestartEnabled);
+            AFX_ASSERT(dpu->primRestartEnabled);
             gl->Disable(GL_PRIMITIVE_RESTART); _ZglThrowErrorOccuried();
         }
-        dpu->activeTs.primRestartEnabled = primRestartEnabled;
+        dpu->primRestartEnabled = nextPrimRestartEnabled;
     }
 #endif
 
 #ifndef _ZGL_DBG_IGNORE_DEPTH_CLAMP
-
-    afxBool depthClampEnabled = dpu->nextTs.depthClampEnabled;
-
-    if (dpu->activeTs.depthClampEnabled != depthClampEnabled)
+    afxBool nextDepthClampEnabled = dpu->nextDepthClampEnabled;
+    if (nextDepthClampEnabled != dpu->depthClampEnabled)
     {
         /*
             GL_DEPTH_CLAMP
             If enabled, the -wc =< zc =< wc plane equation is ignored by view volume clipping (effectively, there is no near or far plane clipping). See glDepthRange.
         */
 
-        if (depthClampEnabled)
+        if (nextDepthClampEnabled)
         {
-            AFX_ASSERT(!dpu->activeTs.depthClampEnabled);
+            AFX_ASSERT(!dpu->depthClampEnabled);
             gl->Enable(GL_DEPTH_CLAMP); _ZglThrowErrorOccuried();
         }
         else
         {
-            AFX_ASSERT(dpu->activeTs.depthClampEnabled);
+            AFX_ASSERT(dpu->depthClampEnabled);
             gl->Disable(GL_DEPTH_CLAMP); _ZglThrowErrorOccuried();
         }
-        dpu->activeTs.depthClampEnabled = depthClampEnabled;
+        dpu->depthClampEnabled = nextDepthClampEnabled;
     }
 #endif
 }
 
-_ZGL void _DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, afxViewport const vp[])
+_ZGL void DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, avxViewport const vp[])
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_RANGE(ZGL_MAX_VIEWPORTS, first, cnt);
@@ -273,12 +294,12 @@ _ZGL void _DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, afxViewport 
     for (afxUnit i = 0; i < cnt; i++)
     {
         afxUnit vpIdx = first + i;
-        dpu->nextTs.vps[vpIdx] = vp[i];
-        dpu->nextTs.vpsUpdMask |= AFX_BIT(vpIdx);
+        dpu->nextVps[vpIdx] = vp[i];
+        dpu->nextVpUpdMask |= AFX_BIT(vpIdx);
     }
 }
 
-_ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBufferInfo const src[])
+_ZGL void DpuBindVertexBuffers(zglDpu* dpu, afxUnit first, afxUnit cnt, avxBufferedStream const src[])
 {
     /*
         The values taken from elements i of pBuffers and pOffsets replace the current state for the vertex input binding firstBinding + i, for i in[0, bindingCount).
@@ -294,7 +315,7 @@ _ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBuff
     */
 
     afxError err = AFX_ERR_NONE;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
     AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, first, cnt);
 
@@ -302,9 +323,9 @@ _ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBuff
 
     for (afxUnit i = 0; i < cnt; i++)
     {
-        zglBufferInfo const* info = &src[i];
+        avxBufferedStream const* info = &src[i];
         
-        afxBuffer buf = info->buf;
+        avxBuffer buf = info->buf;
         afxUnit32 offset = info->offset;
         afxUnit32 range = info->range;
         afxUnit32 stride = info->stride;
@@ -313,14 +334,14 @@ _ZGL void _DpuBindVertexSources(zglDpu* dpu, afxUnit first, afxUnit cnt, zglBuff
         AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
 
         dpu->nextVinBindings.sources[bindingIdx].buf = buf;
-        dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AfxMin(offset, AfxGetBufferCapacity(buf, 0) - 1) : offset;
-        dpu->nextVinBindings.sources[bindingIdx].range = !range && buf ? AfxGetBufferCapacity(buf, 0) - offset : range;
+        dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AfxMin(offset, AvxGetBufferCapacity(buf, 0) - 1) : offset;
+        dpu->nextVinBindings.sources[bindingIdx].range = !range && buf ? AvxGetBufferCapacity(buf, 0) - offset : range;
         dpu->nextVinBindings.sources[bindingIdx].stride = stride;
         dpu->nextVinBindings.sourcesUpdMask |= AFX_BIT(bindingIdx);
     }
 }
 
-_ZGL void _DpuBindIndexSource(zglDpu* dpu, afxBuffer buf, afxUnit32 offset, afxUnit32 range, afxUnit32 stride)
+_ZGL void DpuBindIndexBuffer(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit32 range, afxUnit32 stride)
 {
     afxError err = AFX_ERR_NONE;
 

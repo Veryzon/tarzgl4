@@ -14,7 +14,7 @@
  *                             <https://sigmaco.org/qwadro/>
  */
 
-// Eben'ezer
+#define EXPORT_GL_SYMBOLS
 
 #include "zglDefs.h"
 #include "zglCommands.h"
@@ -38,6 +38,10 @@ _ZGL afxString const zgl2Signature = AFX_STRING(
     "                                www.sigmaco.org                                \n"
     "                                                                               \n"
 );
+
+
+_ZGL afxBool vgiWndClssRegistered = FALSE;
+_ZGL WNDCLASSEXA vgiWndClss = { 0 };
 
 _ZGL const char *glVmtNames[] =
 {
@@ -719,6 +723,780 @@ _ZGL const char *glVmtNames[] =
     "glPolygonOffsetClamp" // 3
 };
 
+_ZGL afxString const glSymbolStrings[] =
+{
+    // 100
+    AFX_STRING("glCullFace"), // 0
+    AFX_STRING("glFrontFace"),
+    AFX_STRING("glHint"),
+    AFX_STRING("glLineWidth"),
+    AFX_STRING("glPointSize"),
+    AFX_STRING("glPolygonMode"),
+    AFX_STRING("glScissor"),
+    AFX_STRING("glTexParameterf"),
+    AFX_STRING("glTexParameterfv"),
+    AFX_STRING("glTexParameteri"),
+    AFX_STRING("glTexParameteriv"),
+    AFX_STRING("glTexImage1D"),
+    AFX_STRING("glTexImage2D"),
+    AFX_STRING("glDrawBuffer"),
+    AFX_STRING("glClear"),
+    AFX_STRING("glClearColor"),
+    AFX_STRING("glClearStencil"),
+    AFX_STRING("glClearDepth"),
+    AFX_STRING("glStencilMask"),
+    AFX_STRING("glColorMask"),
+    AFX_STRING("glDepthMask"),
+    AFX_STRING("glDisable"),
+    AFX_STRING("glEnable"),
+    AFX_STRING("glFinish"),
+    AFX_STRING("glFlush"),
+    AFX_STRING("glBlendFunc"),
+    AFX_STRING("glLogicOp"),
+    AFX_STRING("glStencilFunc"),
+    AFX_STRING("glStencilOp"),
+    AFX_STRING("glDepthFunc"),
+    AFX_STRING("glPixelStoref"),
+    AFX_STRING("glPixelStorei"),
+    AFX_STRING("glReadBuffer"),
+    AFX_STRING("glReadPixels"),
+    AFX_STRING("glGetBooleanv"),
+    AFX_STRING("glGetDoublev"),
+    AFX_STRING("glGetError"),
+    AFX_STRING("glGetFloatv"),
+    AFX_STRING("glGetIntegerv"),
+    AFX_STRING("glGetString"),
+    AFX_STRING("glGetTexImage"),
+    AFX_STRING("glGetTexParameterfv"),
+    AFX_STRING("glGetTexParameteriv"),
+    AFX_STRING("glGetTexLevelParameterfv"),
+    AFX_STRING("glGetTexLevelParameteriv"),
+    AFX_STRING("glIsEnabled"),
+    AFX_STRING("glDepthRange"),
+    AFX_STRING("glViewport"), // 47
+        // 110
+    AFX_STRING("glDrawArrays"), // 0
+    AFX_STRING("glDrawElements"),
+    AFX_STRING("glGetPointerv"),
+    AFX_STRING("glPolygonOffset"),
+    AFX_STRING("glCopyTexImage1D"),
+    AFX_STRING("glCopyTexImage2D"),
+    AFX_STRING("glCopyTexSubImage1D"),
+    AFX_STRING("glCopyTexSubImage2D"),
+    AFX_STRING("glTexSubImage1D"),
+    AFX_STRING("glTexSubImage2D"),
+    AFX_STRING("glBindTexture"),
+    AFX_STRING("glDeleteTextures"),
+    AFX_STRING("glGenTextures"),
+    AFX_STRING("glIsTexture"), // 13
+        // 120
+    AFX_STRING("glDrawRangeElements"), // 0
+    AFX_STRING("glTexImage3D"),
+    AFX_STRING("glTexSubImage3D"),
+    AFX_STRING("glCopyTexSubImage3D"), // 3
+        // 130
+    AFX_STRING("glActiveTexture"), // 0
+    AFX_STRING("glSampleCoverage"),
+    AFX_STRING("glCompressedTexImage3D"),
+    AFX_STRING("glCompressedTexImage2D"),
+    AFX_STRING("glCompressedTexImage1D"),
+    AFX_STRING("glCompressedTexSubImage3D"),
+    AFX_STRING("glCompressedTexSubImage2D"),
+    AFX_STRING("glCompressedTexSubImage1D"),
+    AFX_STRING("glGetCompressedTexImage"), // 8
+        // 140
+    AFX_STRING("glBlendFuncSeparate"), // 0
+    AFX_STRING("glMultiDrawArrays"),
+    AFX_STRING("glMultiDrawElements"),
+    AFX_STRING("glPointParameterf"),
+    AFX_STRING("glPointParameterfv"),
+    AFX_STRING("glPointParameteri"),
+    AFX_STRING("glPointParameteriv"),
+    AFX_STRING("glBlendColor"),
+    AFX_STRING("glBlendEquation"), // 8
+        // 150
+    AFX_STRING("glGenQueries"), // 0
+    AFX_STRING("glDeleteQueries"),
+    AFX_STRING("glIsQuery"),
+    AFX_STRING("glBeginQuery"),
+    AFX_STRING("glEndQuery"),
+    AFX_STRING("glGetQueryiv"),
+    AFX_STRING("glGetQueryObjectiv"),
+    AFX_STRING("glGetQueryObjectuiv"),
+    AFX_STRING("glBindBuffer"),
+    AFX_STRING("glDeleteBuffers"),
+    AFX_STRING("glGenBuffers"),
+    AFX_STRING("glIsBuffer"),
+    AFX_STRING("glBufferData"),
+    AFX_STRING("glBufferSubData"),
+    AFX_STRING("glGetBufferSubData"),
+    AFX_STRING("glMapBuffer"),
+    AFX_STRING("glUnmapBuffer"),
+    AFX_STRING("glGetBufferParameteriv"),
+    AFX_STRING("glGetBufferPointerv"), // 18
+        // 200
+    AFX_STRING("glBlendEquationSeparate"), // 0
+    AFX_STRING("glDrawBuffers"),
+    AFX_STRING("glStencilOpSeparate"),
+    AFX_STRING("glStencilFuncSeparate"),
+    AFX_STRING("glStencilMaskSeparate"),
+    AFX_STRING("glAttachShader"),
+    AFX_STRING("glBindAttribLocation"),
+    AFX_STRING("glCompileShader"),
+    AFX_STRING("glCreateProgram"),
+    AFX_STRING("glCreateShader"),
+    AFX_STRING("glDeleteProgram"),
+    AFX_STRING("glDeleteShader"),
+    AFX_STRING("glDetachShader"),
+    AFX_STRING("glDisableVertexAttribArray"),
+    AFX_STRING("glEnableVertexAttribArray"),
+    AFX_STRING("glGetActiveAttrib"),
+    AFX_STRING("glGetActiveUniform"),
+    AFX_STRING("glGetAttachedShaders"),
+    AFX_STRING("glGetAttribLocation"),
+    AFX_STRING("glGetProgramiv"),
+    AFX_STRING("glGetProgramInfoLog"),
+    AFX_STRING("glGetShaderiv"),
+    AFX_STRING("glGetShaderInfoLog"),
+    AFX_STRING("glGetShaderSource"),
+    AFX_STRING("glGetUniformLocation"),
+    AFX_STRING("glGetUniformfv"),
+    AFX_STRING("glGetUniformiv"),
+    AFX_STRING("glGetVertexAttribdv"),
+    AFX_STRING("glGetVertexAttribfv"),
+    AFX_STRING("glGetVertexAttribiv"),
+    AFX_STRING("glGetVertexAttribPointerv"),
+    AFX_STRING("glIsProgram"),
+    AFX_STRING("glIsShader"),
+    AFX_STRING("glLinkProgram"),
+    AFX_STRING("glShaderSource"),
+    AFX_STRING("glUseProgram"),
+    AFX_STRING("glUniform1f"),
+    AFX_STRING("glUniform2f"),
+    AFX_STRING("glUniform3f"),
+    AFX_STRING("glUniform4f"),
+    AFX_STRING("glUniform1i"),
+    AFX_STRING("glUniform2i"),
+    AFX_STRING("glUniform3i"),
+    AFX_STRING("glUniform4i"),
+    AFX_STRING("glUniform1fv"),
+    AFX_STRING("glUniform2fv"),
+    AFX_STRING("glUniform3fv"),
+    AFX_STRING("glUniform4fv"),
+    AFX_STRING("glUniform1iv"),
+    AFX_STRING("glUniform2iv"),
+    AFX_STRING("glUniform3iv"),
+    AFX_STRING("glUniform4iv"),
+    AFX_STRING("glUniformMatrix2fv"),
+    AFX_STRING("glUniformMatrix3fv"),
+    AFX_STRING("glUniformMatrix4fv"),
+    AFX_STRING("glValidateProgram"),
+    AFX_STRING("glVertexAttrib1d"),
+    AFX_STRING("glVertexAttrib1dv"),
+    AFX_STRING("glVertexAttrib1f"),
+    AFX_STRING("glVertexAttrib1fv"),
+    AFX_STRING("glVertexAttrib1s"),
+    AFX_STRING("glVertexAttrib1sv"),
+    AFX_STRING("glVertexAttrib2d"),
+    AFX_STRING("glVertexAttrib2dv"),
+    AFX_STRING("glVertexAttrib2f"),
+    AFX_STRING("glVertexAttrib2fv"),
+    AFX_STRING("glVertexAttrib2s"),
+    AFX_STRING("glVertexAttrib2sv"),
+    AFX_STRING("glVertexAttrib3d"),
+    AFX_STRING("glVertexAttrib3dv"),
+    AFX_STRING("glVertexAttrib3f"),
+    AFX_STRING("glVertexAttrib3fv"),
+    AFX_STRING("glVertexAttrib3s"),
+    AFX_STRING("glVertexAttrib3sv"),
+    AFX_STRING("glVertexAttrib4Nbv"),
+    AFX_STRING("glVertexAttrib4Niv"),
+    AFX_STRING("glVertexAttrib4Nsv"),
+    AFX_STRING("glVertexAttrib4Nub"),
+    AFX_STRING("glVertexAttrib4Nubv"),
+    AFX_STRING("glVertexAttrib4Nuiv"),
+    AFX_STRING("glVertexAttrib4Nusv"),
+    AFX_STRING("glVertexAttrib4bv"),
+    AFX_STRING("glVertexAttrib4d"),
+    AFX_STRING("glVertexAttrib4dv"),
+    AFX_STRING("glVertexAttrib4f"),
+    AFX_STRING("glVertexAttrib4fv"),
+    AFX_STRING("glVertexAttrib4iv"),
+    AFX_STRING("glVertexAttrib4s"),
+    AFX_STRING("glVertexAttrib4sv"),
+    AFX_STRING("glVertexAttrib4ubv"),
+    AFX_STRING("glVertexAttrib4uiv"),
+    AFX_STRING("glVertexAttrib4usv"),
+    AFX_STRING("glVertexAttribPointer"), // 92
+        // 210
+    AFX_STRING("glUniformMatrix2x3fv"), // 0
+    AFX_STRING("glUniformMatrix3x2fv"),
+    AFX_STRING("glUniformMatrix2x4fv"),
+    AFX_STRING("glUniformMatrix4x2fv"),
+    AFX_STRING("glUniformMatrix3x4fv"),
+    AFX_STRING("glUniformMatrix4x3fv"), // 5
+        // 300
+    AFX_STRING("glColorMaski"), // 0
+    AFX_STRING("glGetBooleani_v"),
+    AFX_STRING("glGetIntegeri_v"),
+    AFX_STRING("glEnablei"),
+    AFX_STRING("glDisablei"),
+    AFX_STRING("glIsEnabledi"),
+    AFX_STRING("glBeginTransformFeedback"),
+    AFX_STRING("glEndTransformFeedback"),
+    AFX_STRING("glBindBufferRange"),
+    AFX_STRING("glBindBufferBase"),
+    AFX_STRING("glTransformFeedbackVaryings"),
+    AFX_STRING("glGetTransformFeedbackVarying"),
+    AFX_STRING("glClampColor"),
+    AFX_STRING("glBeginConditionalRender"),
+    AFX_STRING("glEndConditionalRender"),
+    AFX_STRING("glVertexAttribIPointer"),
+    AFX_STRING("glGetVertexAttribIiv"),
+    AFX_STRING("glGetVertexAttribIuiv"),
+    AFX_STRING("glVertexAttribI1i"),
+    AFX_STRING("glVertexAttribI2i"),
+    AFX_STRING("glVertexAttribI3i"),
+    AFX_STRING("glVertexAttribI4i"),
+    AFX_STRING("glVertexAttribI1ui"),
+    AFX_STRING("glVertexAttribI2ui"),
+    AFX_STRING("glVertexAttribI3ui"),
+    AFX_STRING("glVertexAttribI4ui"),
+    AFX_STRING("glVertexAttribI1iv"),
+    AFX_STRING("glVertexAttribI2iv"),
+    AFX_STRING("glVertexAttribI3iv"),
+    AFX_STRING("glVertexAttribI4iv"),
+    AFX_STRING("glVertexAttribI1uiv"),
+    AFX_STRING("glVertexAttribI2uiv"),
+    AFX_STRING("glVertexAttribI3uiv"),
+    AFX_STRING("glVertexAttribI4uiv"),
+    AFX_STRING("glVertexAttribI4bv"),
+    AFX_STRING("glVertexAttribI4sv"),
+    AFX_STRING("glVertexAttribI4ubv"),
+    AFX_STRING("glVertexAttribI4usv"),
+    AFX_STRING("glGetUniformuiv"),
+    AFX_STRING("glBindFragDataLocation"),
+    AFX_STRING("glGetFragDataLocation"),
+    AFX_STRING("glUniform1ui"),
+    AFX_STRING("glUniform2ui"),
+    AFX_STRING("glUniform3ui"),
+    AFX_STRING("glUniform4ui"),
+    AFX_STRING("glUniform1uiv"),
+    AFX_STRING("glUniform2uiv"),
+    AFX_STRING("glUniform3uiv"),
+    AFX_STRING("glUniform4uiv"),
+    AFX_STRING("glTexParameterIiv"),
+    AFX_STRING("glTexParameterIuiv"),
+    AFX_STRING("glGetTexParameterIiv"),
+    AFX_STRING("glGetTexParameterIuiv"),
+    AFX_STRING("glClearBufferiv"),
+    AFX_STRING("glClearBufferuiv"),
+    AFX_STRING("glClearBufferfv"),
+    AFX_STRING("glClearBufferfi"),
+    AFX_STRING("glGetStringi"),
+    AFX_STRING("glIsRenderbuffer"),
+    AFX_STRING("glBindRenderbuffer"),
+    AFX_STRING("glDeleteRenderbuffers"),
+    AFX_STRING("glGenRenderbuffers"),
+    AFX_STRING("glRenderbufferStorage"),
+    AFX_STRING("glGetRenderbufferParameteriv"),
+    AFX_STRING("glIsFramebuffer"),
+    AFX_STRING("glBindFramebuffer"),
+    AFX_STRING("glDeleteFramebuffers"),
+    AFX_STRING("glGenFramebuffers"),
+    AFX_STRING("glCheckFramebufferStatus"),
+    AFX_STRING("glFramebufferTexture1D"),
+    AFX_STRING("glFramebufferTexture2D"),
+    AFX_STRING("glFramebufferTexture3D"),
+    AFX_STRING("glFramebufferRenderbuffer"),
+    AFX_STRING("glGetFramebufferAttachmentParameteriv"),
+    AFX_STRING("glGenerateMipmap"),
+    AFX_STRING("glBlitFramebuffer"),
+    AFX_STRING("glRenderbufferStorageMultisample"),
+    AFX_STRING("glFramebufferTextureLayer"),
+    AFX_STRING("glMapBufferRange"),
+    AFX_STRING("glFlushMappedBufferRange"),
+    AFX_STRING("glBindVertexArray"),
+    AFX_STRING("glDeleteVertexArrays"),
+    AFX_STRING("glGenVertexArrays"),
+    AFX_STRING("glIsVertexArray"), // 83
+        // 310
+    AFX_STRING("glDrawArraysInstanced"), // 0
+    AFX_STRING("glDrawElementsInstanced"),
+    AFX_STRING("glTexBuffer"),
+    AFX_STRING("glPrimitiveRestartIndex"),
+    AFX_STRING("glCopyBufferSubData"),
+    AFX_STRING("glGetUniformIndices"),
+    AFX_STRING("glGetActiveUniformsiv"),
+    AFX_STRING("glGetActiveUniformName"),
+    AFX_STRING("glGetUniformBlockIndex"),
+    AFX_STRING("glGetActiveUniformBlockiv"),
+    AFX_STRING("glGetActiveUniformBlockName"),
+    AFX_STRING("glUniformBlockBinding"), // 11
+        // 320
+    AFX_STRING("glDrawElementsBaseVertex"), // 0
+    AFX_STRING("glDrawRangeElementsBaseVertex"),
+    AFX_STRING("glDrawElementsInstancedBaseVertex"),
+    AFX_STRING("glMultiDrawElementsBaseVertex"),
+    AFX_STRING("glProvokingVertex"),
+    AFX_STRING("glFenceSync"),
+    AFX_STRING("glIsSync"),
+    AFX_STRING("glDeleteSync"),
+    AFX_STRING("glClientWaitSync"),
+    AFX_STRING("glWaitSync"),
+    AFX_STRING("glGetInteger64v"),
+    AFX_STRING("glGetSynciv"),
+    AFX_STRING("glGetInteger64i_v"),
+    AFX_STRING("glGetBufferParameteri64v"),
+    AFX_STRING("glFramebufferTexture"),
+    AFX_STRING("glTexImage2DMultisample"),
+    AFX_STRING("glTexImage3DMultisample"),
+    AFX_STRING("glGetMultisamplefv"),
+    AFX_STRING("glSampleMaski"), // 18
+        // 330
+    AFX_STRING("glBindFragDataLocationIndexed"), // 0
+    AFX_STRING("glGetFragDataIndex"),
+    AFX_STRING("glGenSamplers"),
+    AFX_STRING("glDeleteSamplers"),
+    AFX_STRING("glIsSampler"),
+    AFX_STRING("glBindSampler"),
+    AFX_STRING("glSamplerParameteri"),
+    AFX_STRING("glSamplerParameteriv"),
+    AFX_STRING("glSamplerParameterf"),
+    AFX_STRING("glSamplerParameterfv"),
+    AFX_STRING("glSamplerParameterIiv"),
+    AFX_STRING("glSamplerParameterIuiv"),
+    AFX_STRING("glGetSamplerParameteriv"),
+    AFX_STRING("glGetSamplerParameterIiv"),
+    AFX_STRING("glGetSamplerParameterfv"),
+    AFX_STRING("glGetSamplerParameterIuiv"),
+    AFX_STRING("glQueryCounter"),
+    AFX_STRING("glGetQueryObjecti64v"),
+    AFX_STRING("glGetQueryObjectui64v"),
+    AFX_STRING("glVertexAttribDivisor"),
+    AFX_STRING("glVertexAttribP1ui"),
+    AFX_STRING("glVertexAttribP1uiv"),
+    AFX_STRING("glVertexAttribP2ui"),
+    AFX_STRING("glVertexAttribP2uiv"),
+    AFX_STRING("glVertexAttribP3ui"),
+    AFX_STRING("glVertexAttribP3uiv"),
+    AFX_STRING("glVertexAttribP4ui"),
+    AFX_STRING("glVertexAttribP4uiv"), // 27
+        // 400
+    AFX_STRING("glMinSampleShading"), // 0
+    AFX_STRING("glBlendEquationi"),
+    AFX_STRING("glBlendEquationSeparatei"),
+    AFX_STRING("glBlendFunci"),
+    AFX_STRING("glBlendFuncSeparatei"),
+    AFX_STRING("glDrawArraysIndirect"),
+    AFX_STRING("glDrawElementsIndirect"),
+    AFX_STRING("glUniform1d"),
+    AFX_STRING("glUniform2d"),
+    AFX_STRING("glUniform3d"),
+    AFX_STRING("glUniform4d"),
+    AFX_STRING("glUniform1dv"),
+    AFX_STRING("glUniform2dv"),
+    AFX_STRING("glUniform3dv"),
+    AFX_STRING("glUniform4dv"),
+    AFX_STRING("glUniformMatrix2dv"),
+    AFX_STRING("glUniformMatrix3dv"),
+    AFX_STRING("glUniformMatrix4dv"),
+    AFX_STRING("glUniformMatrix2x3dv"),
+    AFX_STRING("glUniformMatrix2x4dv"),
+    AFX_STRING("glUniformMatrix3x2dv"),
+    AFX_STRING("glUniformMatrix3x4dv"),
+    AFX_STRING("glUniformMatrix4x2dv"),
+    AFX_STRING("glUniformMatrix4x3dv"),
+    AFX_STRING("glGetUniformdv"),
+    AFX_STRING("glGetSubroutineUniformLocation"),
+    AFX_STRING("glGetSubroutineIndex"),
+    AFX_STRING("glGetActiveSubroutineUniformiv"),
+    AFX_STRING("glGetActiveSubroutineUniformName"),
+    AFX_STRING("glGetActiveSubroutineName"),
+    AFX_STRING("glUniformSubroutinesuiv"),
+    AFX_STRING("glGetUniformSubroutineuiv"),
+    AFX_STRING("glGetProgramStageiv"),
+    AFX_STRING("glPatchParameteri"),
+    AFX_STRING("glPatchParameterfv"),
+    AFX_STRING("glBindTransformFeedback"),
+    AFX_STRING("glDeleteTransformFeedbacks"),
+    AFX_STRING("glGenTransformFeedbacks"),
+    AFX_STRING("glIsTransformFeedback"),
+    AFX_STRING("glPauseTransformFeedback"),
+    AFX_STRING("glResumeTransformFeedback"),
+    AFX_STRING("glDrawTransformFeedback"),
+    AFX_STRING("glDrawTransformFeedbackStream"),
+    AFX_STRING("glBeginQueryIndexed"),
+    AFX_STRING("glEndQueryIndexed"),
+    AFX_STRING("glGetQueryIndexediv"), // 45
+        // 410
+    AFX_STRING("glReleaseShaderCompiler"), // 0
+    AFX_STRING("glShaderBinary"),
+    AFX_STRING("glGetShaderPrecisionFormat"),
+    AFX_STRING("glDepthRangef"),
+    AFX_STRING("glClearDepthf"),
+    AFX_STRING("glGetProgramBinary"),
+    AFX_STRING("glProgramBinary"),
+    AFX_STRING("glProgramParameteri"),
+    AFX_STRING("glUseProgramStages"),
+    AFX_STRING("glActiveShaderProgram"),
+    AFX_STRING("glCreateShaderProgramv"),
+    AFX_STRING("glBindProgramPipeline"),
+    AFX_STRING("glDeleteProgramPipelines"),
+    AFX_STRING("glGenProgramPipelines"),
+    AFX_STRING("glIsProgramPipeline"),
+    AFX_STRING("glGetProgramPipelineiv"),
+    AFX_STRING("glProgramUniform1i"),
+    AFX_STRING("glProgramUniform1iv"),
+    AFX_STRING("glProgramUniform1f"),
+    AFX_STRING("glProgramUniform1fv"),
+    AFX_STRING("glProgramUniform1d"),
+    AFX_STRING("glProgramUniform1dv"),
+    AFX_STRING("glProgramUniform1ui"),
+    AFX_STRING("glProgramUniform1uiv"),
+    AFX_STRING("glProgramUniform2i"),
+    AFX_STRING("glProgramUniform2iv"),
+    AFX_STRING("glProgramUniform2f"),
+    AFX_STRING("glProgramUniform2fv"),
+    AFX_STRING("glProgramUniform2d"),
+    AFX_STRING("glProgramUniform2dv"),
+    AFX_STRING("glProgramUniform2ui"),
+    AFX_STRING("glProgramUniform2uiv"),
+    AFX_STRING("glProgramUniform3i"),
+    AFX_STRING("glProgramUniform3iv"),
+    AFX_STRING("glProgramUniform3f"),
+    AFX_STRING("glProgramUniform3fv"),
+    AFX_STRING("glProgramUniform3d"),
+    AFX_STRING("glProgramUniform3dv"),
+    AFX_STRING("glProgramUniform3ui"),
+    AFX_STRING("glProgramUniform3uiv"),
+    AFX_STRING("glProgramUniform4i"),
+    AFX_STRING("glProgramUniform4iv"),
+    AFX_STRING("glProgramUniform4f"),
+    AFX_STRING("glProgramUniform4fv"),
+    AFX_STRING("glProgramUniform4d"),
+    AFX_STRING("glProgramUniform4dv"),
+    AFX_STRING("glProgramUniform4ui"),
+    AFX_STRING("glProgramUniform4uiv"),
+    AFX_STRING("glProgramUniformMatrix2fv"),
+    AFX_STRING("glProgramUniformMatrix3fv"),
+    AFX_STRING("glProgramUniformMatrix4fv"),
+    AFX_STRING("glProgramUniformMatrix2dv"),
+    AFX_STRING("glProgramUniformMatrix3dv"),
+    AFX_STRING("glProgramUniformMatrix4dv"),
+    AFX_STRING("glProgramUniformMatrix2x3fv"),
+    AFX_STRING("glProgramUniformMatrix3x2fv"),
+    AFX_STRING("glProgramUniformMatrix2x4fv"),
+    AFX_STRING("glProgramUniformMatrix4x2fv"),
+    AFX_STRING("glProgramUniformMatrix3x4fv"),
+    AFX_STRING("glProgramUniformMatrix4x3fv"),
+    AFX_STRING("glProgramUniformMatrix2x3dv"),
+    AFX_STRING("glProgramUniformMatrix3x2dv"),
+    AFX_STRING("glProgramUniformMatrix2x4dv"),
+    AFX_STRING("glProgramUniformMatrix4x2dv"),
+    AFX_STRING("glProgramUniformMatrix3x4dv"),
+    AFX_STRING("glProgramUniformMatrix4x3dv"),
+    AFX_STRING("glValidateProgramPipeline"),
+    AFX_STRING("glGetProgramPipelineInfoLog"),
+    AFX_STRING("glVertexAttribL1d"),
+    AFX_STRING("glVertexAttribL2d"),
+    AFX_STRING("glVertexAttribL3d"),
+    AFX_STRING("glVertexAttribL4d"),
+    AFX_STRING("glVertexAttribL1dv"),
+    AFX_STRING("glVertexAttribL2dv"),
+    AFX_STRING("glVertexAttribL3dv"),
+    AFX_STRING("glVertexAttribL4dv"),
+    AFX_STRING("glVertexAttribLPointer"),
+    AFX_STRING("glGetVertexAttribLdv"),
+    AFX_STRING("glViewportArrayv"),
+    AFX_STRING("glViewportIndexedf"),
+    AFX_STRING("glViewportIndexedfv"),
+    AFX_STRING("glScissorArrayv"),
+    AFX_STRING("glScissorIndexed"),
+    AFX_STRING("glScissorIndexedv"),
+    AFX_STRING("glDepthRangeArrayv"),
+    AFX_STRING("glDepthRangeIndexed"),
+    AFX_STRING("glGetFloati_v"),
+    AFX_STRING("glGetDoublei_v"), // 87
+        // 420
+    AFX_STRING("glDrawArraysInstancedBaseInstance"), // 0
+    AFX_STRING("glDrawElementsInstancedBaseInstance"),
+    AFX_STRING("glDrawElementsInstancedBaseVertexBaseInstance"),
+    AFX_STRING("glGetInternalformativ"),
+    AFX_STRING("glGetActiveAtomicCounterBufferiv"),
+    AFX_STRING("glBindImageTexture"),
+    AFX_STRING("glMemoryBarrier"),
+    AFX_STRING("glTexStorage1D"),
+    AFX_STRING("glTexStorage2D"),
+    AFX_STRING("glTexStorage3D"),
+    AFX_STRING("glDrawTransformFeedbackInstanced"),
+    AFX_STRING("glDrawTransformFeedbackStreamInstanced"), // 11
+        // 430
+    AFX_STRING("glClearBufferData"), // 0
+    AFX_STRING("glClearBufferSubData"),
+    AFX_STRING("glDispatchCompute"),
+    AFX_STRING("glDispatchComputeIndirect"),
+    AFX_STRING("glCopyImageSubData"),
+    AFX_STRING("glFramebufferParameteri"),
+    AFX_STRING("glGetFramebufferParameteriv"),
+    AFX_STRING("glGetInternalformati64v"),
+    AFX_STRING("glInvalidateTexSubImage"),
+    AFX_STRING("glInvalidateTexImage"),
+    AFX_STRING("glInvalidateBufferSubData"),
+    AFX_STRING("glInvalidateBufferData"),
+    AFX_STRING("glInvalidateFramebuffer"),
+    AFX_STRING("glInvalidateSubFramebuffer"),
+    AFX_STRING("glMultiDrawArraysIndirect"),
+    AFX_STRING("glMultiDrawElementsIndirect"),
+    AFX_STRING("glGetProgramInterfaceiv"),
+    AFX_STRING("glGetProgramResourceIndex"),
+    AFX_STRING("glGetProgramResourceName"),
+    AFX_STRING("glGetProgramResourceiv"),
+    AFX_STRING("glGetProgramResourceLocation"),
+    AFX_STRING("glGetProgramResourceLocationIndex"),
+    AFX_STRING("glShaderStorageBlockBinding"),
+    AFX_STRING("glTexBufferRange"),
+    AFX_STRING("glTexStorage2DMultisample"),
+    AFX_STRING("glTexStorage3DMultisample"),
+    AFX_STRING("glTextureView"),
+    AFX_STRING("glBindVertexBuffer"),
+    AFX_STRING("glVertexAttribFormat"),
+    AFX_STRING("glVertexAttribIFormat"),
+    AFX_STRING("glVertexAttribLFormat"),
+    AFX_STRING("glVertexAttribBinding"),
+    AFX_STRING("glVertexBindingDivisor"),
+    AFX_STRING("glDebugMessageControl"),
+    AFX_STRING("glDebugMessageInsert"),
+    AFX_STRING("glDebugMessageCallback"),
+    AFX_STRING("glGetDebugMessageLog"),
+    AFX_STRING("glPushDebugGroup"),
+    AFX_STRING("glPopDebugGroup"),
+    AFX_STRING("glObjectLabel"),
+    AFX_STRING("glGetObjectLabel"),
+    AFX_STRING("glObjectPtrLabel"),
+    AFX_STRING("glGetObjectPtrLabel"), // 42
+        // 440
+    AFX_STRING("glBufferStorage"), // 0
+    AFX_STRING("glClearTexImage"),
+    AFX_STRING("glClearTexSubImage"),
+    AFX_STRING("glBindBuffersBase"),
+    AFX_STRING("glBindBuffersRange"),
+    AFX_STRING("glBindTextures"),
+    AFX_STRING("glBindSamplers"),
+    AFX_STRING("glBindImageTextures"),
+    AFX_STRING("glBindVertexBuffers"), // 8
+        // 450
+    AFX_STRING("glClipControl"), // 0
+    AFX_STRING("glCreateTransformFeedbacks"),
+    AFX_STRING("glTransformFeedbackBufferBase"),
+    AFX_STRING("glTransformFeedbackBufferRange"),
+    AFX_STRING("glGetTransformFeedbackiv"),
+    AFX_STRING("glGetTransformFeedbacki_v"),
+    AFX_STRING("glGetTransformFeedbacki64_v"),
+    AFX_STRING("glCreateBuffers"),
+    AFX_STRING("glNamedBufferStorage"),
+    AFX_STRING("glNamedBufferData"),
+    AFX_STRING("glNamedBufferSubData"),
+    AFX_STRING("glCopyNamedBufferSubData"),
+    AFX_STRING("glClearNamedBufferData"),
+    AFX_STRING("glClearNamedBufferSubData"),
+    AFX_STRING("glMapNamedBuffer"),
+    AFX_STRING("glMapNamedBufferRange"),
+    AFX_STRING("glUnmapNamedBuffer"),
+    AFX_STRING("glFlushMappedNamedBufferRange"),
+    AFX_STRING("glGetNamedBufferParameteriv"),
+    AFX_STRING("glGetNamedBufferParameteri64v"),
+    AFX_STRING("glGetNamedBufferPointerv"),
+    AFX_STRING("glGetNamedBufferSubData"),
+    AFX_STRING("glCreateFramebuffers"),
+    AFX_STRING("glNamedFramebufferRenderbuffer"),
+    AFX_STRING("glNamedFramebufferParameteri"),
+    AFX_STRING("glNamedFramebufferTexture"),
+    AFX_STRING("glNamedFramebufferTextureLayer"),
+    AFX_STRING("glNamedFramebufferCanvas"),
+    AFX_STRING("glNamedFramebufferCanvass"),
+    AFX_STRING("glNamedFramebufferReadBuffer"),
+    AFX_STRING("glInvalidateNamedFramebufferData"),
+    AFX_STRING("glInvalidateNamedFramebufferSubData"),
+    AFX_STRING("glClearNamedFramebufferiv"),
+    AFX_STRING("glClearNamedFramebufferuiv"),
+    AFX_STRING("glClearNamedFramebufferfv"),
+    AFX_STRING("glClearNamedFramebufferfi"),
+    AFX_STRING("glBlitNamedFramebuffer"),
+    AFX_STRING("glCheckNamedFramebufferStatus"),
+    AFX_STRING("glGetNamedFramebufferParameteriv"),
+    AFX_STRING("glGetNamedFramebufferAttachmentParameteriv"),
+    AFX_STRING("glCreateRenderbuffers"),
+    AFX_STRING("glNamedRenderbufferStorage"),
+    AFX_STRING("glNamedRenderbufferStorageMultisample"),
+    AFX_STRING("glGetNamedRenderbufferParameteriv"),
+    AFX_STRING("glCreateTextures"),
+    AFX_STRING("glTextureBuffer"),
+    AFX_STRING("glTextureBufferRange"),
+    AFX_STRING("glTextureStorage1D"),
+    AFX_STRING("glTextureStorage2D"),
+    AFX_STRING("glTextureStorage3D"),
+    AFX_STRING("glTextureStorage2DMultisample"),
+    AFX_STRING("glTextureStorage3DMultisample"),
+    AFX_STRING("glTextureSubImage1D"),
+    AFX_STRING("glTextureSubImage2D"),
+    AFX_STRING("glTextureSubImage3D"),
+    AFX_STRING("glCompressedTextureSubImage1D"),
+    AFX_STRING("glCompressedTextureSubImage2D"),
+    AFX_STRING("glCompressedTextureSubImage3D"),
+    AFX_STRING("glCopyTextureSubImage1D"),
+    AFX_STRING("glCopyTextureSubImage2D"),
+    AFX_STRING("glCopyTextureSubImage3D"),
+    AFX_STRING("glTextureParameterf"),
+    AFX_STRING("glTextureParameterfv"),
+    AFX_STRING("glTextureParameteri"),
+    AFX_STRING("glTextureParameterIiv"),
+    AFX_STRING("glTextureParameterIuiv"),
+    AFX_STRING("glTextureParameteriv"),
+    AFX_STRING("glGenerateTextureMipmap"),
+    AFX_STRING("glBindTextureUnit"),
+    AFX_STRING("glGetTextureImage"),
+    AFX_STRING("glGetCompressedTextureImage"),
+    AFX_STRING("glGetTextureLevelParameterfv"),
+    AFX_STRING("glGetTextureLevelParameteriv"),
+    AFX_STRING("glGetTextureParameterfv"),
+    AFX_STRING("glGetTextureParameterIiv"),
+    AFX_STRING("glGetTextureParameterIuiv"),
+    AFX_STRING("glGetTextureParameteriv"),
+    AFX_STRING("glCreateVertexArrays"),
+    AFX_STRING("glDisableVertexArrayAttrib"),
+    AFX_STRING("glEnableVertexArrayAttrib"),
+    AFX_STRING("glVertexArrayElementBuffer"),
+    AFX_STRING("glVertexArrayVertexBuffer"),
+    AFX_STRING("glVertexArrayVertexBuffers"),
+    AFX_STRING("glVertexArrayAttribBinding"),
+    AFX_STRING("glVertexArrayAttribFormat"),
+    AFX_STRING("glVertexArrayAttribIFormat"),
+    AFX_STRING("glVertexArrayAttribLFormat"),
+    AFX_STRING("glVertexArrayBindingDivisor"),
+    AFX_STRING("glGetVertexArrayiv"),
+    AFX_STRING("glGetVertexArrayIndexediv"),
+    AFX_STRING("glGetVertexArrayIndexed64iv"),
+    AFX_STRING("glCreateSamplers"),
+    AFX_STRING("glCreateProgramPipelines"),
+    AFX_STRING("glCreateQueries"),
+    AFX_STRING("glGetQueryBufferObjecti64v"),
+    AFX_STRING("glGetQueryBufferObjectiv"),
+    AFX_STRING("glGetQueryBufferObjectui64v"),
+    AFX_STRING("glGetQueryBufferObjectuiv"),
+    AFX_STRING("glMemoryBarrierByRegion"),
+    AFX_STRING("glGetTextureSubImage"),
+    AFX_STRING("glGetCompressedTextureSubImage"),
+    AFX_STRING("glGetGraphicsResetStatus"),
+    AFX_STRING("glGetnCompressedTexImage"),
+    AFX_STRING("glGetnTexImage"),
+    AFX_STRING("glGetnUniformdv"),
+    AFX_STRING("glGetnUniformfv"),
+    AFX_STRING("glGetnUniformiv"),
+    AFX_STRING("glGetnUniformuiv"),
+    AFX_STRING("glReadnPixels"),
+    AFX_STRING("glTextureBarrier"), // 109
+        // 460
+    AFX_STRING("glSpecializeShader"), // 0
+    AFX_STRING("glMultiDrawArraysIndirectCount"),
+    AFX_STRING("glMultiDrawElementsIndirectCount"),
+    AFX_STRING("glPolygonOffsetClamp") // 3
+};
+
+
+#if 0
+int(WINAPI*wglChoosePixelFormat)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
+int(WINAPI*wglDescribePixelFormat)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+BOOL(WINAPI*wglSetPixelFormat)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
+int(WINAPI*wglGetPixelFormat)(HDC hdc);
+
+BOOL(WINAPI*wglCopyContextGDI)(HGLRC, HGLRC, UINT) = wglCopyContext;
+HGLRC(WINAPI*wglCreateContextGDI)(HDC) = wglCreateContext;
+HGLRC(WINAPI*wglCreateLayerContextGDI)(HDC, int) = wglCreateLayerContext;
+BOOL(WINAPI*wglDeleteContextGDI)(HGLRC) = wglDeleteContext;
+HGLRC(WINAPI*wglGetCurrentContextGDI)(VOID) = wglGetCurrentContext;
+HDC(WINAPI*wglGetCurrentDCGDI)(VOID) = wglGetCurrentDC;
+PROC(WINAPI*wglGetProcAddressGDI)(LPCSTR) = wglGetProcAddress;
+BOOL(WINAPI*wglMakeCurrentGDI)(HDC, HGLRC) = wglMakeCurrent;
+BOOL(WINAPI*wglSwapBuffersGDI)(HDC) = NIL;// wglSwapBuffers;
+BOOL(WINAPI*wglSwapLayerBuffersGDI)(HDC, UINT) = wglSwapLayerBuffers;
+#endif
+// ARB/EXT
+#if 0
+PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB = NIL;
+PFNWGLGETEXTENSIONSSTRINGEXTPROC wglGetExtensionsStringEXT = NIL;
+PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB = NIL;
+PFNWGLGETPIXELFORMATATTRIBFVARBPROC wglGetPixelFormatAttribfvARB = NIL;
+PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = NIL;
+PFNWGLGETCURRENTREADDCARBPROC wglGetCurrentReadDCARB = NIL;
+PFNWGLMAKECONTEXTCURRENTARBPROC wglMakeContextCurrentARB = NIL;
+PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = NIL;
+PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NIL;
+PFNWGLDXOPENDEVICENVPROC wglDXOpenDeviceNV = NIL;
+PFNWGLDXCLOSEDEVICENVPROC wglDXCloseDeviceNV = NIL;
+PFNWGLDXREGISTEROBJECTNVPROC wglDXRegisterObjectNV = NIL;
+PFNWGLDXUNREGISTEROBJECTNVPROC wglDXUnregisterObjectNV = NIL;
+PFNWGLDXLOCKOBJECTSNVPROC wglDXLockObjectsNV = NIL;
+PFNWGLDXUNLOCKOBJECTSNVPROC wglDXUnlockObjectsNV = NIL;
+#endif
+
+signed int(*__stdcall zglDrvCopyContext)(void *a1, void *a2, int a3) = NIL;
+int(*__stdcall zglDrvCreateContext)(HDC hDC) = NIL;
+int(*__stdcall zglDrvCreateLayerContext)(HDC hDC, int a2) = NIL; // ignore layer
+signed int(*__stdcall zglDrvDeleteContext)(void *a1) = NIL;
+LONG(*__stdcall zglDrvDescribePixelFormat)(/*DHPDEV*/HDC dhpdev, LONG iPixelFormat, ULONG cjpfd, PIXELFORMATDESCRIPTOR *ppfd) = NIL;
+int(*__stdcall zglDrvGetProcAddress)(int Key) = NIL; // key is a string
+int(*__stdcall zglDrvPresentBuffers)(HDC hDC, int a2) = NIL;
+signed int(*__stdcall zglDrvReleaseContext)(void *a1) = NIL;
+int(*__stdcall zglDrvSetContext)(HGDIOBJ h, int a2, int a3) = NIL; // h = HDC, a2 = new ctx
+BOOL(*__stdcall zglDrvSetPixelFormat)(/*SURFOBJ**/ void*pso, LONG iPixelFormat, HWND hwnd) = NIL;
+BOOL(*__stdcall zglDrvSwapBuffers)(/*SURFOBJ**/ void*pso, /*WNDOBJ**/ void*pwo) = NIL; // pso = HDC, pwo = HWND
+
+
+_ZGL afxError TestCoreSymbols(HMODULE opengl32, glVmt const* vmt)
+{
+    afxError err = NIL;
+    afxUnit symCnt = (sizeof(*vmt) / sizeof(vmt->ptr));
+    void**pa = &vmt->ptr;
+
+    for (afxUnit i = 0; i < symCnt; i++)
+    {
+        if (pa[i])
+        {
+            void* ptr = wglGetProcAddressSIG(opengl32, glSymbolStrings[i].start);
+
+            if (!ptr)
+            {
+                afxString128 tmp;
+                AfxMakeString128(&tmp, 0);
+
+                AfxFormatString(&tmp.str, "%.*s%.*s", AfxPushString(&glSymbolStrings[i]), AfxPushString(&AFX_STRING("ARB")));
+                ptr = wglGetProcAddressSIG(opengl32, tmp.str.start);
+
+                if (!ptr)
+                {
+                    AfxFormatString(&tmp.str, "%.*s%.*s", AfxPushString(&glSymbolStrings[i]), AfxPushString(&AFX_STRING("EXT")));
+                    ptr = wglGetProcAddressSIG(opengl32, tmp.str.start);
+                }
+            }
+
+            if (ptr)
+            {
+                AFX_ASSERT(ptr == pa[i]);
+            }
+        }
+    }
+    return err;
+}
+
+_ZGL afxError wglLoadCoreSymbols(HMODULE opengl32, glVmt* gl)
+{
+    afxError err = AFX_ERR_NONE;
+    afxUnit symCnt = (sizeof(*gl) / sizeof(gl->ptr));
+    wglLoadSymbolsSIG(opengl32, 0, symCnt, gl, 1);
+    TestCoreSymbols(opengl32, gl);
+}
+
 _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUnit cnt, void* vmt[], afxBool echo)
 {
     afxError err = AFX_ERR_NONE;
@@ -760,7 +1538,7 @@ _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUni
             {
                 if (i >= baseAddonIdx && echo)
                 {
-                    AfxLogEcho("%.3u %.*s core found.", i, AfxPushString(&name));
+                    AfxReportMessage("  %3u %.*s", i, AfxPushString(&name));
                 }
             }
             else
@@ -773,7 +1551,7 @@ _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUni
                     {
                         if (i >= baseAddonIdx && echo)
                         {
-                            AfxLogY("%.3u %.*s ext found.", i, AfxPushString(&tmp.str));
+                            AfxReportY("  %3u %.*s --- EXT", i, AfxPushString(&tmp.str));
                         }
                         break;
                     }
@@ -781,7 +1559,7 @@ _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUni
                     {
                         if (i >= baseAddonIdx && echo)
                         {
-                            AfxLogY("%.3u %.*s fallback found.", i, AfxPushString(&tmp.str));
+                            AfxReportY("  %3u %.*s fallback found.", i, AfxPushString(&tmp.str));
                         }
                         break;
                     }
@@ -793,7 +1571,7 @@ _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUni
         {
             if (i >= baseAddonIdx && echo)
             {
-                AfxLogEcho("%.3u %.*s fallback found.", i, AfxPushString(&name));
+                AfxReportMessage("  %3u %.*s fallback found.", i, AfxPushString(&name));
             }
         }
 
@@ -802,30 +1580,30 @@ _ZGL afxError __stdcall wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUni
     return err;
 }
 
-wglVmt wgl;
+//wglVmt wgl;
 
-_ZGL PROC __stdcall wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName)
+_ZGL PROC wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName)
 {
     afxError err = NIL;
     PROC f;
 
-    if (/*(!wgl.GetProcAddress) || */!(f = wgl.GetProcAddress(lpProcName)))
+    if (/*(!wgl.GetProcAddress) || */!wglGetProcAddressGDI || !(f = wglGetProcAddressGDI(lpProcName)))
         f = GetProcAddress(opengl32, lpProcName);
 
     return f;
 }
 
-_ZGL afxBool __stdcall wglHasExtensionSIG(HDC hDc, afxChar const* ext)
+_ZGL afxBool wglHasExtensionSIG(HDC hDc, afxChar const* ext)
 {
     const char *extensions;
 
-    if (wgl.GetExtensionsStringEXT == NULL && wgl.GetExtensionsStringARB == NULL)
+    if (wglGetExtensionsStringEXT == NULL && wglGetExtensionsStringARB == NULL)
         return 0;
 
-    if (wgl.GetExtensionsStringARB == NULL || hDc == INVALID_HANDLE_VALUE)
-        extensions = wgl.GetExtensionsStringEXT();
+    if (wglGetExtensionsStringARB == NULL || hDc == INVALID_HANDLE_VALUE)
+        extensions = wglGetExtensionsStringEXT();
     else
-        extensions = wgl.GetExtensionsStringARB(hDc);
+        extensions = wglGetExtensionsStringARB(hDc);
 
     if (extensions == NULL || ext == NULL)
         return 0;
@@ -916,9 +1694,17 @@ _ZGL LRESULT WINAPI _ZglTmpWndPrcCbW32(HWND hWnd, UINT message, WPARAM wParam, L
     return DefWindowProcA(hWnd, message, wParam, lParam);
 }
 
+#if 0
 _ZGL void __stdcall wglLoadWsiSymbolsSIG(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMinor, afxUnit* verPatch)
 {
     afxError err = NIL;
+
+    static afxBool loaded = FALSE;
+
+    if (loaded)
+        return;
+    
+#if 0
     wgl.GetProcAddress = (void*)GetProcAddress(opengl32, "wglGetProcAddress");
 
     wgl.CreateContext = (void*)GetProcAddress(opengl32, "wglCreateContext");
@@ -932,143 +1718,116 @@ _ZGL void __stdcall wglLoadWsiSymbolsSIG(HMODULE opengl32, afxUnit* verMajor, af
     wgl.GetPixelFormat = (void*)GetProcAddress(opengl32, "wglGetPixelFormat");
     wgl.SwapBuffers = (void*)GetProcAddress(opengl32, "wglSwapBuffers");
     wgl.SwapLayerBuffers = (void*)GetProcAddress(opengl32, "wglSwapLayerBuffers");
+#endif
 
-    HDC bkpHdc = wgl.GetCurrentDC();
-    HGLRC bkpHglrc = wgl.GetCurrentContext();
-    static afxBool loaded = FALSE;
-
-    if (loaded)
-        return;
-
+    HDC bkpHdc = wglGetCurrentDC();
+    HGLRC bkpHglrc = wglGetCurrentContext();
+    
     HDC tmpHdc = NIL;
     HWND tmpHwnd = NIL;
     HGLRC tmpHrc = NIL;
-    WNDCLASSEXA wndClss;
 
     if (!loaded)
     {
         loaded = TRUE;
-        wgl.ChoosePixelFormatARB = NIL;
-        wgl.CreateContextAttribsARB = NIL;
-        wgl.MakeContextCurrentARB = NIL;
+        wglChoosePixelFormatARB = NIL;
+        wglCreateContextAttribsARB = NIL;
+        wglMakeContextCurrentARB = NIL;
 
-        AfxZero(&wndClss, sizeof(wndClss));
-        wndClss.cbSize = sizeof(wndClss); // only on EX
-        wndClss.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-        wndClss.lpfnWndProc = _ZglTmpWndPrcCbW32;
-        wndClss.cbClsExtra = 0;
-        wndClss.cbWndExtra = 0;
-        wndClss.hInstance = GetModuleHandleA(NULL);
-        wndClss.hIcon = LoadIconA(NULL, IDI_SHIELD);
-        wndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
-        wndClss.hbrBackground = NULL;
-        wndClss.lpszMenuName = NULL;
-        wndClss.lpszClassName = "wglLoadWsiSymbolsSIG";
-        wndClss.hIconSm = LoadIconA(NULL, IDI_SHIELD);
+        DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DIRECT3D_ACCELERATED | PFD_SWAP_EXCHANGE;
+        DWORD dwExStyle = WS_EX_APPWINDOW;
+        DWORD wndStyles = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 
-        if (!(RegisterClassExA(&wndClss))) AfxThrowError();
+        if (!(tmpHwnd = CreateWindowExA(dwExStyle, vgiWndClss.lpszClassName, "", wndStyles, 0, 0, 1, 1, NIL, NIL, vgiWndClss.hInstance, NIL))) AfxThrowError();
         else
         {
-            DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL
-#if 0
-                | PFD_SWAP_EXCHANGE
-#endif
-#if !0
-                | PFD_DIRECT3D_ACCELERATED
-#endif
-#if 0
-                | PFD_SUPPORT_COMPOSITION
-#endif
-                ;
-            DWORD dwExStyle = WS_EX_APPWINDOW;
-            DWORD wndStyles = WS_POPUP;
-
-            if (!(tmpHwnd = CreateWindowExA(dwExStyle, wndClss.lpszClassName, "", wndStyles | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 1, 1, NIL, NIL, wndClss.hInstance, NIL))) AfxThrowError();
+            if (!(tmpHdc = GetDC(tmpHwnd))) AfxThrowError();
             else
             {
-                if (!(tmpHdc = GetDC(tmpHwnd))) AfxThrowError();
+                int pxlfmt;
+                PIXELFORMATDESCRIPTOR pfd = { 0 };
+                pfd.nSize = sizeof(pfd);
+                pfd.nVersion = 1;
+                pfd.dwFlags = pfdFlags;
+                pfd.iPixelType = PFD_TYPE_RGBA;
+                pfd.cColorBits = AfxMin(24, GetDeviceCaps(tmpHdc, BITSPIXEL));
+                pfd.cAlphaBits = 8;
+                //pfd.cDepthBits = 24;
+                //pfd.cStencilBits = 8;
+
+                HDC hScreenDc = GetDC(NULL);
+                pxlfmt = GetPixelFormat(hScreenDc);
+
+                if (pxlfmt)
+                    DescribePixelFormat(hScreenDc, pxlfmt, sizeof(pfd), &pfd);
+
+                ReleaseDC(NULL, hScreenDc);
+
+                if (!(pxlfmt = ChoosePixelFormat(tmpHdc, &(pfd))))
+                    AfxThrowError();
+
+                if (!(DescribePixelFormat(tmpHdc, pxlfmt, sizeof(pfd), &pfd)))
+                    AfxThrowError();
+
+                if (!SetPixelFormat(tmpHdc, pxlfmt, &(pfd)))
+                    AfxThrowError();
+
+                if (!(tmpHrc = wglCreateContext(tmpHdc))) AfxThrowError();
                 else
                 {
-                    PIXELFORMATDESCRIPTOR pfd = { 0 };
-                    pfd.nSize = sizeof(pfd);
-                    pfd.nVersion = 1;
-                    pfd.dwFlags = pfdFlags;
-                    pfd.iPixelType = PFD_TYPE_RGBA;
-                    pfd.cColorBits = GetDeviceCaps(tmpHdc, BITSPIXEL);
-                    pfd.cAlphaBits = 8;
-                    pfd.cDepthBits = 24;
-                    pfd.cStencilBits = 8;
-                    int pxlfmt;
-
-                    if (!(pxlfmt = wglChoosePixelFormatSIG(tmpHdc, &(pfd))))
-                        AfxThrowError();
-
-                    if (!(wglDescribePixelFormatSIG(tmpHdc, pxlfmt, sizeof(pfd), &pfd)))
-                        AfxThrowError();
-
-                    if (!wglSetPixelFormatSIG(tmpHdc, pxlfmt, tmpHwnd, &(pfd)))
-                        AfxThrowError();
-
-                    if (!(tmpHrc = wgl.CreateContext(tmpHdc))) AfxThrowError();
+                    if (!(wglMakeCurrent(tmpHdc, tmpHrc))) AfxThrowError();
                     else
                     {
-                        if (!(wgl.MakeCurrent(tmpHdc, tmpHrc))) AfxThrowError();
-                        else
-                        {
-                            afxString ver;
-                            afxUnit vMajor, vMinor, vPatch;
-                            PFNGLGETSTRINGPROC _glGetString = (void*)wgl.GetProcAddress("glGetString");
-                            AfxMakeString(&ver, 0, (afxChar const*)_glGetString(GL_VERSION), 0);
-                            AfxScanString(&ver, "%u.%u.%u", &vMajor, &vMinor, &vPatch);
+                        afxString ver;
+                        afxUnit vMajor, vMinor, vPatch;
+                        PFNGLGETSTRINGPROC _glGetString = (void*)wglGetProcAddress("glGetString");
+                        AfxMakeString(&ver, 0, (afxChar const*)_glGetString(GL_VERSION), 0);
+                        AfxScanString(&ver, "%u.%u.%u", &vMajor, &vMinor, &vPatch);
 
-                            if (verMajor)
-                                *verMajor = vMajor;
+                        if (verMajor)
+                            *verMajor = vMajor;
 
-                            if (verMinor)
-                                *verMinor = vMinor;
+                        if (verMinor)
+                            *verMinor = vMinor;
 
-                            if (verPatch)
-                                *verPatch = vPatch;
-                        }
-
-                        if (err)
-                            wgl.DeleteContext(tmpHrc), tmpHrc = NIL;
+                        if (verPatch)
+                            *verPatch = vPatch;
                     }
 
                     if (err)
-                        ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
+                        wglDeleteContext(tmpHrc), tmpHrc = NIL;
                 }
 
                 if (err)
-                    DestroyWindow(tmpHwnd), tmpHwnd = NIL;
+                    ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
             }
 
             if (err)
-                UnregisterClassA(wndClss.lpszClassName, wndClss.hInstance), AfxZero(&wndClss, sizeof(wndClss));
+                DestroyWindow(tmpHwnd), tmpHwnd = NIL;
         }
     }
 
     // ARB/EXT
-
-    wgl.GetPixelFormatAttribivARB = (void*)wgl.GetProcAddress("wglGetPixelFormatAttribivARB");
-    wgl.GetPixelFormatAttribfvARB = (void*)wgl.GetProcAddress("wglGetPixelFormatAttribfvARB");
-    wgl.ChoosePixelFormatARB = (void*)wgl.GetProcAddress("wglChoosePixelFormatARB");
+    wglVmt;
+    wglGetPixelFormatAttribivARB = (void*)wglGetProcAddress("wglGetPixelFormatAttribivARB");
+    wglGetPixelFormatAttribfvARB = (void*)wglGetProcAddress("wglGetPixelFormatAttribfvARB");
+    wglChoosePixelFormatARB = (void*)wglGetProcAddress("wglChoosePixelFormatARB");
     
-    wgl.GetCurrentReadDCARB = (void*)wgl.GetProcAddress("wglGetCurrentReadDCARB");
-    wgl.MakeContextCurrentARB = (void*)wgl.GetProcAddress("wglMakeContextCurrentARB");
-    wgl.CreateContextAttribsARB = (void*)wgl.GetProcAddress("wglCreateContextAttribsARB");
+    wglGetCurrentReadDCARB = (void*)wglGetProcAddress("wglGetCurrentReadDCARB");
+    wglMakeContextCurrentARB = (void*)wglGetProcAddress("wglMakeContextCurrentARB");
+    wglCreateContextAttribsARB = (void*)wglGetProcAddress("wglCreateContextAttribsARB");
     
-    wgl.GetExtensionsStringARB = (void*)wgl.GetProcAddress("wglGetExtensionsStringARB");
-    wgl.GetExtensionsStringEXT = (void*)wgl.GetProcAddress("wglGetExtensionsStringEXT");
+    wglGetExtensionsStringARB = (void*)wglGetProcAddress("wglGetExtensionsStringARB");
+    wglGetExtensionsStringEXT = (void*)wglGetProcAddress("wglGetExtensionsStringEXT");
 
-    wgl.SwapIntervalEXT = (void*)wgl.GetProcAddress("wglSwapIntervalEXT");
+    wglSwapIntervalEXT = (void*)wglGetProcAddress("wglSwapIntervalEXT");
 
-    wgl.DXOpenDeviceNV = (void*)wgl.GetProcAddress("wglDXOpenDeviceNV");
-    wgl.DXCloseDeviceNV = (void*)wgl.GetProcAddress("wglDXCloseDeviceNV");
-    wgl.DXRegisterObjectNV = (void*)wgl.GetProcAddress("wglDXRegisterObjectNV");
-    wgl.DXUnregisterObjectNV = (void*)wgl.GetProcAddress("wglDXUnregisterObjectNV");
-    wgl.DXLockObjectsNV = (void*)wgl.GetProcAddress("wglDXLockObjectsNV");
-    wgl.DXUnlockObjectsNV = (void*)wgl.GetProcAddress("wglDXUnlockObjectsNV");
+    wglDXOpenDeviceNV = (void*)wglGetProcAddress("wglDXOpenDeviceNV");
+    wglDXCloseDeviceNV = (void*)wglGetProcAddress("wglDXCloseDeviceNV");
+    wglDXRegisterObjectNV = (void*)wglGetProcAddress("wglDXRegisterObjectNV");
+    wglDXUnregisterObjectNV = (void*)wglGetProcAddress("wglDXUnregisterObjectNV");
+    wglDXLockObjectsNV = (void*)wglGetProcAddress("wglDXLockObjectsNV");
+    wglDXUnlockObjectsNV = (void*)wglGetProcAddress("wglDXUnlockObjectsNV");
 
     // DRV internals
 #if 0
@@ -1081,33 +1840,247 @@ _ZGL void __stdcall wglLoadWsiSymbolsSIG(HMODULE opengl32, afxUnit* verMajor, af
     HMODULE mod = opengl32;
 #endif
 
-    wgl.DrvCopyContext = (void*)wglGetProcAddressSIG(mod, "DrvCopyContext");
-    wgl.DrvCreateContext = (void*)wglGetProcAddressSIG(mod, "DrvCreateContext");
-    wgl.DrvCreateLayerContext = (void*)wglGetProcAddressSIG(mod, "DrvCreateLayerContext");
-    wgl.DrvDeleteContext = (void*)wglGetProcAddressSIG(mod, "DrvDeleteContext");
-    wgl.DrvDescribePixelFormat = (void*)wglGetProcAddressSIG(mod, "DrvDescribePixelFormat");
-    wgl.DrvGetProcAddress = (void*)wglGetProcAddressSIG(mod, "DrvGetProcAddress");
-    wgl.DrvReleaseContext = (void*)wglGetProcAddressSIG(mod, "DrvReleaseContext");
-    wgl.DrvSetContext = (void*)wglGetProcAddressSIG(mod, "DrvSetContext");
-    wgl.DrvSetPixelFormat = (void*)GetProcAddress(mod, "DrvSetPixelFormat");
-    wgl.DrvSwapBuffers = (void*)GetProcAddress(mod, "DrvSwapBuffers");
-    wgl.DrvPresentBuffers = (void*)wglGetProcAddressSIG(mod, "DrvPresentBuffers");
+    zglDrvCopyContext = (void*)wglGetProcAddressSIG(mod, "DrvCopyContext");
+    zglDrvCreateContext = (void*)wglGetProcAddressSIG(mod, "DrvCreateContext");
+    zglDrvCreateLayerContext = (void*)wglGetProcAddressSIG(mod, "DrvCreateLayerContext");
+    zglDrvDeleteContext = (void*)wglGetProcAddressSIG(mod, "DrvDeleteContext");
+    zglDrvDescribePixelFormat = (void*)wglGetProcAddressSIG(mod, "DrvDescribePixelFormat");
+    zglDrvGetProcAddress = (void*)wglGetProcAddressSIG(mod, "DrvGetProcAddress");
+    zglDrvReleaseContext = (void*)wglGetProcAddressSIG(mod, "DrvReleaseContext");
+    zglDrvSetContext = (void*)wglGetProcAddressSIG(mod, "DrvSetContext");
+    zglDrvSetPixelFormat = (void*)GetProcAddress(mod, "DrvSetPixelFormat");
+    zglDrvSwapBuffers = (void*)GetProcAddress(mod, "DrvSwapBuffers");
+    zglDrvPresentBuffers = (void*)wglGetProcAddressSIG(mod, "DrvPresentBuffers");
 
     int a = 0;
 
     if (((tmpHrc || tmpHdc || tmpHwnd)))
     {
-        wgl.MakeCurrent(NIL, NIL);
-        wgl.DeleteContext(tmpHrc), tmpHrc = NIL;
+        wglMakeCurrent(NIL, NIL);
+        wglDeleteContext(tmpHrc), tmpHrc = NIL;
         ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
         DestroyWindow(tmpHwnd), tmpHwnd = NIL;
-        UnregisterClassA(wndClss.lpszClassName, wndClss.hInstance), AfxZero(&wndClss, sizeof(wndClss));
     }
-    wgl.MakeCurrent(bkpHdc, bkpHglrc);
+    wglMakeCurrent(bkpHdc, bkpHglrc);
 }
+#endif
 
-_ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats)
+_ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats, afxBool* byWgl)
 {
+
+
+    if (wglChoosePixelFormatARB(hDC, piAttribIList, pfAttribFList, nMaxFormats, piFormats, nNumFormats))
+    {
+        if (byWgl)
+            *byWgl = TRUE;
+
+        return TRUE;
+    }
+    else
+    {
+        DWORD dwPfFlags = 0;
+        PIXELFORMATDESCRIPTOR pfd = { 0 };
+        pfd.nSize = sizeof(pfd);
+        pfd.nVersion = 1;
+
+        afxUnit attCnt = 0;
+        while (piAttribIList[attCnt * 2] != 0)
+        {
+            afxUnit key = piAttribIList[attCnt * 2];
+            afxUnit val = piAttribIList[attCnt * 2 + 1];
+            
+            switch (key)
+            {
+            case WGL_ACCELERATION_ARB:
+            {
+                if (val == WGL_FULL_ACCELERATION_ARB)
+                {
+                    dwPfFlags |= PFD_DIRECT3D_ACCELERATED;
+                }
+                else if (val == WGL_GENERIC_ACCELERATION_ARB)
+                {
+                    dwPfFlags |= PFD_GENERIC_ACCELERATED;
+                }
+                else if (val == WGL_NO_ACCELERATION_ARB)
+                {
+                    // nothing
+                }
+                break;
+            }
+            case WGL_SUPPORT_OPENGL_ARB:
+            {
+                dwPfFlags |= (val ? PFD_SUPPORT_OPENGL : NIL);
+                break;
+            }
+            case WGL_SUPPORT_GDI_ARB:
+            {
+                dwPfFlags |= (val ? PFD_SUPPORT_GDI : NIL);
+                break;
+            }
+            case WGL_DRAW_TO_WINDOW_ARB:
+            {
+                dwPfFlags |= (val ? PFD_DRAW_TO_WINDOW : NIL);
+                break;
+            }
+            case WGL_DRAW_TO_BITMAP_ARB:
+            case WGL_DRAW_TO_PBUFFER_ARB:
+            {
+                dwPfFlags |= (val ? PFD_DRAW_TO_BITMAP : NIL);
+                break;
+            }
+            case WGL_DOUBLE_BUFFER_ARB:
+            {
+                dwPfFlags |= (val ? PFD_DOUBLEBUFFER : PFD_DOUBLEBUFFER_DONTCARE);
+                break;
+            }
+            case WGL_PIXEL_TYPE_ARB:
+            {
+                if (val == WGL_TYPE_RGBA_ARB)
+                    dwPfFlags |= PFD_TYPE_RGBA;
+                else if (val == WGL_TYPE_RGBA_FLOAT_ARB)
+                    dwPfFlags |= PFD_TYPE_RGBA;
+                else if (val == WGL_TYPE_COLORINDEX_ARB)
+                    dwPfFlags |= PFD_TYPE_COLORINDEX;
+
+                break;
+            }
+            case WGL_STEREO_ARB:
+            {
+                dwPfFlags |= (val ? PFD_STEREO : PFD_STEREO_DONTCARE);
+                break;
+            }
+            case WGL_SWAP_METHOD_ARB:
+            {
+                if (val == WGL_SWAP_EXCHANGE_ARB)
+                    dwPfFlags |= PFD_SWAP_EXCHANGE;
+                else if (val == WGL_SWAP_COPY_ARB)
+                    dwPfFlags |= PFD_SWAP_COPY;
+                else if (val == WGL_SWAP_UNDEFINED_ARB)
+                    dwPfFlags |= NIL;
+
+                break;
+            }
+            case WGL_SWAP_LAYER_BUFFERS_ARB:
+            {
+                dwPfFlags |= PFD_SWAP_LAYER_BUFFERS;
+                break;
+            }
+            case WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB:
+            {
+                break;
+            }
+            case WGL_COLORSPACE_SRGB_EXT:
+            {
+                break;
+            }
+            case WGL_TRANSPARENT_ARB:
+            {
+                dwPfFlags |= (val ? PFD_SUPPORT_COMPOSITION : NIL);
+                break;
+            }
+
+            case WGL_DEPTH_BITS_ARB:
+            {
+                pfd.cDepthBits = val;
+                break;
+            }
+            case WGL_STENCIL_BITS_ARB:
+            {
+                pfd.cStencilBits = val;
+                break;
+            }
+            case WGL_COLOR_BITS_ARB:
+            {
+                pfd.cColorBits = val;
+                break;
+            }
+            case WGL_RED_BITS_ARB:
+            {
+                pfd.cRedBits = val;
+                break;
+            }
+            case WGL_GREEN_BITS_ARB:
+            {
+                pfd.cGreenBits = val;
+                break;
+            }
+            case WGL_BLUE_BITS_ARB:
+            {
+                pfd.cBlueBits = val;
+                break;
+            }
+            case WGL_ALPHA_BITS_ARB:
+            {
+                pfd.cAlphaBits = val;
+                break;
+            }
+            case WGL_RED_SHIFT_ARB:
+            {
+                pfd.cRedShift = val;
+                break;
+            }
+            case WGL_GREEN_SHIFT_ARB:
+            {
+                pfd.cGreenShift = val;
+                break;
+            }
+            case WGL_BLUE_SHIFT_ARB:
+            {
+                pfd.cBlueShift = val;
+                break;
+            }
+            case WGL_ALPHA_SHIFT_ARB:
+            {
+                pfd.cAlphaShift = val;
+                break;
+            }
+            case WGL_AUX_BUFFERS_ARB:
+            {
+                pfd.cAuxBuffers = val;
+                break;
+            }
+            case WGL_ACCUM_BITS_ARB:
+            {
+                pfd.cAccumBits = val;
+                break;
+            }
+            case WGL_ACCUM_RED_BITS_ARB:
+            {
+                pfd.cAccumRedBits = val;
+                break;
+            }
+            case WGL_ACCUM_GREEN_BITS_ARB:
+            {
+                pfd.cAccumGreenBits = val;
+                break;
+            }
+            case WGL_ACCUM_BLUE_BITS_ARB:
+            {
+                pfd.cAccumBlueBits = val;
+                break;
+            }
+            case WGL_ACCUM_ALPHA_BITS_ARB:
+            {
+                pfd.cAccumAlphaBits = val;
+                break;
+            }
+            default: break;
+            }
+
+            attCnt++;
+        }
+
+        int pxlFmt = ChoosePixelFormat(hDC, &pfd);
+        piFormats[0] = pxlFmt;
+        *nNumFormats = 1;
+
+        if (byWgl)
+            *byWgl = FALSE;
+
+        return !!pxlFmt;
+    }
+    
+
     int numFormats;
     int bestFormat = 0;
     int bestMatchScore = -1;
@@ -1115,7 +2088,7 @@ _ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribILis
     // Retrieve the number of pixel formats
     int maxPixelFormats;
 
-    if (wgl.GetPixelFormatAttribivARB(hDC, 0, 0, 1, (int[]) { WGL_NUMBER_PIXEL_FORMATS_ARB }, &maxPixelFormats) != TRUE)
+    if (wglGetPixelFormatAttribivARB(hDC, 0, 0, 1, (int[]) { WGL_NUMBER_PIXEL_FORMATS_ARB }, &maxPixelFormats) != TRUE)
     {
         return 0;
     }
@@ -1221,7 +2194,7 @@ _ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribILis
         for (int j = 0; j < intAttrCnt; j++)
         {
             int valuei = 0;
-            wgl.GetPixelFormatAttribivARB(hDC, i, 0, 1, &piAttribIList[2 * j], &valuei);
+            wglGetPixelFormatAttribivARB(hDC, i, 0, 1, &piAttribIList[2 * j], &valuei);
 
             int valueb = piAttribIList[2 * j + 1];
 
@@ -1234,7 +2207,7 @@ _ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribILis
         for (int j = 0; j < fltAttrCnt; j++)
         {
             FLOAT valuef = 0;
-            wgl.GetPixelFormatAttribfvARB(hDC, i, 0, 1, (int*)&pfAttribFList[2 * j], &valuef);
+            wglGetPixelFormatAttribfvARB(hDC, i, 0, 1, (int*)&pfAttribFList[2 * j], &valuef);
 
             float valuec = pfAttribFList[2 * j + 1];
 
@@ -1255,164 +2228,6 @@ _ZGL BOOL __stdcall wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribILis
     *nNumFormats = !!bestFormat;
 
     return !!bestFormat;
-}
-
-_ZGL HDC __stdcall wglGetCurrentDrawDCSIG(void)
-{
-    afxError err = NIL;    
-    return wgl.GetCurrentDC();
-}
-
-_ZGL HDC __stdcall wglGetCurrentReadDCSIG(void)
-{
-    afxError err = NIL;
-    HDC rdc;
-    
-    if ((!wgl.GetCurrentReadDCARB) || !(rdc = wgl.GetCurrentReadDCARB()))
-        rdc = wgl.GetCurrentDC();
-
-    return rdc;
-}
-
-_ZGL HGLRC __stdcall wglGetCurrentContextSIG(void)
-{
-    return wgl.GetCurrentContext();
-}
-
-_ZGL BOOL __stdcall wglMakeContextCurrentSIG(HDC hDrawDC, HDC hReadDC, HGLRC hglrc)
-{
-    afxError err = NIL;
-    BOOL rslt;
-
-    //if (1 || /*(hDrawDC == hReadDC) ||*/ (!wgl.MakeContextCurrentARB) || !(rslt = wgl.MakeContextCurrentARB(hDrawDC, hReadDC, hglrc)))
-        rslt = wgl.MakeCurrent(hDrawDC, hglrc);
-
-    return rslt;
-}
-
-_ZGL HGLRC __stdcall wglCreateContextAttribsSIG(HDC hDC, HGLRC hShareContext, int const attribList[])
-{
-    afxError err = AFX_ERR_NONE;
-    HGLRC rc;
-
-    if (((!attribList) && (!hShareContext)) || (!wgl.CreateContextAttribsARB) || !(rc = wgl.CreateContextAttribsARB(hDC, hShareContext, attribList)))
-#ifndef _AVOID_DRV_FUNCS
-        if ((!wgl.DrvCreateContext) || !(rc = (HGLRC)wgl.DrvCreateContext(hDC)))
-#endif
-            rc = wgl.CreateContext(hDC);
-
-    return rc;
-}
-
-_ZGL BOOL __stdcall wglDeleteContextSIG(HGLRC hGlrc)
-{
-    afxError err = AFX_ERR_NONE;
-    BOOL rslt = FALSE;
-
-    if (hGlrc == wglGetCurrentContextSIG())
-        wglMakeContextCurrentSIG(NIL, NIL, NIL);
-
-#ifndef _AVOID_DRV_FUNCS
-    if ((!wgl.DrvDeleteContext) || !(rslt = wgl.DrvDeleteContext(hGlrc)))
-#endif
-        rslt = wgl.DeleteContext(hGlrc);
-
-    return rslt;
-}
-
-_ZGL BOOL __stdcall wglSwapBuffersSIG(HDC hDC, HWND hWnd)
-{
-    afxError err = AFX_ERR_NONE;
-    BOOL rslt = FALSE;
-#if 0
-#ifndef _AVOID_DRV_FUNCS
-    if ((!wgl.DrvSwapBuffers) || !(rslt = wgl.DrvSwapBuffers(hDC, hWnd)))
-#endif
-#endif
-#ifndef _AVOID_WGL_FUNCS
-        if ((!wgl.SwapBuffers) || !(rslt = wgl.SwapBuffers(hDC)))
-#endif
-            rslt = SwapBuffers(hDC);
-
-    return rslt;
-}
-
-_ZGL BOOL __stdcall wglPresentBuffersSIG(HDC hDC, int a2)
-{
-    afxError err = AFX_ERR_NONE;
-    BOOL rslt = FALSE;
-
-    // a2 is appearently a HGLRC
-
-#ifndef _AVOID_DRV_FUNCS
-    if ((!wgl.DrvPresentBuffers) || !(rslt = wgl.DrvPresentBuffers(hDC, a2)))
-#endif
-        0;
-
-    return rslt;
-}
-
-_ZGL int __stdcall wglChoosePixelFormatSIG(HDC hDC, CONST PIXELFORMATDESCRIPTOR* ppfd)
-{
-    afxError err = AFX_ERR_NONE;
-    int fmt;
-
-#ifndef _AVOID_WGL_FUNCS
-    if ((!wgl.ChoosePixelFormat) || !(fmt = wgl.ChoosePixelFormat(hDC, ppfd)))
-#endif
-        fmt = ChoosePixelFormat(hDC, ppfd);
-
-    return fmt;
-}
-
-_ZGL BOOL __stdcall wglSetPixelFormatSIG(HDC hDC, int format, HWND hWnd, CONST PIXELFORMATDESCRIPTOR* ppfd)
-{
-    afxError err = AFX_ERR_NONE;
-    BOOL rslt = FALSE;
-
-#ifndef _AVOID_DRV_FUNCS
-    if ((!wgl.DrvSetPixelFormat) || !(rslt = wgl.DrvSetPixelFormat(hDC, format, hWnd)))
-#endif
-#ifndef _AVOID_WGL_FUNCS
-        if ((!wgl.SetPixelFormat) || !(rslt = wgl.SetPixelFormat(hDC, format, ppfd)))
-#endif
-            rslt = SetPixelFormat(hDC, format, ppfd);
-    
-    return rslt;
-}
-
-_ZGL int __stdcall wglDescribePixelFormatSIG(HDC hDC, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd)
-{
-    afxError err = AFX_ERR_NONE;
-    int rslt = 0;
-
-#ifndef _AVOID_DRV_FUNCS
-    if ((!wgl.DrvDescribePixelFormat) || !(rslt = wgl.DrvDescribePixelFormat(hDC, iPixelFormat, nBytes, ppfd)))
-#endif
-#ifndef _AVOID_WGL_FUNCS
-        if ((!wgl.DescribePixelFormat) || !(rslt = wgl.DescribePixelFormat(hDC, iPixelFormat, nBytes, ppfd)))
-#endif
-            rslt = DescribePixelFormat(hDC, iPixelFormat, nBytes, ppfd);
-
-    return rslt;
-}
-
-_ZGL int __stdcall wglGetPixelFormatSIG(HDC hDC)
-{
-    afxError err = AFX_ERR_NONE;
-    int rslt;
-
-#ifndef _AVOID_WGL_FUNCS
-    if ((!wgl.GetPixelFormat) || !(rslt = wgl.GetPixelFormat(hDC)))
-#endif
-        rslt = GetPixelFormat(hDC);
-
-    return rslt;
-}
-
-_ZGL BOOL __stdcall wglSwapIntervalSIG(int interval)
-{
-    return wgl.SwapIntervalEXT ? wgl.SwapIntervalEXT(interval) : FALSE;
 }
 
 _ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
@@ -1447,12 +2262,232 @@ _ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum sev
     case GL_DEBUG_SEVERITY_MEDIUM: severityStr = "MEDIUM"; break;
     case GL_DEBUG_SEVERITY_HIGH: severityStr = "HIGH"; break;
     }
-    AfxLogError("%s %s %s %u %s", sourceStr, typeStr, severityStr, id, message);
+    AfxReportError("%s %s %s %u %s", sourceStr, typeStr, severityStr, id, message);
+}
+
+_ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
+{
+    afxError err = NIL;
+
+    DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_SWAP_EXCHANGE | PFD_DIRECT3D_ACCELERATED;
+    DWORD wndStyles = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+    DWORD dwExStyle = WS_EX_TOPMOST;
+
+    HWND hWnd = NIL;
+    HDC hDC = NIL;
+    HGLRC hGLRC = NIL;
+    int dcPxlFmt = 0;
+    PIXELFORMATDESCRIPTOR dcPfd = { 0 };
+
+    if (!(hWnd = CreateWindowExA(dwExStyle, vgiWndClss.lpszClassName, vgiWndClss.lpszClassName, wndStyles, atX, atY, 1, 1, NIL, NIL, vgiWndClss.hInstance, NIL)))
+    {
+        AfxThrowError();
+        return err;
+    }
+
+    if (!(hDC = GetDC(hWnd)))
+    {
+        AfxThrowError();
+        DestroyWindow(hWnd), hWnd = NIL;
+        return err;
+    }
+
+    /*
+    WGL_SWAP_METHOD_ARB
+    If the pixel format supports a back buffer, then this indicates
+    how they are swapped. If this attribute is set to
+    WGL_SWAP_EXCHANGE_ARB then swapping exchanges the front and back
+    buffer contents; if it is set to WGL_SWAP_COPY_ARB then swapping
+    copies the back buffer contents to the front buffer; if it is
+    set to WGL_SWAP_UNDEFINED_ARB then the back buffer contents are
+    copied to the front buffer but the back buffer contents are
+    undefined after the operation. If the pixel format does not
+    support a back buffer then this parameter is set to
+    WGL_SWAP_UNDEFINED_ARB. The <iLayerPlane> parameter is ignored
+    if this attribute is specified.
+    */
+
+    int pxlAttrPairs[][2] =
+    {
+        { WGL_SUPPORT_OPENGL_ARB, GL_TRUE },
+        { WGL_DRAW_TO_WINDOW_ARB, GL_TRUE },
+        { WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB },
+        { WGL_DOUBLE_BUFFER_ARB, GL_TRUE },
+        { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB },
+
+        /*
+            WGL_COLOR_BITS_ARB
+            The number of color bitplanes in each color buffer. For RGBA pixel types,
+            it is the size of the color buffer, "excluding the alpha" bitplanes.
+            For color-index pixels, it is the size of the color index buffer.
+        */
+
+        // ARGB8
+        { WGL_COLOR_BITS_ARB, AfxMin(24, GetDeviceCaps(hDC, BITSPIXEL)) },
+#if 0
+        { WGL_RED_BITS_ARB, 8 },
+        { WGL_GREEN_BITS_ARB, 8 },
+        { WGL_BLUE_BITS_ARB, 8 },
+        { WGL_ALPHA_BITS_ARB, 8 },
+#endif
+#if 0
+        { WGL_ALPHA_SHIFT_ARB, 24 },
+        { WGL_RED_SHIFT_ARB, 16 },
+        { WGL_GREEN_SHIFT_ARB, 8 },
+        { WGL_BLUE_SHIFT_ARB, 0 },
+#endif
+#if 0
+        { WGL_DEPTH_BITS_ARB, 0 }, // { WGL_DEPTH_BITS_ARB, 24 },
+        { WGL_STENCIL_BITS_ARB, 0 }, // { WGL_STENCIL_BITS_ARB, 8 },
+#endif
+#if 0
+        { WGL_AUX_BUFFERS_ARB, 0 },
+        { WGL_ACCUM_BITS_ARB, 0 },
+        { WGL_ACCUM_ALPHA_BITS_ARB, 0 },
+        { WGL_ACCUM_RED_BITS_ARB, 0 },
+        { WGL_ACCUM_GREEN_BITS_ARB, 0 },
+        { WGL_ACCUM_BLUE_BITS_ARB, 0 },
+#endif
+#if 0
+        { WGL_TRANSPARENT_ARB, GL_FALSE },//{ WGL_TRANSPARENT_ARB, GL_TRUE },
+        //{ WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
+        { WGL_SAMPLE_BUFFERS_ARB, GL_FALSE },
+        //{ WGL_SAMPLE_BUFFERS_ARB, GL_TRUE },  // works on Intel, didn't work on Mesa
+        { WGL_SAMPLES_ARB, 0 },  // works on Intel, didn't work on Mesa
+        //{ WGL_COLORSPACE_EXT, WGL_COLORSPACE_SRGB_EXT }, // WGL_COLORSPACE_LINEAR_EXT // works on Mesa, didn't work on Intel
+        //{ WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE }, // works on Mesa, didn't work on Intel
+#endif
+        { WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
+#if 0
+        { WGL_NUMBER_OVERLAYS_ARB, 0 },
+        { WGL_NUMBER_UNDERLAYS_ARB, 0 },
+
+        { WGL_SHARE_DEPTH_ARB, FALSE },
+        { WGL_SHARE_STENCIL_ARB, FALSE },
+        { WGL_SHARE_ACCUM_ARB, FALSE },
+
+        { WGL_STEREO_ARB, FALSE },
+#endif
+        { NIL, NIL },
+    };
+
+    UINT formatCount;
+
+    //if (unitIdx == 0)
+        //wglLoadWsiSymbolsSIG(opengl32, NIL);
+
+    if (!wglChoosePixelFormatARB(hDC, &pxlAttrPairs[0][0], NIL, 1, &dcPxlFmt, &formatCount))
+    {
+        AfxThrowError();
+        ReleaseDC(hWnd, hDC), hDC = NIL;
+        DestroyWindow(hWnd), hWnd = NIL;
+        return err;
+    }
+
+    AFX_ASSERT(dcPxlFmt);
+    AFX_ASSERT(formatCount);
+    AfxZero(&dcPfd, sizeof(dcPfd));
+    dcPfd.nSize = sizeof(dcPfd);
+
+    if (!wglDescribePixelFormatGDI(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd))
+    {
+        if (!DescribePixelFormat(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd))
+        {
+            AfxThrowError();
+            ReleaseDC(hWnd, hDC), hDC = NIL;
+            DestroyWindow(hWnd), hWnd = NIL;
+            return err;
+        }
+        else if (!SetPixelFormat(hDC, dcPxlFmt, &dcPfd))
+        {
+            AfxThrowError();
+            ReleaseDC(hWnd, hDC), hDC = NIL;
+            DestroyWindow(hWnd), hWnd = NIL;
+            return err;
+        }
+    }
+    else if ((!wglSetPixelFormatGDI(hDC, dcPxlFmt, &dcPfd)) && (!SetPixelFormat(hDC, dcPxlFmt, &dcPfd)))
+    {
+        AfxThrowError();
+        ReleaseDC(hWnd, hDC), hDC = NIL;
+        DestroyWindow(hWnd), hWnd = NIL;
+        return err;
+    }
+
+    AFX_ASSERT(dcPfd.dwFlags & pfdFlags);
+
+    *phWnd = hWnd;
+    *phDC = hDC;
+    *pPixFmt = dcPxlFmt;
+    *pPfd = dcPfd;
+
+    return err;
+}
+
+_ZGL afxError _ZglCreateHwContext(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool robust, HGLRC* phGLRC, glVmt* gl, afxBool echo)
+{
+    afxError err = NIL;
+
+    HDC bkpHdc = wglGetCurrentDCGDI();
+    HGLRC bkpGlrc = wglGetCurrentContextGDI();
+
+    int ctxAttrPairs[][2] =
+    {
+        // GL Extensions Viewer 6.0.9.0 benchmark tests appointed 3.2 core as faster profile when 3.1 was not. 4.0 caused major drops.
+        //{ WGL_CONTEXT_MAJOR_VERSION_ARB, dpu->verMajor },
+        { WGL_CONTEXT_MAJOR_VERSION_ARB, verMaj ? verMaj : 4 },
+        //{ WGL_CONTEXT_MINOR_VERSION_ARB, dpu->verMinor },
+        { WGL_CONTEXT_MINOR_VERSION_ARB, verMin },
+        { WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB }, // WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
+        { WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+#ifndef ZGL_DONT_USE_ROBUST_ACCESS
+        | WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB
+#endif
+#ifdef _AFX_DEBUG
+        | WGL_CONTEXT_DEBUG_BIT_ARB
+#endif
+        },
+        { NIL, NIL },
+        { NIL, NIL },
+    };
+
+    if (robust)
+        ctxAttrPairs[3][1] |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
+
+    // hShareCtx can't be active in another thread
+    HGLRC hGLRC = NIL;
+
+    if (!(hGLRC = wglCreateContextAttribsARB(hDC, hShareCtx, (void*)ctxAttrPairs)))
+    {
+        AfxThrowError();
+        return err;
+    }
+
+    if (!(wglMakeCurrentGDI(hDC, hGLRC)))
+    {
+        wglDeleteContextGDI(hGLRC), hGLRC = NIL;
+        AfxThrowError();
+    }
+
+    if (gl)
+    {
+        wglLoadSymbolsSIG(hOpengl32Dll, 0, sizeof(*gl) / sizeof(gl->ptr), (void**)gl, echo);
+    }
+    
+    if (err)
+        wglDeleteContextGDI(hGLRC), hGLRC = NIL;
+
+    *phGLRC = hGLRC;
+
+    wglMakeCurrentGDI(bkpHdc, bkpGlrc);
+
+    return err;
 }
 
 _ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures)
 {
-    static afxDrawFeatures features = { 0 };
+    afxError err = NIL;
+    afxDrawFeatures features = { 0 };
     
     features.robustBufAccess = wglHasExtensionSIG(hDC, "GL_ARB_robustness");
     features.primShader = wglHasExtensionSIG(hDC, "GL_ARB_geometry_shader4");
@@ -1463,6 +2498,7 @@ _ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFe
     features.multiViewport = wglHasExtensionSIG(hDC, "GL_ARB_viewport_array");
     features.samplerMirrorClampToEdge = wglHasExtensionSIG(hDC, "GL_ARB_texture_mirror_clamp_to_edge");
     features.multiDrawIndirect = wglHasExtensionSIG(hDC, "GL_ARB_multi_draw_indirect");
+    features.drawIndirectFirstInst = (features.multiDrawIndirect && gl->DrawArraysInstancedBaseInstance && gl->DrawElementsInstancedBaseInstance);
     features.voidCanvas = wglHasExtensionSIG(hDC, "GL_ARB_framebuffer_no_attachments");
     features.samplerFilterMinMax = wglHasExtensionSIG(hDC, "GL_ARB_texture_filter_minmax");
     features.shaderCullDist = wglHasExtensionSIG(hDC, "GL_ARB_cull_distance");
@@ -1472,17 +2508,131 @@ _ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFe
     features.depthClamp = wglHasExtensionSIG(hDC, "GL_ARB_depth_clamp");
     features.depthBiasClamp = wglHasExtensionSIG(hDC, "GL_ARB_polygon_offset_clamp");
     features.depthBounds = wglHasExtensionSIG(hDC, "GL_EXT_depth_bounds_test");
-    
+    features.rasterCubeArray = wglHasExtensionSIG(hDC, "GL_ARB_texture_cube_map_array");
+    features.largePoints = wglHasExtensionSIG(hDC, "GL_ARB_point_parameters");
+    features.pipelineStatsQuery = wglHasExtensionSIG(hDC, "GL_ARB_pipeline_statistics_query");
+    features.occlusionQueryPrecise = wglHasExtensionSIG(hDC, "GL_ARB_timer_query");
+
+
+    /*
+    afxBool8 fullDrawIdxUint32;
+    afxBool8 independentBlend;
+    afxBool8 dualSrcBlend;
+    afxBool8 logicOp;
+    afxBool8 fillModeNonSolid;
+    afxBool8 wideLines;
+    afxBool8 alphaToOne;
+    afxBool8 etc2; // texture compression.
+    afxBool8 astc_LDR; // texture compression.
+    afxBool8 vtxPipelineStoresAndAtomics;
+    afxBool8 fragStoresAndAtomics;
+    afxBool8 shaderTessAndPrimPointSiz;
+    afxBool8 shaderRasterGatherExt;
+    afxBool8 shaderStorageRasterExtFmts;
+    afxBool8 shaderStorageRasterMultisample;
+    afxBool8 shaderStorageRasterReadWithoutFmt;
+    afxBool8 shaderStorageRasterWriteWithoutFmt;
+    afxBool8 shaderUboArrayDynIndexing;
+    afxBool8 shaderSampledRasterArrayDynIndexing;
+    afxBool8 shaderSsboArrayDynIndexing;
+    afxBool8 shaderStorageImageArrayDynIndexing;
+    afxBool8 shaderClipDist;
+    afxBool8 shaderFloat64;
+    afxBool8 shaderInt64;
+    afxBool8 shaderInt16;
+    afxBool8 shaderRsrcResidency;
+    afxBool8 shaderRsrcMinLod;
+    afxBool8 sparseBinding;
+    afxBool8 sparseResidencyBuffer;
+    afxBool8 sparseResidencyRaster2D;
+    afxBool8 sparseResidencyRaster3D;
+    afxBool8 sparseResidency2Samples;
+    afxBool8 sparseResidency4Samples;
+    afxBool8 sparseResidency8Samples;
+    afxBool8 sparseResidency16Samples;
+    afxBool8 sparseResidencyAliased;
+    afxBool8 variableMultisampleRate;
+    afxBool8 inheritedQueries;
+
+    // compatible with PhysicalDeviceVulkan11Features
+    afxBool8 ssbo16bitAccess;
+    afxBool8 uboAndSsbo16bitAccess;
+    afxBool8 storagePushConst16;
+    afxBool8 storageInputOut16;
+    afxBool8 multiview;
+    afxBool8 multiviewPrimShader;
+    afxBool8 multiviewTessShader;
+    afxBool8 varPtrsStorageBuf;
+    afxBool8 varPtrs;
+    afxBool8 protectedMem;
+    afxBool8 samplerYcbcrConv;
+    afxBool8 shaderDrawParams;
+
+    // compatible with PhysicalDeviceVulkan12Features
+    afxBool8 samplerMirrorClampToEdge;
+    afxBool8 drawIndirectCnt;
+    afxBool8 ssbo8BitAccess;
+    afxBool8 uboAndSsbo8bitAccess;
+    afxBool8 storagePushConst8;
+    afxBool8 shaderBufInt64Atomics;
+    afxBool8 shaderSharedInt64Atomics;
+    afxBool8 shaderFloat16;
+    afxBool8 shaderInt8;
+    afxBool8 descIndexing;
+
+    // compatible with PhysicalDeviceDescriptorIndexingFeatures
+    afxBool8 shaderInputAttachArrayDynamicIndexing;
+    afxBool8 shaderUniformTexelBufArrayDynamicIndexing;
+    afxBool8 shaderStorageTexelBufArrayDynamicIndexing;
+    afxBool8 shaderUboArrayNonUniformIndexing;
+    afxBool8 shaderSampledRasArrayNonUniformIndexing;
+    afxBool8 shaderSsboArrayNonUniformIndexing;
+    afxBool8 shaderStorageRasArrayNonUniformIndexing;
+    afxBool8 shaderInputAttachmentArrayNonUniformIndexing;
+    afxBool8 shaderUniformTexelBufArrayNonUniformIndexing;
+    afxBool8 shaderStorageTexelBufArrayNonUniformIndexing;
+    afxBool8 descBindingUboUpdAfterBind;
+    afxBool8 descBindingSampledRasUpdAfterBind;
+    afxBool8 descBindingStorageRasUpdAfterBind;
+    afxBool8 descBindingSsboUpdAfterBind;
+    afxBool8 descBindingUniformTexelBufUpdAfterBind;
+    afxBool8 descBindingStorageTexelBufUpdAfterBind;
+    afxBool8 descBindingUpdUnusedWhilePending;
+    afxBool8 descBindingPartiallyBound;
+    afxBool8 descBindingVarDescCnt;
+    afxBool8 runtimeDescArray;
+
+    afxBool8 samplerFilterMinMax;
+    afxBool8 scalarBlockLayout;
+    afxBool8 voidCanvas;
+    afxBool8 uniformBufStdLayout;
+    afxBool8 shaderSubgroupExtTypes;
+    afxBool8 separateDepthStencilLayouts;
+    afxBool8 hostQueryReset;
+    afxBool8 timelineSemaphore;
+    afxBool8 bufDevAddress;
+    afxBool8 bufDevAddressCaptureReplay;
+    afxBool8 bufDevAddressMultidev;
+    afxBool8 vkMemModel;
+    afxBool8 vkMemModelDevScope;
+    afxBool8 vkMemModelAvailVisibChains;
+    afxBool8 shaderOutViewportIdx;
+    afxBool8 shaderOutLayer;
+    afxBool8 subgroupBroadcastDynId;
+    */
+
+    AFX_ASSERT(pFeatures);
     *pFeatures = features;
 }
 
 _ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits)
 {
+    afxError err = NIL;
     GLfloat dataf;
     GLfloat dataf2[3];
     GLint datai;
     GLint datai2[3];
-    static afxDrawLimits limits = { 0 };
+    afxDrawLimits limits = { 0 };
 
 #if 0
     afxUnit maxMemAllocCnt;
@@ -1532,193 +2682,199 @@ _ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits)
 
     // the maximum number of uniform blocks per program.The value must be at least 70.
     // GL_MAX_COMBINED_UNIFORM_BLOCKS
-    gl->GetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &datai);
     limits.maxPerStageUbos = datai;
-    gl->GetIntegerv(GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS, &datai); _ZglThrowErrorOccuried();
+    limits.maxPerLigaUbos = datai;
+    gl->GetIntegerv(GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS, &datai);
     limits.maxPerStageSsbos = datai;
-    gl->GetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &datai); _ZglThrowErrorOccuried();
+    limits.maxPerLigaSsbos = datai;
+    gl->GetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &datai);
     limits.maxPerStageSampledImages = datai;
+    limits.maxPerLigaSampledImages = datai;
     limits.maxPerStageSamplers = datai;
+    limits.maxPerLigaSamplers = datai;
 
     // GL_MAX_TEXTURE_IMAGE_UNITS --- the maximum supported texture image units that can be used to access texture maps from the fragment shader. The value must be at least (GL) 16.
-    gl->GetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &datai); _ZglThrowErrorOccuried();
-    limits.maxLigaSetSamplers = datai;
-    limits.maxLigaSetSampledImages = datai;
+    gl->GetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &datai);
+    //limits.maxPerLigaSamplers = datai;
+    //limits.maxPerLigaSampledImages = datai;
     
     // GL_MAX_UNIFORM_BUFFER_BINDINGS --- the maximum number of uniform buffer binding points on the context, which must be at least 36.
-    gl->GetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &datai); _ZglThrowErrorOccuried();
-    limits.maxLigaSetUbos = datai;
+    gl->GetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &datai);
+    limits.maxPerLigaUbos = datai;
     // GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS --- the maximum number of shader storage buffer binding points on the context, which must be at least 8.
-    gl->GetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &datai); _ZglThrowErrorOccuried();
-    limits.maxLigaSetSsbos = datai;
+    gl->GetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &datai);
+    limits.maxPerLigaSsbos = datai;
 
 
     ///////////////////////////////////////////
     // BUFFERIZATION
 
     // the minimum alignment in basic machine units of pointers returned from glMapBuffer and glMapBufferRange. This value must be a power of two and must be at least 64.
-    gl->GetIntegerv(GL_MIN_MAP_BUFFER_ALIGNMENT, &datai); _ZglThrowErrorOccuried();
-    limits.minMemMapAlign = datai; // at least 64
-    // the minimum required alignment for shader storage buffer sizes and offset. The initial value is 1.
-    gl->GetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &datai); _ZglThrowErrorOccuried();
-    limits.minSsboOffsetAlign = datai; // at least 64
-    // the minimum required alignment for texture buffer sizes and offset. The initial value is 1.
-    gl->GetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &datai); _ZglThrowErrorOccuried();
-    limits.minTexelBufOffsetAlign = datai; // at least 64
-    // the minimum required alignment for uniform buffer sizes and offset. The initial value is 1.
-    gl->GetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &datai); _ZglThrowErrorOccuried();
-    limits.minUboOffsetAlign = datai; // at least 64
+    gl->GetIntegerv(GL_MIN_MAP_BUFFER_ALIGNMENT, &datai);
+    limits.minBufMapAlign = datai; // at least 64
 
     limits.optimalBufCopyOffsetAlign = AFX_SIMD_ALIGNMENT;
     limits.optimalBufCopyRowPitchAlign = AFX_SIMD_ALIGNMENT;
+    
+    // the minimum required alignment for uniform buffer sizes and offset. The initial value is 1.
+    gl->GetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &datai);
+    limits.minUboOffsetAlign = datai; // at least 64
+    // the maximum size in basic machine units of a uniform block, which must be at least 16384.
+    gl->GetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &datai);
+    limits.maxUboRange = datai;
+
+    // the minimum required alignment for shader storage buffer sizes and offset. The initial value is 1.
+    gl->GetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &datai);
+    limits.minSsboOffsetAlign = datai; // at least 64
+    gl->GetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &datai);
+    limits.maxSsboRange = datai;
+    
+    // the minimum required alignment for texture buffer sizes and offset. The initial value is 1.
+    gl->GetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &datai);
+    limits.minTboOffsetAlign = datai; // at least 64
+    // The value gives the maximum number of texels allowed in the texel array of a texture buffer object. Value must be at least 65536.
+    gl->GetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &datai);
+    limits.maxTboCap = datai;
+    // the minimum required alignment for texture buffer sizes and offset. The initial value is 1.
+    gl->GetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &datai);
+    limits.bufferRasterGranularity = datai;
 
     // A rough estimate of the largest texture that the GL can handle. The value must be at least 1024.
-    gl->GetIntegerv(GL_MAX_TEXTURE_SIZE, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TEXTURE_SIZE, &datai);
     limits.maxRasterDim1D = datai; // at least 1024
     limits.maxRasterDim2D = datai; // at least 1024
     // a rough estimate of the largest 3D texture that the GL can handle. The value must be at least 64.
-    gl->GetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &datai);
     limits.maxRasterDim3D = datai; // at least 64
     // the maximum number of layers allowed in an array texture, and must be at least 256.
-    gl->GetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &datai); _ZglThrowErrorOccuried();
-    limits.maxRasterArrayLayers = datai; // at least 256
+    gl->GetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &datai);
+    limits.maxRasterLayers = datai; // at least 256
     // a rough estimate of the largest cube-map texture that the GL can handle. The value must be at least 1024.
-    gl->GetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &datai);
     limits.maxRasterDimCube = datai; // at least 1024
-
-    // The value gives the maximum number of texels allowed in the texel array of a texture buffer object. Value must be at least 65536.
-    gl->GetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &datai); _ZglThrowErrorOccuried();
-    limits.maxTexelBufElements = datai;
-    // the maximum size in basic machine units of a uniform block, which must be at least 16384.
-    gl->GetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &datai); _ZglThrowErrorOccuried();
-    limits.maxUboRange = datai;
-    gl->GetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &datai); _ZglThrowErrorOccuried();
-    limits.maxSsboRange = datai;
-    // the minimum required alignment for texture buffer sizes and offset. The initial value is 1.
-    gl->GetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &datai); _ZglThrowErrorOccuried();
-    limits.bufferRasterGranularity = datai;
 
     //////////////////////////////////////
     // VERTEX PROCESSING
 
     // the maximum number of 4-component generic vertex attributes accessible to a vertex shader. The value must be at least 16.
-    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIBS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIBS, &datai);
     limits.maxVtxIns = datai; // at least 16
     // the maximum number of components of output written by a vertex shader, which must be at least 64.
-    gl->GetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &datai);
     limits.maxVtxOutCompos = datai; // at least 64
     // the maximum number of vertex buffers that may be bound.
-    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &datai);
     limits.maxVtxInSrcs = datai;
     // the maximum offset that may be added to a vertex binding offset.
-    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, &datai);
     limits.maxVtxInOffset = datai;
     // the maximum value of stride parameters to vertex array pointer-setting commands.
-    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_STRIDE, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VERTEX_ATTRIB_STRIDE, &datai);
     limits.maxVtxInSrcStride = datai;
 
     /////////////////////////////////////////////
     // PRIMITIVE PROCESSING
 
     // the maximum number of application-defined clipping distances. The value must be at least 8.
-    gl->GetIntegerv(GL_MAX_CLIP_DISTANCES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_CLIP_DISTANCES, &datai);
     limits.maxClipDistances = datai; // at least 8
-    gl->GetIntegerv(GL_MAX_CULL_DISTANCES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_CULL_DISTANCES, &datai);
     limits.maxCullDistances = datai; // at least 8
-    gl->GetIntegerv(GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES, &datai);
     limits.maxCombinedClipAndCullDistances = datai; // at least 8
 
     // the maximum number of simultaneous viewports that are supported. The value must be at least 16.
-    gl->GetIntegerv(GL_MAX_VIEWPORTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VIEWPORTS, &datai);
     limits.maxVpCnt = datai; // at least 16
     // the maximum supported width and height of the viewport. These must be at least as large as the visible dimensions of the display being rendered to.
-    gl->GetIntegerv(GL_MAX_VIEWPORT_DIMS, datai2); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_VIEWPORT_DIMS, datai2);
     limits.maxVpDimensions[0] = datai2[0];
     limits.maxVpDimensions[1] = datai2[1];
     // the minimum and maximum viewport bounds range. The minimum range should be at least [-32768, 32767].
-    gl->GetFloatv(GL_VIEWPORT_BOUNDS_RANGE, dataf2); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_VIEWPORT_BOUNDS_RANGE, dataf2);
     limits.vpBoundsRange[0] = dataf2[0];  // at least [-32768, 32767]
     limits.vpBoundsRange[1] = dataf2[1];  // at least [-32768, 32767]
     // the number of bits of sub-pixel precision which the GL uses to interpret the floating point viewport bounds. The minimum value is 0.
-    gl->GetIntegerv(GL_VIEWPORT_SUBPIXEL_BITS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_VIEWPORT_SUBPIXEL_BITS, &datai);
     limits.vpSubPixelBits = datai; // at least 0
 
     // the maximum number of components of inputs read by a geometry shader, which must be at least 64.
-    gl->GetIntegerv(GL_MAX_GEOMETRY_INPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_GEOMETRY_INPUT_COMPONENTS, &datai);
     limits.maxPrimInComps = datai; // at least 64
     // the maximum number of components of outputs written by a geometry shader, which must be at least 128.
-    gl->GetIntegerv(GL_MAX_GEOMETRY_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_GEOMETRY_OUTPUT_COMPONENTS, &datai);
     limits.maxPrimOutComps = datai; // at least 128
 
     // the implementation-dependent maximum tessellation level (the value of MAX_TESS_GEN_LEVEL).
-    gl->GetIntegerv(GL_MAX_TESS_GEN_LEVEL, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_GEN_LEVEL, &datai);
     limits.maxTessGenLvl = datai;
     // the implementation-dependent maximum patch size (the value of MAX_PATCH_VERTICES). The patch size is initially three vertices.
-    gl->GetIntegerv(GL_MAX_PATCH_VERTICES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_PATCH_VERTICES, &datai);
     limits.maxTessPatchSiz = datai;
-    gl->GetIntegerv(GL_MAX_TESS_CONTROL_INPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_CONTROL_INPUT_COMPONENTS, &datai);
     limits.maxTessCtrlPerVtxInComps = datai;
-    gl->GetIntegerv(GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS, &datai);
     limits.maxTessCtrlPerVtxOutComps = datai;
     // The number of components of active per-patch output variables may not exceed the value of MAX_TESS_PATCH_COMPONENTS
-    gl->GetIntegerv(GL_MAX_TESS_PATCH_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_PATCH_COMPONENTS, &datai);
     limits.maxTessCtrlPerPatchOutComps = datai;
-    gl->GetIntegerv(GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS, &datai);
     limits.maxTessCtrlTotalOutComps = datai;
-    gl->GetIntegerv(GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS, &datai);
     limits.maxTessEvalInComps = datai;
-    gl->GetIntegerv(GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS, &datai);
     limits.maxTessEvalOutComps = datai;
 
-    gl->GetIntegerv(GL_MAX_GEOMETRY_SHADER_INVOCATIONS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_GEOMETRY_SHADER_INVOCATIONS, &datai);
     limits.maxPrimShadInvocations = datai;
-    gl->GetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &datai);
     limits.maxPrimOutVertices = datai;
-    gl->GetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, &datai);
     limits.maxPrimTotalOutComps = datai;
 
     /////////////////////////////////////
     // CANVAS
 
-    gl->GetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &datai); _ZglThrowErrorOccuried();
-    limits.maxColorAttachments = datai; // at least 16384
+    gl->GetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &datai);
+    limits.maxColorAttachments = datai;
     // 4.3 --- the maximum width for a framebuffer that has no attachments, which must be at least 16384.
-    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, &datai);
     limits.maxCanvasWhd.w = datai; // at least 16384
     // 4.3 --- the maximum height for a framebuffer that has no attachments, which must be at least 16384.
-    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, &datai);
     limits.maxCanvasWhd.h = datai; // at least 16384
     // 4.3 --- the maximum number of layers for a framebuffer that has no attachments, which must be at least 2048.
-    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_LAYERS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_LAYERS, &datai);
     limits.maxCanvasWhd.d = datai; // at least 2048
      // the maximum samples in a framebuffer that has no attachments, which must be at least 4.
-    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_SAMPLES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_FRAMEBUFFER_SAMPLES, &datai);
     limits.canvasNoAttachmentsSampleCnts = datai;
 
     //////////////////////////////
     // SAMPLING
 
     // the maximum, absolute value of the texture level-of-detail bias. The value must be at least 2.0.
-    gl->GetFloatv(GL_MAX_TEXTURE_LOD_BIAS, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_MAX_TEXTURE_LOD_BIAS, &dataf);
     limits.maxSamplerLodBias = dataf; // at least 2.0
-    gl->GetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &dataf);
     limits.maxSamplerAnisotropy = dataf;
 
     ////////////////////////////////////////////
     // MULTISAMPLING
 
     // the maximum number of sample mask words.
-    gl->GetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &datai);
     limits.maxSampleMaskWords = datai;
     // the maximum number of samples supported in integer format multisample buffers.
-    gl->GetIntegerv(GL_MAX_INTEGER_SAMPLES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_INTEGER_SAMPLES, &datai);
     limits.sampledRasterIntegerSampleCnts = datai;
     // the maximum number of samples in a color multisample texture.
-    gl->GetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &datai);
     limits.sampledRasterColorSampleCnts = datai;
     limits.canvasColorSampleCnts = datai;
     // the maximum number of samples in a multisample depth or depth-stencil texture.
-    gl->GetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &datai);
     limits.sampledRasterDepthSampleCnts = datai;
     limits.sampledRasterStencilSampleCnts = datai;
     limits.canvasDepthSampleCnts = datai;
@@ -1728,82 +2884,154 @@ _ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits)
     // RASTERIZATION
 
     // the smallest and largest supported sizes for antialiased points. The smallest size must be at most 1, and the largest size must be at least 1.
-    gl->GetFloatv(GL_POINT_SIZE_RANGE, dataf2); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_POINT_SIZE_RANGE, dataf2);
     limits.pointSizRange[0] = dataf2[0]; // at least 1
     limits.pointSizRange[1] = dataf2[1]; // at least 1
     // the size difference between adjacent supported sizes for antialiased points.
-    gl->GetFloatv(GL_POINT_SIZE_GRANULARITY, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_POINT_SIZE_GRANULARITY, &dataf);
     limits.pointSizGranularity = dataf;
     // the range of widths supported for smooth (antialiased) lines.
-    gl->GetFloatv(GL_LINE_WIDTH_RANGE, dataf2); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_LINE_WIDTH_RANGE, dataf2);
     limits.lineWidthRange[0] = dataf2[0];
     limits.lineWidthRange[1] = dataf2[1];
     // the level of quantization applied to smooth line width parameters.
-    gl->GetFloatv(GL_LINE_WIDTH_GRANULARITY, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_LINE_WIDTH_GRANULARITY, &dataf);
     limits.lineWidthGranularity = dataf;
 
     ///////////////////////////////
     // FRAGMENT PROCESSING
 
     // the maximum number of components of the inputs read by the fragment shader, which must be at least 128.
-    gl->GetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &datai);
     limits.maxFragInComps = datai; // at least 128
     // the maximum number of simultaneous outputs that may be written in a fragment shader. The value must be at least 8.
-    gl->GetIntegerv(GL_MAX_DRAW_BUFFERS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_DRAW_BUFFERS, &datai);
     limits.maxFragOutAttachments = datai; // at least 8
     // the maximum number of active draw buffers when using dual-source blending. The value must be at least 1.
-    gl->GetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &datai);
     limits.maxFragDualSrcAttachments = datai; // at least 1
 
     // the minimum texel offset allowed in a texture lookup, which must be at most -8.
-    gl->GetIntegerv(GL_MIN_PROGRAM_TEXEL_OFFSET, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MIN_PROGRAM_TEXEL_OFFSET, &datai);
     limits.minTexelOffset = datai; // at least 1
     // the maximum texel offset allowed in a texture lookup, which must be at least 7.
-    gl->GetIntegerv(GL_MAX_PROGRAM_TEXEL_OFFSET, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_PROGRAM_TEXEL_OFFSET, &datai);
     limits.maxTexelOffset = datai; // at least 1
     // For all instructions except textureGather, the limits are the values of MIN_PROGRAM_TEXEL_OFFSET and MAX_PROGRAM_TEXEL_OFFSET. 
     // For the textureGather instruction, the limits are the values of MIN_PROGRAM_TEXTURE_GATHER_OFFSET and MAX_PROGRAM_TEXTURE_GATHER_OFFSET.
-    gl->GetIntegerv(GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET, &datai);
     limits.minTexelGatherOffset = datai; // at least 1
-    gl->GetIntegerv(GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET, &datai);
     limits.maxTexelGatherOffset = datai; // at least 1
 
     // The built-in function interpolateAtOffset will sample variables at a specified(x, y) offset relative to the center of the pixel.The range and granularity of offsets supported by this function is implementation-dependent.
     // If either component of the specified offset is less than the value of MIN_FRAGMENT_INTERPOLATION_OFFSET or greater than the value of MAX_FRAGMENT_INTERPOLATION_OFFSET, the position used to interpolate the variable is undefined.
     // Not all values of offset may be supported; x and y offsets may be rounded to fixed-point values with the number of fraction bits given by the value of the implementation-dependent constant FRAGMENT_INTERPOLATION_OFFSET_BITS.
-    gl->GetFloatv(GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, &dataf);
     limits.minInterpolationOffset = dataf; // at least 1
-    gl->GetFloatv(GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, &dataf); _ZglThrowErrorOccuried();
+    gl->GetFloatv(GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, &dataf);
     limits.maxInterpolationOffset = dataf; // at least 1
-    gl->GetIntegerv(GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, &datai);
     limits.subPixelInterpolationOffsetBits = datai; // at least 1
 
     ///////////////////////////////////////
     // COMPUTING
 
     // the number of invocations in a single local work group (i.e., the product of the three dimensions) that may be dispatched to a compute shader.
-    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &datai);
     limits.maxComputeWarpInvocations = datai;
     // the maximum number of work groups that may be dispatched to a compute shader. Indices 0, 1, and 2 correspond to the X, Y and Z dimensions, respectively.
-    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_COUNT, datai2); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_COUNT, datai2);
     limits.maxComputeWarpCnt.w = datai2[0];
     limits.maxComputeWarpCnt.h = datai2[1];
     limits.maxComputeWarpCnt.d = datai2[2];
     // the maximum size of a work groups that may be used during compilation of a compute shader. Indices 0, 1, and 2 correspond to the X, Y and Z dimensions, respectively.
-    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_SIZE, datai2); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_SIZE, datai2);
     limits.maxComputeWarpSiz.w = datai2[0];
     limits.maxComputeWarpSiz.h = datai2[1];
     limits.maxComputeWarpSiz.d = datai2[2];
 
-    gl->GetIntegerv(GL_MAX_COMPUTE_SHARED_MEMORY_SIZE, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_COMPUTE_SHARED_MEMORY_SIZE, &datai);
     limits.maxComputeSharedMemSiz = datai;
 
     // the maximum index that may be specified during the transfer of generic vertex attributes to the GL.
-    gl->GetIntegerv(GL_MAX_ELEMENT_INDEX, &datai); _ZglThrowErrorOccuried();
+    gl->GetIntegerv(GL_MAX_ELEMENT_INDEX, &datai);
     limits.maxDrawIndexedIdxValue = datai;
 
-    limits.maxBoundLigaSets = 4;
+    // silent any error generated by passing invalid params.
+    GLenum glErr = gl->GetError();
+
+    limits.maxBoundPerLigas = 4;
     limits.maxPushConstsSiz = 128;
 
+    limits.maxSamplerAllocCnt = AFX_U32_MAX;
+    
+    AFX_ASSERT(pLimits);
     *pLimits = limits;
+}
+
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL,  // handle to DLL module
+    DWORD fdwReason,     // reason for calling function
+    LPVOID lpvReserved)  // reserved
+{
+    afxError err = NIL;
+    // Perform actions based on the reason for calling.
+    switch (fdwReason)
+    {
+    case DLL_PROCESS_ATTACH:
+        // Initialize once for each new process.
+        // Return FALSE to fail DLL load.
+
+        if (!vgiWndClssRegistered)
+        {
+            AfxZero(&vgiWndClss, sizeof(vgiWndClss));
+            vgiWndClss.cbSize = sizeof(vgiWndClss); // only on EX
+            vgiWndClss.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+            vgiWndClss.lpfnWndProc = _ZglTmpWndPrcCbW32;
+            vgiWndClss.cbClsExtra = 0;
+            vgiWndClss.cbWndExtra = 0;
+            vgiWndClss.hInstance = GetModuleHandleA(NULL);
+            vgiWndClss.hIcon = LoadIconA(NULL, IDI_SHIELD);
+            vgiWndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
+            vgiWndClss.hbrBackground = NULL;
+            vgiWndClss.lpszMenuName = NULL;
+            vgiWndClss.lpszClassName = "SIGMA GL/2 Continuous Integration --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build";
+            //vgiWndClss.hIconSm = LoadIconA(NULL, IDI_SHIELD);
+
+            if (!(RegisterClassExA(&vgiWndClss)))
+            {
+                AfxThrowError();
+                return FALSE;
+            }
+            vgiWndClssRegistered = TRUE;
+        }
+        break;
+
+    case DLL_THREAD_ATTACH:
+        // Do thread-specific initialization.
+        break;
+
+    case DLL_THREAD_DETACH:
+        // Do thread-specific cleanup.
+        break;
+
+    case DLL_PROCESS_DETACH:
+
+        if (lpvReserved != NIL)
+        {
+            break; // do not do cleanup if process termination scenario
+        }
+
+        if (vgiWndClssRegistered)
+        {
+            UnregisterClassA(vgiWndClss.lpszClassName, vgiWndClss.hInstance);
+            AfxZero(&vgiWndClss, sizeof(vgiWndClss));
+            vgiWndClssRegistered = FALSE;
+        }
+
+        // Perform any necessary cleanup.
+        break;
+    }
+    return TRUE;  // Successful DLL_PROCESS_ATTACH.
 }

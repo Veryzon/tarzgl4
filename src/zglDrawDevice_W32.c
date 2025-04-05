@@ -20,20 +20,26 @@
 
 //#define _AVOID_WGL_FUNCS 1
 
+//#define USE_SCREEN_DC 1
+
 extern afxClassConfig _ZglDexuMgrCfg;
 
-_ZGL LRESULT WINAPI _ZglWndHndlngPrcW32Callback(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    afxError err = AFX_ERR_NONE;
-    //afxObject obj = (afxObject)(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-
-    if (message == WM_SHOWWINDOW)
-    {
-        // Sent to a window when the window is about to be hidden or shown.
-        return 0; // If an application processes this message, it should return zero.
-    }
-    return DefWindowProcA(hWnd, message, wParam, lParam);
-}
+_ZGL afxString const targaSignature = AFX_STRING(
+    "           :::::::::::     :::     :::::::::   ::::::::      :::               \n"
+    "               :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:             \n"
+    "               +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+            \n"
+    "               +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:           \n"
+    "               +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+           \n"
+    "               #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#           \n"
+    "               ###     ###     ### ###    ###  ########  ###     ###           \n"
+    "                                                                               \n"
+    "              Q W A D R O   E X E C U T I O N   E C O S Y S T E M              \n"
+    "                                                                               \n"
+    "                               Public Test Build                               \n"
+    "                           (c) 2017 SIGMA FEDERATION                           \n"
+    "                                www.sigmaco.org                                \n"
+    "                                                                               \n"
+);
 
 _ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* deletionQueue)
 {
@@ -100,7 +106,7 @@ _ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* del
             AFX_ASSERT(!gl->IsQuery(res.gpuHandle));
             break;
         default:
-            AfxLogError("");
+            AfxReportError("");
             break;
         }
     }
@@ -127,199 +133,6 @@ _ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit ty
 
     dexu->m.schedCnt += 1;
     AfxSignalCondition2(&dexu->m.schedCnd);
-}
-
-_ZGL afxError _ZglCreateHwSurface(LPWNDCLASSEXA cls, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
-{
-    afxError err = NIL;
-    HDC bkpHdc = wglGetCurrentDrawDCSIG();
-    HGLRC bkpGlrc = wglGetCurrentContextSIG();
-
-    DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL
-#if 0
-        | PFD_SWAP_EXCHANGE
-#endif
-#if !0
-        | PFD_DIRECT3D_ACCELERATED
-#endif
-#if 0
-        | PFD_SUPPORT_COMPOSITION
-#endif
-        ;
-    DWORD dwExStyle = WS_EX_TOPMOST;
-    DWORD wndStyles = WS_POPUP;
-
-    HWND hWnd = NIL;
-    HDC hDC = NIL;
-    HGLRC hGLRC = NIL;
-    int dcPxlFmt = 0;
-    PIXELFORMATDESCRIPTOR dcPfd = { 0 };
-
-    if (!(hWnd = CreateWindowExA(dwExStyle, cls->lpszClassName, cls->lpszClassName, wndStyles | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 1, 1, NIL, NIL, cls->hInstance, NIL)))
-        AfxThrowError();
-    else
-    {
-        if (!(hDC = GetDC(hWnd))) AfxThrowError();
-        else
-        {
-            /*
-            WGL_SWAP_METHOD_ARB
-            If the pixel format supports a back buffer, then this indicates
-            how they are swapped. If this attribute is set to
-            WGL_SWAP_EXCHANGE_ARB then swapping exchanges the front and back
-            buffer contents; if it is set to WGL_SWAP_COPY_ARB then swapping
-            copies the back buffer contents to the front buffer; if it is
-            set to WGL_SWAP_UNDEFINED_ARB then the back buffer contents are
-            copied to the front buffer but the back buffer contents are
-            undefined after the operation. If the pixel format does not
-            support a back buffer then this parameter is set to
-            WGL_SWAP_UNDEFINED_ARB. The <iLayerPlane> parameter is ignored
-            if this attribute is specified.
-            */
-
-            int pxlAttrPairs[][2] =
-            {
-                { WGL_SUPPORT_OPENGL_ARB, GL_TRUE },
-                { WGL_DRAW_TO_WINDOW_ARB, GL_TRUE },
-#if 0
-                { WGL_SUPPORT_GDI_ARB, GL_FALSE },
-                { WGL_DRAW_TO_PBUFFER_ARB, GL_FALSE },
-                { WGL_DRAW_TO_BITMAP_ARB, GL_FALSE },
-                { WGL_BIND_TO_TEXTURE_RGB_ARB, GL_FALSE },
-                { WGL_BIND_TO_TEXTURE_RGBA_ARB, GL_FALSE },
-#endif
-                { WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB },
-                { WGL_DOUBLE_BUFFER_ARB, GL_TRUE },
-                { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB },
-
-                // ARGB8
-                { WGL_COLOR_BITS_ARB, GetDeviceCaps(hDC, BITSPIXEL) },
-                { WGL_ALPHA_BITS_ARB, 8 },
-                { WGL_ALPHA_SHIFT_ARB, 24 },
-                { WGL_RED_BITS_ARB, 8 },
-                { WGL_RED_SHIFT_ARB, 16 },
-                { WGL_GREEN_BITS_ARB, 8 },
-                { WGL_GREEN_SHIFT_ARB, 8 },
-                { WGL_BLUE_BITS_ARB, 8 },
-                { WGL_BLUE_SHIFT_ARB, 0 },
-
-                { WGL_DEPTH_BITS_ARB, 0 }, // { WGL_DEPTH_BITS_ARB, 24 },
-                { WGL_STENCIL_BITS_ARB, 0 }, // { WGL_STENCIL_BITS_ARB, 8 },
-#if 0
-                { WGL_AUX_BUFFERS_ARB, 0 },
-                { WGL_ACCUM_BITS_ARB, 0 },
-                { WGL_ACCUM_ALPHA_BITS_ARB, 0 },
-                { WGL_ACCUM_RED_BITS_ARB, 0 },
-                { WGL_ACCUM_GREEN_BITS_ARB, 0 },
-                { WGL_ACCUM_BLUE_BITS_ARB, 0 },
-#endif
-                { WGL_TRANSPARENT_ARB, GL_FALSE },//{ WGL_TRANSPARENT_ARB, GL_TRUE },
-                //{ WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
-                { WGL_SAMPLE_BUFFERS_ARB, GL_FALSE },
-                //{ WGL_SAMPLE_BUFFERS_ARB, GL_TRUE },  // works on Intel, didn't work on Mesa
-                { WGL_SAMPLES_ARB, 0 },  // works on Intel, didn't work on Mesa
-                //{ WGL_COLORSPACE_EXT, WGL_COLORSPACE_SRGB_EXT }, // WGL_COLORSPACE_LINEAR_EXT // works on Mesa, didn't work on Intel
-                //{ WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE }, // works on Mesa, didn't work on Intel
-#if 0
-                { WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
-
-                { WGL_NUMBER_OVERLAYS_ARB, 0 },
-                { WGL_NUMBER_UNDERLAYS_ARB, 0 },
-
-                { WGL_SHARE_DEPTH_ARB, FALSE },
-                { WGL_SHARE_STENCIL_ARB, FALSE },
-                { WGL_SHARE_ACCUM_ARB, FALSE },
-
-                { WGL_STEREO_ARB, FALSE },
-#endif
-                { NIL, NIL },
-            };
-
-            UINT formatCount;
-            
-            //if (unitIdx == 0)
-                //wglLoadWsiSymbolsSIG(opengl32, NIL);
-
-            if (!wgl.ChoosePixelFormatARB(hDC, &pxlAttrPairs[0][0], NIL, 1, &dcPxlFmt, &formatCount)) AfxThrowError();
-            else
-            {
-                AFX_ASSERT(dcPxlFmt);
-                AFX_ASSERT(formatCount);
-                AfxZero(&dcPfd, sizeof(dcPfd));
-
-                wglDescribePixelFormatSIG(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd);
-                wglSetPixelFormatSIG(hDC, dcPxlFmt, hWnd, &dcPfd);
-
-                AFX_ASSERT(dcPfd.dwFlags & pfdFlags);
-            }
-
-            if (err)
-                ReleaseDC(hWnd, hDC), hDC = NIL;
-        }
-
-        if (err)
-            DestroyWindow(hWnd), hWnd = NIL;
-    }
-
-    *phWnd = hWnd;
-    *phDC = hDC;
-    *pPixFmt = dcPxlFmt;
-    *pPfd = dcPfd;
-
-    wglMakeContextCurrentSIG(bkpHdc, bkpHdc, bkpGlrc);
-
-    return err;
-}
-
-_ZGL afxError _ZglCreateHwContext(afxModule oglDll, HDC hDC, HGLRC hShareCtx, HGLRC* phGLRC, glVmt* gl)
-{
-    afxError err = NIL;
-    HDC bkpHdc = wglGetCurrentDrawDCSIG();
-    HGLRC bkpGlrc = wglGetCurrentContextSIG();
-
-    HMODULE hOglDll = AfxGetModuleIdd(oglDll);
-
-    int ctxAttrPairs[][2] =
-    {
-        // GL Extensions Viewer 6.0.9.0 benchmark tests appointed 3.2 core as faster profile when 3.1 was not. 4.0 caused major drops.
-        //{ WGL_CONTEXT_MAJOR_VERSION_ARB, dpu->verMajor },
-        { WGL_CONTEXT_MAJOR_VERSION_ARB, 3 },
-        //{ WGL_CONTEXT_MINOR_VERSION_ARB, dpu->verMinor },
-        { WGL_CONTEXT_MINOR_VERSION_ARB, 2 },
-        { WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB }, // WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
-        { WGL_CONTEXT_FLAGS_ARB, /*WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB*/
-#ifndef ZGL_DONT_USE_ROBUST_ACCESS
-        | WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB
-#endif
-#ifdef _AFX_DEBUG
-        /* | */ WGL_CONTEXT_DEBUG_BIT_ARB
-#endif
-        },
-        { NIL, NIL }
-    };
-
-    // share can't be active in another thread
-    HGLRC hGLRC = NIL;
-
-    if (!(hGLRC = wglCreateContextAttribsSIG(hDC, hShareCtx, (void*)ctxAttrPairs))) AfxThrowError();
-    else
-    {
-        if (!(wglMakeContextCurrentSIG(hDC, hDC, hGLRC))) AfxThrowError();
-        else
-        {
-            if (gl)
-                wglLoadSymbolsSIG(hOglDll, 0, sizeof(*gl) / sizeof(gl->ptr), (void**)gl, FALSE);
-        }
-
-        if (err)
-            wglDeleteContextSIG(hGLRC), hGLRC = NIL;
-    }
-
-    *phGLRC = hGLRC;
-
-    wglMakeContextCurrentSIG(bkpHdc, bkpHdc, bkpGlrc);
-
-    return err;
 }
 
 _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
@@ -373,7 +186,7 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                         if (!(RegisterClassExA(&(ddev->idd->wndClss)))) AfxThrowError();
                         else
                         {
-                            AfxLogComment("Listing mem available display devices...\n");
+                            AfxReportComment("Listing mem available display devices...\n");
 
                             //HDC hdc = NIL;
                             afxUnit idx = 0;
@@ -385,7 +198,7 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                                 if (!(EnumDisplayDevicesA(NULL, idx, &dispdev, NIL))) break;
                                 else
                                 {
-                                    AfxLogComment("#%u = %s (%s) %x", idx, dispdev.DeviceString, dispdev.DeviceName, dispdev.StateFlags);
+                                    AfxReportComment("#%u = %s (%s) %x", idx, dispdev.DeviceString, dispdev.DeviceName, dispdev.StateFlags);
                                     idx++;
                                 }
                             }
@@ -431,12 +244,12 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                                     {
                                         GLint n = 0;
                                         gl->GetIntegerv(GL_NUM_EXTENSIONS, &n); _ZglThrowErrorOccuried();
-                                        AfxLogEcho("Listing #%03u \"core\" GL supported extensions.", n);
+                                        AfxReportMessage("Listing #%03u \"core\" GL supported extensions.", n);
 
                                         for (GLint i = 0; i < n; i++)
                                         {
                                             const char* extension = (const char*)gl->GetStringi(GL_EXTENSIONS, i); _ZglThrowErrorOccuried();
-                                            AfxLogEcho("%.3u %s ext found.", i, extension);
+                                            AfxReportMessage("%.3u %s ext found.", i, extension);
                                         }
                                     }
 #endif
@@ -545,7 +358,7 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                 do
                 {
                     AfxRequestThreadInterruption(dexu->m.worker);
-                    AfxWaitForIdleDrawBridge(dexu, AFX_TIME_INFINITE);
+                    AvxWaitForIdleDrawBridge(dexu, AFX_TIME_INFINITE);
                 } while (!AfxWaitForThreadExit(dexu->m.worker, &exitCode));
             }
         }
@@ -577,8 +390,6 @@ _ZGL afxError _ZglDdevDtorCb(afxDrawDevice ddev)
     if (ddev->d3d9Dll)
         AfxDisposeObjects(1, &ddev->d3d9Dll);
 
-    UnregisterClassA(ddev->wndClss.lpszClassName, ddev->wndClss.hInstance);
-
     return err;
 }
 
@@ -592,29 +403,29 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
     afxDrawDeviceInfo const* info = (afxDrawDeviceInfo const *)(args[1]) + invokeNo;
     AFX_ASSERT(info);
 
-    static afxDrawPortCaps const portCaps[] =
+    static afxDrawCapabilities const portCaps[] =
     {
         {
-            .capabilities = afxDrawPortFlag_DRAW | afxDrawPortFlag_COMPUTE | afxDrawPortFlag_TRANSFER | afxDrawPortFlag_VHS,
+            .capabilities = afxDrawPortFlag_DRAW | afxDrawPortFlag_COMPUTE | afxDrawPortFlag_TRANSFER | afxDrawPortFlag_VIDEO,
             .minQueCnt = 4,
             .maxQueCnt = 16,
-            .acceleration = afxAcceleration_IGPU
+            .acceleration = afxAcceleration_DPU
         },
         {
             .capabilities = afxDrawPortFlag_COMPUTE | afxDrawPortFlag_TRANSFER,
             .minQueCnt = 2,
             .maxQueCnt = 16,
-            .acceleration = afxAcceleration_IGPU
+            .acceleration = afxAcceleration_DPU
         },
         {
             .capabilities = afxDrawPortFlag_TRANSFER,
             .minQueCnt = 2,
             .maxQueCnt = 16,
-            .acceleration = afxAcceleration_IGPU
+            .acceleration = afxAcceleration_DPU
         }
     };
 
-    if (_AVX_DDEV_CLASS_CONFIG.ctor(ddev, (void*[]) { icd, (void*)info }, 0))
+    if (_AVX_DDEV_CLASS_CONFIG.ctor(ddev, (void*[]) { icd, (void*)info, args[2] }, 0))
     {
         AfxThrowError();
         return err;
@@ -633,112 +444,82 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
         {
             //ZglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
 
-            static afxChar const* const classNames[] =
-            {
-                "SIGMA GL/2 Continuous Integration --- v3 --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build",
-                "SIGMA GL/2 Continuous Integration --- v4 --- Qwadro Video Graphics Infrastructure (c) 2017 SIGMA --- Public Test Build",
-            };
+            afxUnit verMajor, verMinor, verPatch;
+            //wglLoadWsiSymbolsSIG(AfxGetModuleIdd(ddev->oglDll), &verMajor, &verMinor, &verPatch);
 
-            ddev->wndClss.cbSize = sizeof(ddev->wndClss); // only on EX
-            ddev->wndClss.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-            ddev->wndClss.lpfnWndProc = _ZglWndHndlngPrcW32Callback;
-            ddev->wndClss.cbClsExtra = sizeof(ddev);
-            ddev->wndClss.cbWndExtra = sizeof((afxDrawOutput)0);
-            ddev->wndClss.hInstance = GetModuleHandleA(NULL);
-            ddev->wndClss.hIcon = LoadIconA(NULL, IDI_SHIELD);
-            ddev->wndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
-            ddev->wndClss.hbrBackground = NULL;
-            ddev->wndClss.lpszMenuName = NULL;
-            ddev->wndClss.lpszClassName = classNames[invokeNo]; // it is to avoid class name colision. It must be unique per process.
-            ddev->wndClss.hIconSm = LoadIconA(NULL, IDI_SHIELD);
+            wglLoadModule(AfxGetModuleIdd(ddev->oglDll), &verMajor, &verMinor, &verPatch);
 
-            if (!(RegisterClassExA(&(ddev->wndClss)))) AfxThrowError();
+            ddev->oglVerMajor = verMajor;
+            ddev->oglVerMinor = verMinor;
+            ddev->oglVerPatch = verPatch;
+
+            HWND tmpHwnd;
+            HDC tmpHdc;
+            int pixelFmt;
+            PIXELFORMATDESCRIPTOR pfd;
+            if (_ZglCreateHwSurface(0, 0, &tmpHwnd, &tmpHdc, &pixelFmt, &pfd)) AfxThrowError();
             else
             {
-                AfxLogComment("Listing mem available display devices...\n");
+                HDC bkpHdc = wglGetCurrentDCGDI();
+                HGLRC bkpGlrc = wglGetCurrentContextGDI();
 
-                //HDC hdc = NIL;
-                afxUnit idx = 0;
-                while (1)
-                {
-                    DISPLAY_DEVICE dispdev = { 0 };
-                    dispdev.cb = sizeof(dispdev);
 
-                    if (!(EnumDisplayDevicesA(NULL, idx, &dispdev, NIL))) break;
-                    else
-                    {
-                        AfxLogComment("#%u = %s (%s) %x", idx, dispdev.DeviceString, dispdev.DeviceName, dispdev.StateFlags);
-                        idx++;
-                    }
-                }
-
-                afxUnit verMajor, verMinor, verPatch;
-                wglLoadWsiSymbolsSIG(AfxGetModuleIdd(ddev->oglDll), &verMajor, &verMinor, &verPatch);
-                ddev->oglVerMajor = verMajor;
-                ddev->oglVerMinor = verMinor;
-                ddev->oglVerPatch = verPatch;
-
-                HWND tmpHwnd;
-                HDC tmpHdc;
-                int pixelFmt;
-                PIXELFORMATDESCRIPTOR pfd;
-
-                if (_ZglCreateHwSurface(&ddev->wndClss, &tmpHwnd, &tmpHdc, &pixelFmt, &pfd)) AfxThrowError();
-                else
-                {
-                    HDC bkpHdc = wglGetCurrentDrawDCSIG();
-                    HGLRC bkpGlrc = wglGetCurrentContextSIG();
-
-                    HGLRC tmpHglrc;
-                    glVmt gl;
-
-                    if (_ZglCreateHwContext(ddev->oglDll, tmpHdc, NIL, &tmpHglrc, &gl)) AfxThrowError();
-                    else
-                    {
-                        wglMakeContextCurrentSIG(tmpHdc, tmpHdc, tmpHglrc);
-
-                        ZglDetectDeviceFeatures(&gl, tmpHdc, &ddev->m.features);
-                        ZglDetectDeviceLimits(&gl, &ddev->m.limits);
-
-                        ddev->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
-                        ddev->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
-
-                        if (ddev->hasDxInterop1 || ddev->hasDxInterop2)
-                        {
-                            //ddev->idd->useDxgiSwapchain = FALSE;
-                        }
-
-#if 0
-                        if (0 == unitIdx)
-                        {
-                            GLint n = 0;
-                            gl->GetIntegerv(GL_NUM_EXTENSIONS, &n); _ZglThrowErrorOccuried();
-                            AfxLogEcho("Listing #%03u \"core\" GL supported extensions.", n);
-
-                            for (GLint i = 0; i < n; i++)
-                            {
-                                const char* extension = (const char*)gl->GetStringi(GL_EXTENSIONS, i); _ZglThrowErrorOccuried();
-                                AfxLogEcho("%.3u %s ext found.", i, extension);
-                            }
-                        }
+#if _AFX_DEBUG
+                afxBool echoSymbols = TRUE;
+                        
+#else
+                afxBool echoSymbols = FALSE;
 #endif
 
-                        for (afxUnit i = 0; i < ddev->m.portCnt; i++)
-                        {
-                            afxDrawPortCaps* caps = &ddev->m.ports[i].caps;
-                            *caps = portCaps[i];
-                        }
+                glVmt gl;
+                HGLRC tmpHglrc;
+                if (_ZglCreateHwContext(tmpHdc, NIL, verMajor, verMinor, FALSE, &tmpHglrc, &gl, echoSymbols)) AfxThrowError();
+                else
+                {
+                    wglMakeCurrentGDI(tmpHdc, tmpHglrc);
 
-                        wglMakeContextCurrentSIG(NIL, NIL, NIL);
-                        wglDeleteContextSIG(tmpHglrc), tmpHglrc = NIL;
+                    TestCoreSymbols(AfxGetModuleIdd(ddev->oglDll), &gl);
+
+                    ZglDetectDeviceFeatures(&gl, tmpHdc, &ddev->m.features);
+                    ZglDetectDeviceLimits(&gl, &ddev->m.limits);
+
+                    //EnumDisplayMonitors(tmpHdc, NIL, );
+
+                    ddev->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
+                    ddev->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+
+                    if (ddev->hasDxInterop1 || ddev->hasDxInterop2)
+                    {
+                        //ddev->idd->useDxgiSwapchain = FALSE;
                     }
-                    ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
-                    DestroyWindow(tmpHwnd), tmpHwnd = NIL;
-                    wglMakeContextCurrentSIG(bkpHdc, bkpHdc, bkpGlrc);
-                }
 
-                if (err)
-                    UnregisterClassA(ddev->wndClss.lpszClassName, ddev->wndClss.hInstance);
+#if !0
+                    if (1)
+                    {
+                        GLint n = 0;
+                        gl.GetIntegerv(GL_NUM_EXTENSIONS, &n);
+                        AfxReportMessage("GL: Listing #%03u supported extensions.", n);
+
+                        for (GLint i = 0; i < n; i++)
+                        {
+                            const char* extension = (const char*)gl.GetStringi(GL_EXTENSIONS, i);
+                            AfxReportMessage("  %3u %s", i, extension);
+                        }
+                    }
+#endif
+
+                    for (afxUnit i = 0; i < ddev->m.portCnt; i++)
+                    {
+                        afxDrawCapabilities* caps = &ddev->m.ports[i].caps;
+                        *caps = portCaps[i];
+                    }
+
+                    wglMakeCurrentGDI(NIL, NIL);
+                    wglDeleteContextGDI(tmpHglrc), tmpHglrc = NIL;
+                }
+                ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
+                DestroyWindow(tmpHwnd), tmpHwnd = NIL;
+                wglMakeCurrentGDI(bkpHdc, bkpGlrc);
             }
 
             if (err)
@@ -767,7 +548,12 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     dsysClsCfg.ctor = (void*)_ZglDsysCtorCb;
     dsysClsCfg.dtor = (void*)_ZglDsysDtorCb;
 
-    if (_AvxImplementDrawSystem(icd, NIL, &ddevClsCfg, &dsysClsCfg))
+    afxClassConfig viddClsCfg = _AVX_VDU_CLASS_CONFIG;
+    viddClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDisplay));
+    viddClsCfg.ctor = (void*)_ZglViddCtorCb;
+    viddClsCfg.dtor = (void*)_ZglViddDtorCb;
+
+    if (_AvxImplementDrawSystem(icd, &viddClsCfg, &ddevClsCfg, &dsysClsCfg))
     {
         AfxThrowError();
         return err;
@@ -798,7 +584,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         afxDrawDeviceInfo const ddevInfos[] =
         {
             {
-                .dev.urn = AfxString("tarzgl3"),
+                .dev.urn = AfxString("tarzgl4"),
                 .dev.type = afxDeviceType_DRAW,
                 .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -808,7 +594,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
                 .portCnt = 3
             },
             {
-                .dev.urn = AfxString("tarzgl4"),
+                .dev.urn = AfxString("tarzgl3"),
                 .dev.type = afxDeviceType_DRAW,
                 .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -821,10 +607,33 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         afxDrawDevice ddevices[ARRAY_SIZE(ddevInfos)] = { 0 };
 
-        if (_AvxRegisterDrawDevices(icd, ARRAY_SIZE(ddevInfos), ddevInfos, ddevices))
+        if (_AvxRegisterDrawDevices(icd, /*ARRAY_SIZE(ddevInfos)*/1, ddevInfos, ddevices))
         {
             AfxThrowError();
             return err;
+        }
+        else
+        {
+            avxDisplayInfo viddInfos[]=
+            {
+                {
+                    .dev.urn = AfxString("dwm"),
+                    .dev.type = afxDeviceType_DISPLAY,
+                    .dev.ioctl = (void*)_ZglViddIoctrlCb,
+                },
+                {
+                    .dev.urn = AfxString("dwmglw"),
+                    .dev.type = afxDeviceType_DISPLAY,
+                    .dev.ioctl = (void*)_ZglViddIoctrlCb,
+                },
+                {
+                    .dev.urn = AfxString("dwmglw2"),
+                    .dev.type = afxDeviceType_DISPLAY,
+                    .dev.ioctl = (void*)_ZglViddIoctrlCb,
+                }
+            };
+            afxDisplay vidds[ARRAY_SIZE(viddInfos)];
+            _AvxRegisterDisplays(icd, ARRAY_SIZE(viddInfos), viddInfos, vidds);
         }
     }
     return err;

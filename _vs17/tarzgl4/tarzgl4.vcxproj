@@ -71,19 +71,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\system$(PlatformArchitecture)d\</OutDir>
+    <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)d\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\system$(PlatformArchitecture)\</OutDir>
+    <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\system$(PlatformArchitecture)d\</OutDir>
+    <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)d\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\system$(PlatformArchitecture)\</OutDir>
+    <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -168,6 +168,7 @@
     <ResourceCompile Include="tarzgl4.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\dep\gl\wgl.c" />
     <ClCompile Include="..\..\src\zglCommandDecoder.c" />
     <ClCompile Include="..\..\src\zglInterop_D3D.c" />
     <ClCompile Include="..\..\src\zglLigature.c" />
@@ -188,6 +189,7 @@
     <ClCompile Include="..\..\src\zglShader.c" />
     <ClCompile Include="..\..\src\zglTransformationOps.c" />
     <ClCompile Include="..\..\src\zglVertexDecl.c" />
+    <ClCompile Include="..\..\src\zglVideoDevice_W32.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\zglWrapper.inl" />
@@ -195,12 +197,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\afx\_vs17\e2coree\e2coree.vcxproj">
       <Project>{973a60ff-ea6c-4d62-a302-bf610cabab8c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\afx\_vs17\e2draw\e2draw.vcxproj">
-      <Project>{2d93c9e6-a8bd-40e6-8ffe-cd15319b0241}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\afx\_vs17\e2mmux\e2mmux.vcxproj">
-      <Project>{b86a5b24-69ef-42ad-86d9-e3ac4405a9ce}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

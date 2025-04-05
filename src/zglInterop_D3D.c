@@ -335,14 +335,14 @@ _ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxDrawOutput dout, afxBool lock
 
     if (locked)
     {
-        if (!wgl.DXLockObjectsNV(dout->dxgi.d3d11DevForGl, count, resources))
+        if (!wglDXLockObjectsNV(dout->dxgi.d3d11DevForGl, count, resources))
         {
             AfxThrowError();
         }
     }
     else
     {
-        if (!wgl.DXUnlockObjectsNV(dout->dxgi.d3d11DevForGl, count, resources))
+        if (!wglDXUnlockObjectsNV(dout->dxgi.d3d11DevForGl, count, resources))
         {
             AfxThrowError();
         }
@@ -353,7 +353,7 @@ _ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxDrawOutput dout, afxBool lock
 _ZGL afxError swapDxgi(zglDpu* dpu, afxDrawOutput dout)
 {
     afxError err;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
     gl->Flush();
     setObjectsLockedDxgi(dpu, dout, FALSE);
@@ -372,7 +372,7 @@ _ZGL afxError swapDxgi(zglDpu* dpu, afxDrawOutput dout)
 _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* rc)
 {
     afxError err;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
     AFX_ASSERT(rc->w > 0 && rc->h > 0);
     AFX_ASSERT(dout->dxgi.mSwapChain1 != NIL);
@@ -402,7 +402,7 @@ _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* 
     return checkForResizeDxgi(dpu, dout);
 }
 
-_ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, afxRaster texture, GLint buffer)
+_ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, avxRaster texture, GLint buffer)
 {
     afxError err;
     afxDrawDevice ddev = AfxGetProvider(dout);
@@ -418,7 +418,7 @@ _ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, afxRaster textur
         return err;
     }
 
-    dout->dxgi.mTextureHandle = wgl.DXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, textureID, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
+    dout->dxgi.mTextureHandle = wglDXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, textureID, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
     ID3D11Texture2D_Release(colorBuffer);
 
     if (dout->dxgi.mTextureHandle == NIL)
@@ -427,9 +427,9 @@ _ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, afxRaster textur
         return err;
     }
 
-    if (!wgl.DXLockObjectsNV(dout->dxgi.d3d11DevForGl, 1, &dout->dxgi.mTextureHandle))
+    if (!wglDXLockObjectsNV(dout->dxgi.d3d11DevForGl, 1, &dout->dxgi.mTextureHandle))
     {
-        wgl.DXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mTextureHandle);
+        wglDXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mTextureHandle);
         dout->dxgi.mTextureHandle = NIL;
         AfxThrowError();
         return err;
@@ -504,7 +504,7 @@ _ZGL IDXGIFactory *GetDXGIFactoryFromDevice(ID3D11Device *device)
 _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
 {
     afxError err = NIL;
-    glVmt const* gl = &dpu->gl;
+    glVmt const* gl = dpu->gl;
 
     afxDrawDevice ddev = AfxGetProvider(dout);
 
@@ -513,7 +513,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
     {
         if (dout->dxgi.mRenderbufferBufferHandle)
         {
-            wgl.DXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mRenderbufferBufferHandle);
+            wglDXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mRenderbufferBufferHandle);
             dout->dxgi.mRenderbufferBufferHandle = NIL;
         }
         // If this surface is bound to a texture, unregister it.
@@ -521,7 +521,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
 
         if (hadBoundSurface)
         {
-            wgl.DXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mTextureHandle);
+            wglDXUnregisterObjectNV(dout->dxgi.d3d11DevForGl, dout->dxgi.mTextureHandle);
             dout->dxgi.mTextureHandle = NIL;
         }
         IDXGIFactory *dxgiFactory = GetDXGIFactoryFromDevice(dout->dxgi.d3d11Dev);
@@ -601,7 +601,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
         }
 
         gl->BindRenderbuffer(GL_RENDERBUFFER, dout->dxgi.mColorRenderbufferID); // state mgr
-        dout->dxgi.mRenderbufferBufferHandle = wgl.DXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, dout->dxgi.mColorRenderbufferID, GL_RENDERBUFFER, WGL_ACCESS_READ_WRITE_NV);
+        dout->dxgi.mRenderbufferBufferHandle = wglDXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, dout->dxgi.mColorRenderbufferID, GL_RENDERBUFFER, WGL_ACCESS_READ_WRITE_NV);
         ID3D11Texture2D_Release(colorBuffer);
 
         if (dout->dxgi.mRenderbufferBufferHandle == NIL)
@@ -612,7 +612,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
         // Rebind the surface to the texture if needed.
         if (hadBoundSurface)
         {
-            dout->dxgi.mTextureHandle = wgl.DXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, dout->dxgi.mTextureID, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
+            dout->dxgi.mTextureHandle = wglDXRegisterObjectNV(dout->dxgi.d3d11DevForGl, colorBuffer, dout->dxgi.mTextureID, GL_TEXTURE_2D, WGL_ACCESS_READ_WRITE_NV);
 
             if (dout->dxgi.mTextureHandle == NIL)
             {
