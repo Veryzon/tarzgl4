@@ -78,7 +78,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 {
                     gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
                 }
-                gl->NamedBufferStorage(glHandle, buf->m.cap, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
+                gl->NamedBufferStorage(glHandle, buf->m.size, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
             }
             else
             {
@@ -89,7 +89,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 {
                     gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
                 }
-                gl->BufferStorage(buf->glTarget, buf->m.cap, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
+                gl->BufferStorage(buf->glTarget, buf->m.size, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
                 bound = TRUE;
             }
 
@@ -249,7 +249,7 @@ _ZGL afxError DpuDumpBuffer(zglDpu* dpu, avxBuffer buf, afxByte* dst, afxUnit op
 
         if (op->srcStride == op->dstStride)
         {
-            afxUnit bufRange = AfxMin(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
+            afxUnit bufRange = AFX_MIN(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
 
             if (gl->GetNamedBufferSubData)
             {
@@ -281,7 +281,7 @@ _ZGL afxError DpuDumpBuffer(zglDpu* dpu, avxBuffer buf, afxByte* dst, afxUnit op
 
         if (op->srcStride != op->dstStride)
         {
-            afxUnit bufRange = AfxMin(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
+            afxUnit bufRange = AFX_MIN(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
 
             if (gl->MapNamedBufferRange)
             {
@@ -350,7 +350,7 @@ _ZGL afxError DpuUpdateBuffer(zglDpu* dpu, avxBuffer buf, afxByte const* src, af
 
         if (op->srcStride == op->dstStride)
         {
-            afxUnit bufRange = AfxMin(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
+            afxUnit bufRange = AFX_MIN(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
 
             if (gl->NamedBufferSubData)
             {
@@ -382,7 +382,7 @@ _ZGL afxError DpuUpdateBuffer(zglDpu* dpu, avxBuffer buf, afxByte const* src, af
 
         if (op->srcStride != op->dstStride)
         {
-            afxUnit bufRange = AfxMin(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
+            afxUnit bufRange = AFX_MIN(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
 
             if (gl->MapNamedBufferRange)
             {
@@ -447,7 +447,7 @@ _ZGL afxError _DpuDownloadBuffer(zglDpu* dpu, avxBuffer buf, afxStream out, afxU
     for (afxUnit i = 0; i < opCnt; i++)
     {
         avxBufferIo const* op = &ops[i];
-        afxUnit bufRange = AfxMin(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
+        afxUnit bufRange = AFX_MIN(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
 
         if (gl->MapNamedBufferRange)
         {
@@ -519,7 +519,7 @@ _ZGL afxError _DpuUploadBuffer(zglDpu* dpu, avxBuffer buf, afxStream in, afxUnit
     for (afxUnit i = 0; i < opCnt; i++)
     {
         avxBufferIo const* op = &ops[i];
-        afxUnit bufRange = AfxMin(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
+        afxUnit bufRange = AFX_MIN(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
         
         if (gl->MapNamedBufferRange)
         {
@@ -596,7 +596,7 @@ _ZGL afxError _DpuRemapBuf(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit r
     if (range)
     {
         GLenum glAccess = NIL;
-        AFX_ASSERT(!buf->m.bytemap);
+        AFX_ASSERT(!buf->m.storage[0].mapPtr);
 
 #if 0 // disable to force usage of flags by glMapBufferRange()
         if (!offset && range == AvxGetBufferCapacity(buf, 0))
@@ -623,12 +623,12 @@ _ZGL afxError _DpuRemapBuf(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit r
             if (gl->MapNamedBufferRange)
             {
                 DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE); // sync
-                buf->m.bytemap = gl->MapNamedBufferRange(buf->glHandle, offset, range, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
+                buf->m.storage[0].mapPtr = gl->MapNamedBufferRange(buf->glHandle, offset, range, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
             }
             else
             {
                 DpuBindAndSyncBuf(dpu, glTarget, buf, TRUE); // bind
-                buf->m.bytemap = gl->MapBufferRange(glTarget, offset, range, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
+                buf->m.storage[0].mapPtr = gl->MapBufferRange(glTarget, offset, range, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
 #if UNBIND_GL_BUF
                 DpuBindAndSyncBuf(dpu, glTarget, NIL, TRUE); // unbind
 #endif
@@ -636,18 +636,18 @@ _ZGL afxError _DpuRemapBuf(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit r
             }
         }
 
-        buf->m.mappedOffset = offset;
-        buf->m.mappedRange = range;
-        buf->m.mappedFlags = flags;
-        AFX_ASSERT(buf->m.bytemap);
+        buf->m.storage[0].mapOffset = offset;
+        buf->m.storage[0].mapRange = range;
+        buf->m.storage[0].mapFlags = flags;
+        AFX_ASSERT(buf->m.storage[0].mapPtr);
 
         //if (placeholder)
-        *placeholder = buf->m.bytemap;
+        *placeholder = buf->m.storage[0].mapPtr;
         AFX_ASSERT(*placeholder);
     }
     else
     {
-        AFX_ASSERT(buf->m.bytemap);
+        AFX_ASSERT(buf->m.storage[0].mapPtr);
 
         if (gl->UnmapNamedBuffer)
         {
@@ -662,12 +662,12 @@ _ZGL afxError _DpuRemapBuf(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit r
             DpuBindAndSyncBuf(dpu, glTarget, NIL, TRUE); // unbind
 #endif
         }
-        buf->m.bytemap = NIL;
+        buf->m.storage[0].mapPtr = NIL;
 
         //gl->FlushMappedBufferRange(glTarget, subm->buf->glMappedOff, subm->buf->glMappedSiz); _ZglThrowErrorOccuried();
-        buf->m.mappedOffset = 0;
-        buf->m.mappedRange = 0;
-        buf->m.mappedFlags = NIL;
+        buf->m.storage[0].mapOffset = 0;
+        buf->m.storage[0].mapRange = 0;
+        buf->m.storage[0].mapFlags = NIL;
     }
     //AFX_ASSERT(!AfxLoadAtom32(&buf->m.pendingRemap));
 
@@ -749,10 +749,10 @@ _ZGL afxError _BufDtorCb(avxBuffer buf)
 
     afxDrawSystem dsys = AvxGetBufferContext(buf);
 
-    if (buf->m.mappedRange)
+    if (buf->m.storage[0].mapRange)
     {
         AvxUnmapBuffer(buf, TRUE);
-        AFX_ASSERT(!buf->m.mappedRange);
+        AFX_ASSERT(!buf->m.storage[0].mapRange);
     }
 
     if (buf->glHandle)
@@ -904,28 +904,13 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
                 glMapRangeAccess |= GL_MAP_INVALIDATE_RANGE_BIT;
 
                 /*
-                    GL_MAP_FLUSH_EXPLICIT_BIT indicates that one or more discrete subranges of the mapping may be modified.
-                    When this flag is set, modifications to each subrange must be explicitly flushed by calling glFlushMappedBufferRange.
-                    No GL error is set if a subrange of the mapping is modified and not flushed,
-                    but data within the corresponding subrange of the buffer are undefined.
-                    This flag may only be used in conjunction with GL_MAP_WRITE_BIT. When this option is selected,
-                    flushing is strictly limited to regions that are explicitly indicated with calls to glFlushMappedBufferRange prior to unmap;
-                    if this option is not selected glUnmapBuffer will automatically flush the entire mapped range when called.
-
-                    If a buffer range is mapped with both GL_MAP_PERSISTENT_BIT and GL_MAP_FLUSH_EXPLICIT_BIT set,
-                    then these commands may be called to ensure that data written by the client into the flushed region
-                    becomes visible to the server. Data written to a coherent store will always become visible to the
-                    server after an unspecified period of time.
-                */
-                glMapRangeAccess |= GL_MAP_FLUSH_EXPLICIT_BIT;
-
-                /*
                     GL_MAP_UNSYNCHRONIZED_BIT indicates that the GL should not attempt to synchronize
                     pending operations on the buffer prior to returning from glMapBufferRange or glMapNamedBufferRange.
                     No GL error is generated if pending operations which source or modify the buffer overlap the mapped region,
                     but the result of such previous and any subsequent operations is undefined.
                 */
                 glMapRangeAccess |= GL_MAP_UNSYNCHRONIZED_BIT;
+                // TODO force to be always unsynchronized like Vulkan.
             }
             else
             {
@@ -948,7 +933,72 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
             glGenAccess |= GL_MAP_COHERENT_BIT;
             glMapRangeAccess |= GL_MAP_COHERENT_BIT;
         }
+        else
+        {
+            // If mapping is write-only
+            if ((access & avxBufferFlag_RW) == avxBufferFlag_W)
+            {
+                /*
+                    GL_MAP_FLUSH_EXPLICIT_BIT indicates that one or more discrete subranges of the mapping may be modified.
+                    When this flag is set, modifications to each subrange must be explicitly flushed by calling glFlushMappedBufferRange.
+                    No GL error is set if a subrange of the mapping is modified and not flushed,
+                    but data within the corresponding subrange of the buffer are undefined.
+                    This flag may only be used in conjunction with GL_MAP_WRITE_BIT. When this option is selected,
+                    flushing is strictly limited to regions that are explicitly indicated with calls to glFlushMappedBufferRange prior to unmap;
+                    if this option is not selected glUnmapBuffer will automatically flush the entire mapped range when called.
+
+                    If a buffer range is mapped with both GL_MAP_PERSISTENT_BIT and GL_MAP_FLUSH_EXPLICIT_BIT set,
+                    then these commands may be called to ensure that data written by the client into the flushed region
+                    becomes visible to the server. Data written to a coherent store will always become visible to the
+                    server after an unspecified period of time.
+                */
+                glMapRangeAccess |= GL_MAP_FLUSH_EXPLICIT_BIT;
+            }
+        }
     }
+
+    /*
+        NOTE:
+        Most drivers do treat standard write mappings as coherent, unless you 
+        specifically ask for non-coherent behavior (i.e., GL_MAP_FLUSH_EXPLICIT_BIT).
+
+        On desktop GPUs, glMapBufferRange is often coherent by default, especially with persistent mapping.
+        On mobile GPUs (like OpenGL ES on Android), coherency can vary, and flushing may be more important.
+        If you use GL_MAP_PERSISTENT_BIT and GL_MAP_COHERENT_BIT (OpenGL 4.4+), you explicitly ask for coherence.
+
+        OpenGL vs Vulkan Memory Mapping: Overview
+        Concept	                        OpenGL	                                    Vulkan
+        Buffer mapping	                glMapBufferRange()	                        vkMapMemory()
+        Coherent memory	                GL_MAP_COHERENT_BIT                         (OpenGL 4.4+) or no flush needed	VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        Non-coherent memory	            GL_MAP_FLUSH_EXPLICIT_BIT	                No HOST_COHERENT — requires vkFlushMappedMemoryRanges()
+        Persistent mapping	            GL_MAP_PERSISTENT_BIT	                    Long-lived vkMapMemory() (no unmap between frames)
+        Unsynchronized access	        GL_MAP_UNSYNCHRONIZED_BIT	                Vulkan always gives you unsynchronized access — you manage all sync
+        Invalidate buffer before read	GL_MAP_INVALIDATE_RANGE_BIT/...BUFFER_BIT   vkInvalidateMappedMemoryRanges()
+        Explicit flush	                glFlushMappedBufferRange()	                vkFlushMappedMemoryRanges()
+
+        GL_MAP_UNSYNCHRONIZED_BIT -> Vulkan-style access by default
+        OpenGL uses this to tell the driver "I'll take care of synchronization."
+        In Vulkan, all access is unsynchronized by default - you must use barriers, fences, and memory dependencies to manage visibility and hazard prevention.
+        So in a way, Vulkan operates as if GL_MAP_UNSYNCHRONIZED_BIT is always enabled - it's up to you to keep things safe.
+
+        GL_MAP_PERSISTENT_BIT -> Persistent vkMapMemory()
+        Vulkan encourages persistent mapping - you're expected to map once and reuse it.
+        No need to unmap each frame, similar to OpenGL persistent buffers.
+        But Vulkan doesn't need a flag for this - you just map once and manage everything.
+
+        GL_MAP_FLUSH_EXPLICIT_BIT -> Vulkan without HOST_COHERENT_BIT
+        The app is responsible for flushing memory ranges using vkFlushMappedMemoryRanges() (CPU -> GPU)
+        Also responsible for invalidating memory using vkInvalidateMappedMemoryRanges() (GPU -> CPU)
+        This matches non-coherent memory in Vulkan.
+
+        GL_MAP_COHERENT_BIT -> VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        In Vulkan, if the memory has the HOST_COHERENT_BIT, then:
+        CPU writes are automatically visible to the GPU (no vkFlushMappedMemoryRanges() needed).
+        GPU writes are automatically visible to the CPU (no vkInvalidateMappedMemoryRanges() needed).
+        This mimics the behavior of coherent buffer mappings in OpenGL.
+
+
+    */
 
     /*
         GL_MAP_READ_BIT
@@ -991,7 +1041,7 @@ _ZGL afxError _DpuWork_SyncMaps(zglDpu* dpu, _avxIoReqPacket* subm)
         afxUnit flushCnt = subm->SyncMaps.flushCnt;
         for (afxUnit i = 0; i < flushCnt; i++)
         {
-            avxBufferedMap const* map = &subm->SyncMaps.ops[i];
+            avxBufferedMap const* map = &subm->SyncMaps.ops[subm->SyncMaps.baseFlushIdx + i];
 
             avxBuffer buf = map->buf;
             AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
@@ -1020,7 +1070,7 @@ _ZGL afxError _DpuWork_SyncMaps(zglDpu* dpu, _avxIoReqPacket* subm)
         afxUnit fetchCnt = subm->SyncMaps.fetchCnt;
         for (afxUnit i = 0; i < fetchCnt; i++)
         {
-            avxBufferedMap const* map = &subm->SyncMaps.ops[i];
+            avxBufferedMap const* map = &subm->SyncMaps.ops[subm->SyncMaps.baseFetchIdx + i];
 
             avxBuffer buf = map->buf;
             AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
@@ -1054,8 +1104,8 @@ _ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm)
         afxUnit unmapCnt = subm->Remap.unmapCnt;
         for (afxUnit i = 0; i < unmapCnt; i++)
         {
-            avxBuffer unmap = subm->Remap.unmapOps[i];
-            avxBuffer buf = unmap;
+            _avxBufferRemapping const* unmap = &subm->Remap.unmapOps[subm->Remap.firstUnmapIdx + i];
+            avxBuffer buf = unmap->buf;
             AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
             GLenum glTarget = (buf->m.flags & avxBufferFlag_W) ? GL_COPY_WRITE_BUFFER : GL_COPY_READ_BUFFER;
 
@@ -1074,13 +1124,13 @@ _ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm)
 #endif
             }
 
-            buf->m.mappedOffset = 0;
-            buf->m.mappedRange = 0;
-            buf->m.mappedFlags = NIL;
-            AFX_ASSERT(buf->m.bytemap);
-            buf->m.bytemap = NIL;
+            buf->m.storage[0].mapOffset = 0;
+            buf->m.storage[0].mapRange = 0;
+            buf->m.storage[0].mapFlags = NIL;
+            AFX_ASSERT(buf->m.storage[0].mapPtr);
+            buf->m.storage[0].mapPtr = NIL;
 
-            AfxDecAtom32(&buf->m.pendingRemap);
+            AfxDecAtom32(&buf->m.storage[0].pendingRemap);
             AfxDisposeObjects(1, &buf);
         }
     }
@@ -1090,7 +1140,7 @@ _ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm)
         afxUnit mapCnt = subm->Remap.mapCnt;
         for (afxUnit i = 0; i < mapCnt; i++)
         {
-            avxBufferRemap const* map = &subm->Remap.mapOps[i];
+            _avxBufferRemapping const* map = &subm->Remap.mapOps[subm->Remap.firstMapIdx + i];
 
             avxBuffer buf = map->buf;
             GLenum glTarget = (buf->m.flags & avxBufferFlag_W) ? GL_COPY_WRITE_BUFFER : GL_COPY_READ_BUFFER;
@@ -1131,16 +1181,15 @@ _ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm)
 #endif
             }
 
-            buf->m.bytemap = ptr;
-
-            buf->m.mappedOffset = map->offset;
-            buf->m.mappedRange = map->range;
-            buf->m.mappedFlags = map->flags;
-            AFX_ASSERT(buf->m.bytemap);
+            buf->m.storage[0].mapPtr = ptr;
+            buf->m.storage[0].mapOffset = map->offset;
+            buf->m.storage[0].mapRange = map->range;
+            buf->m.storage[0].mapFlags = map->flags;
+            AFX_ASSERT(buf->m.storage[0].mapPtr);
             AFX_ASSERT(map->placeholder);
-            *map->placeholder = buf->m.bytemap;
+            *map->placeholder = buf->m.storage[0].mapPtr;
             AFX_ASSERT(*map->placeholder);
-            AfxDecAtom32(&buf->m.pendingRemap);
+            AfxDecAtom32(&buf->m.storage[0].pendingRemap);
             AfxDisposeObjects(1, &buf);
         }
     }

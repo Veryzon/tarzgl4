@@ -104,7 +104,7 @@ _ZGL void _DecodeCmdDrawIndexedIndirectCount(zglDpu* dpu, _avxCmd const* cmd)
 
 _ZGL void _DecodeCmdDispatch(zglDpu* dpu, _avxCmd const* cmd)
 {
-    DpuDispatch(dpu, cmd->Dispatch.data.x, cmd->Dispatch.data.y, cmd->Dispatch.data.z);
+    DpuDispatch(dpu, cmd->Dispatch.data.w, cmd->Dispatch.data.h, cmd->Dispatch.data.d);
 }
 
 _ZGL void _DecodeCmdDispatchIndirect(zglDpu* dpu, _avxCmd const* cmd)
@@ -361,14 +361,14 @@ _ZGL void _DecodeCmdPushDebugScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;    
-    DpuPushDebugScope(dpu, cmd->PushDebugScope.color, &cmd->PushDebugScope.label.str);
+    DpuPushDebugScope(dpu, cmd->PushDebugScope.color, &cmd->PushDebugScope.label.s);
 }
 
 _ZGL void _DecodeCmdMarkDebugStep(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
-    DpuMarkDebugStep(dpu, cmd->MarkDebugStep.color, &cmd->MarkDebugStep.label.str);
+    DpuMarkDebugStep(dpu, cmd->MarkDebugStep.color, &cmd->MarkDebugStep.label.s);
 }
 
 _ZGL void _DecodeCmdPopDebugScope(zglDpu* dpu, _avxCmd const* cmd)

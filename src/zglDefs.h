@@ -142,7 +142,7 @@ AFX_DEFINE_UNION(zglLegoData) // A GPUBindGroupEntry describes a single resource
 
 typedef struct _DrawPipelineResource
 {
-    avxShaderStage stages;
+    avxShaderType stages;
     avxShaderParam resType;
     //afxShaerBaseResType baseType;
     //VkAccessFlags access;

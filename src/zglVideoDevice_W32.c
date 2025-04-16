@@ -543,7 +543,7 @@ _ZGL afxError _ZglViddCtorCb(afxDisplay vidd, void** args, afxUnit invokeNo)
                 { WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB },
                 { WGL_DOUBLE_BUFFER_ARB, GL_TRUE },
                 { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB },
-                { WGL_COLOR_BITS_ARB, AfxMin(24, GetDeviceCaps(hGfxDc, BITSPIXEL)) },
+                { WGL_COLOR_BITS_ARB, AFX_MIN(24, GetDeviceCaps(hGfxDc, BITSPIXEL)) },
                 { WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
                 { NIL, NIL },
             };
@@ -553,7 +553,7 @@ _ZGL afxError _ZglViddCtorCb(afxDisplay vidd, void** args, afxUnit invokeNo)
             PIXELFORMATDESCRIPTOR dcPfd = { 0 };
             dcPfd.nSize = sizeof(dcPfd);
             dcPfd.dwFlags = pfdFlags;
-            dcPfd.cColorBits = AfxMin(24, GetDeviceCaps(hGfxDc, BITSPIXEL));
+            dcPfd.cColorBits = AFX_MIN(24, GetDeviceCaps(hGfxDc, BITSPIXEL));
             int dcPxlFmt = 0;
 
             dcPxlFmt = ChoosePixelFormat(hGfxDc, &dcPfd);

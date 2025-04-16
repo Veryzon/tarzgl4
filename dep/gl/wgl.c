@@ -663,7 +663,7 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
         pfd.nVersion = 1;
         pfd.dwFlags = pfdFlags;
         pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = AfxMin(24, GetDeviceCaps(tmpHdc, BITSPIXEL));
+        pfd.cColorBits = AFX_MIN(24, GetDeviceCaps(tmpHdc, BITSPIXEL));
         pfd.cAlphaBits = 8;
         //pfd.cDepthBits = 24;
         //pfd.cStencilBits = 8;

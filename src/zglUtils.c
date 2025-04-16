@@ -480,8 +480,8 @@ _ZGL GLenum AfxToGlFillMode(avxFillMode pm)
 {
     static GLenum const v[] =
     {
-        [avxFillMode_SOLID] = GL_FILL,
-        [avxFillMode_EDGE] = GL_LINE,
+        [avxFillMode_FACE] = GL_FILL,
+        [avxFillMode_LINE] = GL_LINE,
         [avxFillMode_POINT] = GL_POINT
     };
 
@@ -505,34 +505,34 @@ _ZGL GLenum ZglToGlCompareOp(avxCompareOp co)
     return v[co];
 };
 
-_ZGL GLuint AfxToGlShaderStage(avxShaderStage s)
+_ZGL GLuint AfxToGlShaderStage(avxShaderType s)
 {
     static GLuint const v[] =
     {
         NIL,
-        [avxShaderStage_VERTEX] = GL_VERTEX_SHADER,
-        [avxShaderStage_FRAGMENT] = GL_FRAGMENT_SHADER,
-        [avxShaderStage_PRIMITIVE] = GL_GEOMETRY_SHADER,
-        [avxShaderStage_TESS_CTRL] = GL_TESS_CONTROL_SHADER,
-        [avxShaderStage_TESS_EVAL] = GL_TESS_EVALUATION_SHADER,
-        [avxShaderStage_COMPUTE] = GL_COMPUTE_SHADER,
+        [avxShaderType_VERTEX] = GL_VERTEX_SHADER,
+        [avxShaderType_FRAGMENT] = GL_FRAGMENT_SHADER,
+        [avxShaderType_PRIMITIVE] = GL_GEOMETRY_SHADER,
+        [avxShaderType_TESS_CTRL] = GL_TESS_CONTROL_SHADER,
+        [avxShaderType_TESS_EVAL] = GL_TESS_EVALUATION_SHADER,
+        [avxShaderType_COMPUTE] = GL_COMPUTE_SHADER,
         NIL
     };
 
     return v[s];
 };
 
-_ZGL GLuint AfxToGlShaderStageBit(avxShaderStage s)
+_ZGL GLuint AfxToGlShaderStageBit(avxShaderType s)
 {
     static GLuint const v[] =
     {
         NIL,
-        [avxShaderStage_VERTEX] = GL_VERTEX_SHADER_BIT,
-        [avxShaderStage_FRAGMENT] = GL_FRAGMENT_SHADER_BIT,
-        [avxShaderStage_PRIMITIVE] = GL_GEOMETRY_SHADER_BIT,
-        [avxShaderStage_TESS_CTRL] = GL_TESS_CONTROL_SHADER_BIT,
-        [avxShaderStage_TESS_EVAL] = GL_TESS_EVALUATION_SHADER_BIT,
-        [avxShaderStage_COMPUTE] = GL_COMPUTE_SHADER_BIT,
+        [avxShaderType_VERTEX] = GL_VERTEX_SHADER_BIT,
+        [avxShaderType_FRAGMENT] = GL_FRAGMENT_SHADER_BIT,
+        [avxShaderType_PRIMITIVE] = GL_GEOMETRY_SHADER_BIT,
+        [avxShaderType_TESS_CTRL] = GL_TESS_CONTROL_SHADER_BIT,
+        [avxShaderType_TESS_EVAL] = GL_TESS_EVALUATION_SHADER_BIT,
+        [avxShaderType_COMPUTE] = GL_COMPUTE_SHADER_BIT,
         NIL
     };
 

@@ -71,7 +71,7 @@ _ZGLINL void _ZglFlushDsChanges(zglDpu* dpu)
             GL_POLYGON_OFFSET_LINE,
             GL_POLYGON_OFFSET_POINT
         };
-        AFX_ASSERT(QwadroToGlPolygonModeBasedOffset[avxFillMode_SOLID] == GL_POLYGON_OFFSET_FILL);
+        AFX_ASSERT(QwadroToGlPolygonModeBasedOffset[avxFillMode_FACE] == GL_POLYGON_OFFSET_FILL);
 
         if (nextDepthBiasEnabled)
         {
@@ -543,7 +543,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
     _ZglFlushDsChanges(dpu);
 
 #ifndef _ZGL_DBG_IGNORE_LINE_WIDTH
-    if (nextFillMode == avxFillMode_EDGE)
+    if (nextFillMode == avxFillMode_LINE)
     {
         /*
             glLineWidth — specify the width of rasterized lines.

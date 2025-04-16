@@ -161,7 +161,7 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                 afxModule icd = AfxGetDeviceDriver(&ddev->dev);
                 afxManifest const* ini = AfxGetModuleManifest(icd);
 
-                //if (!AfxFindInitializationRecord(ini, devPagIdx, &AfxString("OpenglDll"), &recIdx) || !AfxGetManifestUri(ini, devPagIdx, recIdx, &uri)) AfxThrowError();
+                //if (!AfxFindInitializationRecord(ini, devPagIdx, &AFX_STRING("OpenglDll"), &recIdx) || !AfxGetManifestUri(ini, devPagIdx, recIdx, &uri)) AfxThrowError();
                 //else
                 AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
                 {
@@ -435,7 +435,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
     afxUnit devPagIdx = ddev->m.dev.manifestPagNo, recIdx;
     afxManifest const* ini = AfxGetModuleManifest(icd);
 
-    //if (!AfxFindInitializationRecord(ini, devPagIdx, &AfxString("OpenglDll"), &recIdx) || !AfxGetManifestUri(ini, devPagIdx, recIdx, &uri)) AfxThrowError();
+    //if (!AfxFindInitializationRecord(ini, devPagIdx, &AFX_STRING("OpenglDll"), &recIdx) || !AfxGetManifestUri(ini, devPagIdx, recIdx, &uri)) AfxThrowError();
     //else
     AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
     {
@@ -487,6 +487,8 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
 
                     ddev->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
                     ddev->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+                    
+                    // 16384 * 16384 * 4 / 1024 / 1024 = 1024MB
 
                     if (ddev->hasDxInterop1 || ddev->hasDxInterop2)
                     {
@@ -584,7 +586,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         afxDrawDeviceInfo const ddevInfos[] =
         {
             {
-                .dev.urn = AfxString("tarzgl4"),
+                .dev.urn = AFX_STRING("tarzgl4"),
                 .dev.type = afxDeviceType_DRAW,
                 .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -594,7 +596,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
                 .portCnt = 3
             },
             {
-                .dev.urn = AfxString("tarzgl3"),
+                .dev.urn = AFX_STRING("tarzgl3"),
                 .dev.type = afxDeviceType_DRAW,
                 .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -617,17 +619,17 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
             avxDisplayInfo viddInfos[]=
             {
                 {
-                    .dev.urn = AfxString("dwm"),
+                    .dev.urn = AFX_STRING("dwm"),
                     .dev.type = afxDeviceType_DISPLAY,
                     .dev.ioctl = (void*)_ZglViddIoctrlCb,
                 },
                 {
-                    .dev.urn = AfxString("dwmglw"),
+                    .dev.urn = AFX_STRING("dwmglw"),
                     .dev.type = afxDeviceType_DISPLAY,
                     .dev.ioctl = (void*)_ZglViddIoctrlCb,
                 },
                 {
-                    .dev.urn = AfxString("dwmglw2"),
+                    .dev.urn = AFX_STRING("dwmglw2"),
                     .dev.type = afxDeviceType_DISPLAY,
                     .dev.ioctl = (void*)_ZglViddIoctrlCb,
                 }

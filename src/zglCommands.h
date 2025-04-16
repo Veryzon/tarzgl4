@@ -22,7 +22,7 @@
 // vkCmdBindDescriptorSets - Binds descriptor sets to a command buffer
 
 ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp);
-ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVmt const* gl);
+ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderType stage, glVmt const* gl);
 ZGL afxError _DpuSurfSync(zglDpu* dpu, avxDrawSurfaceSlot surf, glVmt const* gl); // must be used before texUpdate
 ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster tex, afxBool keepBound);
 ZGL afxError _ZglTexSubImage(glVmt const* gl, GLenum glTarget, avxRasterRegion const* rgn, GLenum glFmt, GLenum glType, afxAddress const src);

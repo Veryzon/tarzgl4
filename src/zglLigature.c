@@ -136,7 +136,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
     
     afxString32 tmp;
     AfxMakeString32(&tmp, 0);
-    afxChar const *rawName = (void const *)AfxGetStringStorage(&tmp.str, 0);
+    afxChar const *rawName = (void const *)AfxGetStringStorage(&tmp.s, 0);
 
     if (liga->m.pushables)
     {
@@ -166,8 +166,8 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
         for (afxUnit j = 0; j < entryCnt; j++)
         {
             avxLigatureEntry const *entry = &liga->m.totalEntries[baseEntry + j];
-            AFX_ASSERT(!AfxIsStringEmpty(&entry->name.str));
-            AfxCopyString(&tmp.str, &entry->name.str);
+            AFX_ASSERT(!AfxIsStringEmpty(&entry->name.s));
+            AfxCopyString(&tmp.s, &entry->name.s);
             //AFX_ASSERT(entry->visibility);
             //AFX_ASSERT(entry->cnt);
 
