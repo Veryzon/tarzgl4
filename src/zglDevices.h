@@ -80,7 +80,7 @@ AFX_DEFINE_STRUCT(zglDpu)
 
     // NEXT RASTERIZATION STATE
     afxBool             nextRasterizationDisabled; // controls whether primitives are discarded immediately before the rasterization stage. // FALSE
-    avxFillMode         nextFillMode; // is the triangle rendering mode. // avxFillMode_SOLID
+    avxFillMode         nextFillMode; // is the triangle rendering mode. // avxFillMode_FACE
     afxReal             nextLineWidth; // is the width of rasterized line segments. // 1.f    
 
     afxBool             nextDepthBiasEnabled; // controls whether to bias fragment depth values. // FALSE
@@ -133,7 +133,7 @@ AFX_DEFINE_STRUCT(zglDpu)
     GLenum          invalidDrawBufs[10];
 
     afxBool             rasterizationDisabled; // controls whether primitives are discarded immediately before the rasterization stage. // FALSE
-    avxFillMode         fillMode; // is the triangle rendering mode. // avxFillMode_SOLID
+    avxFillMode         fillMode; // is the triangle rendering mode. // avxFillMode_FACE
     afxReal             lineWidth; // is the width of rasterized line segments. // 1.f    
 
     afxBool             depthBiasEnabled; // controls whether to bias fragment depth values. // FALSE
@@ -232,6 +232,8 @@ AFX_DEFINE_STRUCT(zglDpu)
     afxUnit         shouldPushConstRange;
 
     GLuint          timeElapsedQueryIdActive;
+    
+    afxBool         emulatedDrawParams;
 };
 
 #if 0

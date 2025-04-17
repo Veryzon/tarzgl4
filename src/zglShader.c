@@ -23,7 +23,7 @@
 // SHADER                                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-_ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderStage stage, glVmt const* gl)
+_ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderType stage, glVmt const* gl)
 {
     //AfxEntry("shd=%p", shd);
     afxError err = AFX_ERR_NONE;

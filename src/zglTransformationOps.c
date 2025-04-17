@@ -170,7 +170,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
         {
             afxUnit cnt = dpu->nextViewportUpdCnt;
             AFX_ASSERT(cnt);
-            cnt = AfxClamp(cnt, 0, vpCnt);
+            cnt = AFX_CLAMP(cnt, 0, vpCnt);
 
             afxMask updMask = dpu->nextViewportUpdMask;
 
@@ -334,7 +334,7 @@ _ZGL void DpuBindVertexBuffers(zglDpu* dpu, afxUnit first, afxUnit cnt, avxBuffe
         AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
 
         dpu->nextVinBindings.sources[bindingIdx].buf = buf;
-        dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AfxMin(offset, AvxGetBufferCapacity(buf, 0) - 1) : offset;
+        dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AFX_MIN(offset, AvxGetBufferCapacity(buf, 0) - 1) : offset;
         dpu->nextVinBindings.sources[bindingIdx].range = !range && buf ? AvxGetBufferCapacity(buf, 0) - offset : range;
         dpu->nextVinBindings.sources[bindingIdx].stride = stride;
         dpu->nextVinBindings.sourcesUpdMask |= AFX_BIT(bindingIdx);

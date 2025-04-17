@@ -248,7 +248,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
         afxUnit maxSurCnt = AvxQueryDrawBufferSlots(canv, &maxColSurCnt, &dsSurIdx[0], &dsSurIdx[1]);
         afxBool hasDs = ((dsSurIdx[1] != AFX_INVALID_INDEX) || (dsSurIdx[0] != AFX_INVALID_INDEX));
         afxBool combinedDs = (hasDs && (dsSurIdx[1] == dsSurIdx[0]));
-        cCnt = AfxMin(cCnt, maxColSurCnt);
+        cCnt = AFX_MIN(cCnt, maxColSurCnt);
 
         afxUnit storeCnt = 0;
         GLenum storeBufs[_ZGL_MAX_SURF_PER_CANV];
@@ -806,7 +806,7 @@ _ZGL void DpuPushConstants(zglDpu* dpu, afxUnit32 offset, afxUnit32 siz, void co
     AfxCopy(&dpu->pushConstMappedMem[offset], data, siz);
     dpu->shouldPushConsts = TRUE;
     dpu->shouldPushConstRange = (dpu->shouldPushConstBase + dpu->shouldPushConstRange) > (offset + siz) ? dpu->shouldPushConstRange : siz;
-    dpu->shouldPushConstBase = AfxMin(dpu->shouldPushConstBase, offset);
+    dpu->shouldPushConstBase = AFX_MIN(dpu->shouldPushConstBase, offset);
 }
 
 _ZGL void _ZglFlushLsChanges(zglDpu* dpu)
@@ -1420,7 +1420,7 @@ _ZGL void DpuDrawIndexed(zglDpu* dpu, avxDrawIndexedIndirect const* data)
     afxSize idxSiz = dpu->activeVin->bindings.idxSrcSiz;
     afxSize idxBaseOff = dpu->activeVin->bindings.idxSrcOff;
 
-    GLint vtxOff2 = data->vtxOff;
+    GLint vtxOff2 = data->vtxOffset;
     afxUnit32 firstIdx = data->baseIdx;
     afxUnit32 instCnt = data->instCnt;
     afxUnit32 firstInst = data->baseInst;
@@ -1936,7 +1936,7 @@ _ZGL afxError _DpuExecSubmStamp(zglDpu* dpu, afxDrawBridge dexu, afxUnit queIdx,
 
         afxReal x = subm->origin[0];
         afxReal y = subm->origin[1];
-        afxUnit numchar = subm->caption.str.len;
+        afxUnit numchar = subm->caption.s.len;
         afxReal r = 1, g = 1, b = 1;
         afxReal x2 = x;
 
@@ -2045,7 +2045,7 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
 
     dpu->frontFaceCw = FALSE;
     dpu->cullMode = avxCullMode_NONE;// avxCullMode_BACK;
-    dpu->fillMode = avxFillMode_SOLID;
+    dpu->fillMode = avxFillMode_FACE;
 
     dpu->depthBiasConstFactor = 0.f;
     dpu->depthBiasSlopeScale = 0.f;
@@ -2130,6 +2130,8 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
     gl->BindBuffer(GL_UNIFORM_BUFFER, 0); _ZglThrowErrorOccuried();
     dpu->pushConstUboIdx = datai - 1; // the last uniform block
     gl->BindBufferBase(GL_UNIFORM_BUFFER, dpu->pushConstUboIdx, dpu->pushConstUbo); _ZglThrowErrorOccuried();
+
+    dpu->emulatedDrawParams = !wglHasExtensionSIG(dexu->hDC, "GL_ARB_shader_draw_parameters");
 
     dpu->m.instanced = TRUE;
     dpu->m.running = TRUE;
@@ -2225,7 +2227,7 @@ _ZGL afxBool _Dpu_ProcCb(zglDpu* dpu)
             afxBool mustWaitCnt = 0;
 
             _avxIoReqPacket* iorp;
-            AFX_ITERATE_CHAIN_B2F(&dque->m.iorpChn, _avxIoReqPacket, hdr.chain, iorp)
+            AFX_ITERATE_CHAIN_B2F(_avxIoReqPacket, iorp, hdr.chain, &dque->m.iorpChn)
             {
                 AFX_ASSERT(dque->m.iorpChn.cnt);
 
@@ -2266,7 +2268,7 @@ _ZGL afxBool _Dpu_ProcCb(zglDpu* dpu)
                 case GL_ALREADY_SIGNALED: // the sync object was signaled before the function was called.
                 case GL_CONDITION_SATISFIED: // the sync object was signaled within the given timeout period.
                 {
-                    AFX_ITERATE_CHAIN_B2F(&dque->m.iorpChn, _avxIoReqPacket, hdr.chain, iorp)
+                    AFX_ITERATE_CHAIN_B2F(_avxIoReqPacket, iorp, hdr.chain, &dque->m.iorpChn)
                     {
                         AFX_ASSERT(dque->m.iorpChn.cnt);
 
@@ -2301,6 +2303,7 @@ _ZGL afxBool _Dpu_ProcCb(zglDpu* dpu)
 
             AfxUnlockMutex(&dque->m.iorpChnMtx);
             AfxSignalCondition(&dque->m.idleCnd);
+            AfxYield();
         }
     }
     return TRUE;
@@ -2408,8 +2411,7 @@ _ZGL afxError _ZglDexuCtorCb(afxDrawBridge dexu, void** args, afxUnit invokeNo)
         .Execute = _AvxDpuWork_ExecuteCb,
         .Transfer = _DpuWork_Transfer,
         .Remap = _DpuWork_Remap,
-        .SyncMaps = _DpuWork_SyncMaps,
-        NIL,// _DpuPresentDout,
+        .SyncMaps = _DpuWork_SyncMaps
     };
 
     dexu->m.cmdVmt = &cmdDevmt;

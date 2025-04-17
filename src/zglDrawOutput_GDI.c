@@ -25,9 +25,9 @@ _ZGL afxUnit _ZglDoutIsSuspended(afxDrawOutput dout)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_DOUT, 1, &dout);
-    AfxEnterSlockShared(&dout->m.suspendSlock);
+    AfxLockFutexShared(&dout->m.suspendSlock);
     afxUnit suspendCnt = dout->m.suspendCnt;
-    AfxExitSlockShared(&dout->m.suspendSlock);
+    AfxUnlockFutexShared(&dout->m.suspendSlock);
     return suspendCnt;
 }
 
@@ -35,9 +35,9 @@ _ZGL afxUnit _ZglDoutSuspendFunction(afxDrawOutput dout)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_DOUT, 1, &dout);
-    AfxEnterSlockExclusive(&dout->m.suspendSlock);
+    AfxLockFutex(&dout->m.suspendSlock);
     afxUnit suspendCnt = ++dout->m.suspendCnt;
-    AfxExitSlockExclusive(&dout->m.suspendSlock);
+    AfxUnlockFutex(&dout->m.suspendSlock);
     return suspendCnt;
 }
 
@@ -45,9 +45,9 @@ _ZGL afxUnit _ZglDoutResumeFunction(afxDrawOutput dout)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_DOUT, 1, &dout);
-    AfxEnterSlockExclusive(&dout->m.suspendSlock);
+    AfxLockFutex(&dout->m.suspendSlock);
     afxUnit suspendCnt = --dout->m.suspendCnt;
-    AfxExitSlockExclusive(&dout->m.suspendSlock);
+    AfxUnlockFutex(&dout->m.suspendSlock);
     return suspendCnt;
 }
 
@@ -136,8 +136,6 @@ _ZGL afxError _ZglDoutPresentGdi(afxDrawQueue dque, avxPresentation* ctrl, afxDr
 #else
         wglSwapBuffersGDI(dout->hDC);
 #endif
-        //AfxYield();
-        //AfxSleep(1);
     }
 
     if (dout->m.presentAlpha && (dout->m.presentAlpha != avxVideoAlpha_OPAQUE))
@@ -150,6 +148,10 @@ _ZGL afxError _ZglDoutPresentGdi(afxDrawQueue dque, avxPresentation* ctrl, afxDr
     {
         wglMakeCurrentGDI(bkpHdc, bkpGlrc);
     }
+
+    AfxYield();
+    //AfxSleep(1);
+
     return err;
 }
 
@@ -572,7 +574,7 @@ _ZGL afxError _ZglRelinkDoutCb(afxDrawOutput dout)
     };
     afxReal64 physAspRatio = (afxReal64)GetDeviceCaps(dout->hDC, HORZSIZE) / (afxReal64)GetDeviceCaps(dout->hDC, VERTSIZE);
     afxReal refreshRate = GetDeviceCaps(dout->hDC, VREFRESH);
-    AvxResetDrawOutputResolution(dout, physAspRatio, refreshRate, screenRes, FALSE);
+    AvxModifyDrawOutputSettings(dout, physAspRatio, refreshRate, screenRes, FALSE);
 
     HDC bkpHdc = wglGetCurrentDCGDI();
     HGLRC bkpGlrc = wglGetCurrentContextGDI();
@@ -709,7 +711,7 @@ _ZGL afxError _ZglDoutCtorCb(afxDrawOutput dout, void** args, afxUnit invokeNo)
             };
             afxReal64 physAspRatio = (afxReal64)GetDeviceCaps(dc, HORZSIZE) / (afxReal64)GetDeviceCaps(dc, VERTSIZE);
             afxReal refreshRate = GetDeviceCaps(dc, VREFRESH);
-            AvxResetDrawOutputResolution(dout, physAspRatio, refreshRate, screenRes, FALSE);
+            AvxModifyDrawOutputSettings(dout, physAspRatio, refreshRate, screenRes, FALSE);
         }
         ReleaseDC(hWnd, dc);
 #endif

@@ -257,11 +257,11 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         avxPipelineBlueprint razrCfg = { 0 };
         razrCfg.stageCnt = 2;
         razrCfg.cullMode = avxCullMode_BACK;
-        razrCfg.fillMode = avxFillMode_SOLID;
+        razrCfg.fillMode = avxFillMode_FACE;
         razrCfg.primTop = avxTopology_TRI_STRIP;
         AvxAssemblePipelines(dsys, 1, &razrCfg, &dsys->presentRazr);
-        AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderStage_VERTEX, AfxUri("//./z/video/uvOutTristripQuad.vsh"), NIL, NIL, NIL);
-        AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderStage_FRAGMENT, AfxUri("//./z/video/sampleOutRgba2d.fsh"), NIL, NIL, NIL);
+        AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_VERTEX, AfxUri("//./z/video/uvOutTristripQuad.vsh"), NIL, NIL, NIL);
+        AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_FRAGMENT, AfxUri("//./z/video/sampleOutRgba2d.fsh"), NIL, NIL, NIL);
 #endif
 
         // DEVICE FONT STUFF
