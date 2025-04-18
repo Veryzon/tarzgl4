@@ -167,7 +167,8 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
         {
             avxLigatureEntry const *entry = &liga->m.totalEntries[baseEntry + j];
             AFX_ASSERT(!AfxIsStringEmpty(&entry->name.s));
-            AfxCopyString(&tmp.s, &entry->name.s);
+            AfxClearStrings(1, &tmp.s);
+            AfxCopyString(&tmp.s, 0, &entry->name.s, 0);
             //AFX_ASSERT(entry->visibility);
             //AFX_ASSERT(entry->cnt);
 

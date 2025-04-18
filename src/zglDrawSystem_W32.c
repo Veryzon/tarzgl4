@@ -172,13 +172,13 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
     else
     {
         afxChain *classes = &dsys->m.ctx.classes;
-
+#if 0
         afxClassConfig semClsConf = _AfxSemStdImplementation;
         semClsConf.fixedSiz = sizeof(AFX_OBJECT(afxSemaphore));
         semClsConf.ctor = (void*)_ZglSemCtorCb;
         semClsConf.dtor = (void*)_ZglSemDtorCb;
         AfxMountClass(&dsys->m.ctx.semaphores, NIL, classes, &semClsConf);
-
+#endif
         afxClassConfig fencClsConf = _AVX_FENC_CLASS_CONFIG;
         fencClsConf.fixedSiz = sizeof(AFX_OBJECT(avxFence));
         fencClsConf.ctor = (void*)_ZglFencCtorCb;
