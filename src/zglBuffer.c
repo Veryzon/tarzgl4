@@ -903,14 +903,6 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
                 */
                 glMapRangeAccess |= GL_MAP_INVALIDATE_RANGE_BIT;
 
-                /*
-                    GL_MAP_UNSYNCHRONIZED_BIT indicates that the GL should not attempt to synchronize
-                    pending operations on the buffer prior to returning from glMapBufferRange or glMapNamedBufferRange.
-                    No GL error is generated if pending operations which source or modify the buffer overlap the mapped region,
-                    but the result of such previous and any subsequent operations is undefined.
-                */
-                glMapRangeAccess |= GL_MAP_UNSYNCHRONIZED_BIT;
-                // TODO force to be always unsynchronized like Vulkan.
             }
             else
             {
@@ -955,6 +947,15 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
                 glMapRangeAccess |= GL_MAP_FLUSH_EXPLICIT_BIT;
             }
         }
+
+        /*
+            GL_MAP_UNSYNCHRONIZED_BIT indicates that the GL should not attempt to synchronize
+            pending operations on the buffer prior to returning from glMapBufferRange or glMapNamedBufferRange.
+            No GL error is generated if pending operations which source or modify the buffer overlap the mapped region,
+            but the result of such previous and any subsequent operations is undefined.
+        */
+        glMapRangeAccess |= GL_MAP_UNSYNCHRONIZED_BIT;
+        // TODO force to be always unsynchronized like Vulkan.
     }
 
     /*

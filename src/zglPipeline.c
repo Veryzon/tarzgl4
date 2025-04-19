@@ -416,7 +416,7 @@ _ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, 
             //if ((dpu->nextOutCnt = config.colorOutCnt))
             if ((dpu->outCnt = pip->m.outCnt))
             {
-                AfxCopy2(dpu->nextOuts, pip->m.outs, sizeof(pip->m.outs[0]), pip->m.outCnt);
+                AfxCopy(dpu->nextOuts, pip->m.outs, sizeof(pip->m.outs[0]) * pip->m.outCnt);
 
                 AvxCopyColor(dpu->nextBlendConstants, pip->m.blendConstants);
                 //dpu->nextBlendConstUpd = 1;
@@ -459,7 +459,7 @@ _ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, 
 
             if ((dpu->nextSampleLvl = pip->m.sampleLvl))
             {
-                AfxCopy2(dpu->nextSampleMasks, pip->m.sampleMasks, sizeof(pip->m.sampleMasks), pip->m.sampleLvl);
+                AfxCopy(dpu->nextSampleMasks, pip->m.sampleMasks, sizeof(pip->m.sampleMasks) * pip->m.sampleLvl);
             }
 
             if ((dpu->nextStencilTestEnabled = pip->m.stencilTestEnabled))
