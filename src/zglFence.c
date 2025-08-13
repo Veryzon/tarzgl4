@@ -127,7 +127,7 @@ _ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, avxF
         */
 
         AfxGetClock(&currClock);
-    } while (timeout > AfxGetClockSecondsElapsed(&startClock, &currClock));
+    } while (timeout > AfxGetSecondsElapsed(&startClock, &currClock));
     return err;
 }
 

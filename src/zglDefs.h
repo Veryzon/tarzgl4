@@ -51,7 +51,7 @@
 #define _AVX_VERTEX_INPUT_C
 #define _AVX_VERTEX_DECL_IMPL
 #define _AVX_DRAW_CONTEXT_C
-#define _AVX_CMD_BUFFER_IMPL
+#define _AVX_DRAW_CONTEXT_IMPL
 #define _AVX_SAMPLER_C
 #define _AVX_SAMPLER_IMPL
 #define _AVX_SHADER_C
@@ -77,8 +77,8 @@
 #define _ZGL_MAX_DQUE_PER_DCTX 4
 #define _ZGL_MAX_SWAPCHAIN_CAP 3
 #define _ZGL_MAX_SURF_PER_DOUT 3
-#define _ZGL_MAX_LEGO_PER_BIND 4
-#define _ZGL_MAX_ENTRY_PER_LEGO 10 
+#define _ZGL_MAX_LEGO_PER_BIND AVX_MAX_LIGATURE_SETS
+#define _ZGL_MAX_ENTRY_PER_LEGO AVX_MAX_LIGAMENTS
 #define _ZGL_MAX_STAGE_PER_PIP 8
 //#define _ZGL_MAX_VBO_PER_BIND 8
 
@@ -114,12 +114,18 @@
 #define FORCE_GL_GENERIC_FUNCS 1 // we also attempt to use specific functions as a medium of hinting for the driver.
 #define ZGL_DONT_USE_ROBUST_ACCESS 1
 
+#define FORCE_ARG_REBIND TRUE
+#define FORCE_VBO_REBIND TRUE
+#define FORCE_IBO_REBIND TRUE
+#define UNBIND_GL_BUF FALSE
+ //#define COHERENT_PUSHABLES
+
 typedef enum zglUpdateFlags
 {
-    ZGL_UPD_FLAG_DEVICE_FLUSH   = AFX_BIT(0), // flush from host to device
-    ZGL_UPD_FLAG_HOST_FLUSH     = AFX_BIT(1), // flush from device to host
-    ZGL_UPD_FLAG_DEVICE_INST    = AFX_BIT(2), // (re)instantiate on device
-    ZGL_UPD_FLAG_HOST_INST      = AFX_BIT(3), // (re)instantiate on host
+    ZGL_UPD_FLAG_DEVICE_FLUSH   = AFX_BITMASK(0), // flush from host to device
+    ZGL_UPD_FLAG_HOST_FLUSH     = AFX_BITMASK(1), // flush from device to host
+    ZGL_UPD_FLAG_DEVICE_INST    = AFX_BITMASK(2), // (re)instantiate on device
+    ZGL_UPD_FLAG_HOST_INST      = AFX_BITMASK(3), // (re)instantiate on host
     
     ZGL_UPD_FLAG_HOST           = (ZGL_UPD_FLAG_HOST_INST | ZGL_UPD_FLAG_HOST_FLUSH),
     ZGL_UPD_FLAG_DEVICE         = (ZGL_UPD_FLAG_DEVICE_INST | ZGL_UPD_FLAG_DEVICE_FLUSH),
@@ -159,9 +165,9 @@ typedef struct _DrawPipelineResource
 
 typedef enum zglBindFlags
 {
-    zglBindFlag_BIND = AFX_BIT(0),
-    zglBindFlag_SYNC = AFX_BIT(1),
-    zglBindFlag_KEEP = AFX_BIT(2)
+    zglBindFlag_BIND = AFX_BITMASK(0),
+    zglBindFlag_SYNC = AFX_BITMASK(1),
+    zglBindFlag_KEEP = AFX_BITMASK(2)
 }zglBindFlags;
 
 #endif//ZGL_DEFS_H

@@ -111,6 +111,7 @@ AFX_DEFINE_STRUCT(zglDpu)
     afxUnit32           nextCurtainUpdMask;
 
     avxFormat           nextDsFmt; // is the format of depth/stencil surface this pipeline will be compatible with.
+    afxUnit             nextOutCnt;
     avxColorOutput      nextOuts[8];
     afxMask             nextOutUpdMask;
     afxReal             nextBlendConstants[4]; // [ 0, 0, 0, 1 ]
@@ -118,6 +119,7 @@ AFX_DEFINE_STRUCT(zglDpu)
     avxLogicOp          nextLogicOp; // avxLogicOp_NOP
 
     // ACTIVE RASTERIZATION STATE
+    afxBool         inDrawScope;
     avxCanvas       canv;
     GLuint          canvGpuHandle;
     afxBool         canvIsDefFbo;
@@ -168,7 +170,7 @@ AFX_DEFINE_STRUCT(zglDpu)
     afxUnit32            curtainUpdMask;
 
     afxUnit              outCnt;
-    avxColorOutput  outs[8];
+    avxColorOutput      outs[8];
     afxMask             outUpdMask;
 
     afxBool             anyBlendEnabled;
@@ -240,8 +242,8 @@ AFX_DEFINE_STRUCT(zglDpu)
 struct _afxDdevIdd
 {
     WNDCLASSEX      wndClss;
-    afxModule       oglDll;
-    afxUnit          oglVerMajor, oglVerMinor, oglVerPatch;
+    afxModule       wglDll;
+    afxUnit         oglVerMajor, oglVerMinor, oglVerPatch;
 
     afxModule       d3d9Dll;
     HRESULT (WINAPI*Direct3DCreate9Ex)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
@@ -255,7 +257,7 @@ AFX_OBJECT(afxDrawDevice)
 {
     AFX_OBJ(_avxDrawDevice) m;
     //WNDCLASSEX      wndClss;
-    afxModule       oglDll;
+    afxModule       wglDll;
     afxUnit         oglVerMajor, oglVerMinor, oglVerPatch;
     DISPLAY_DEVICEA dd;
 
@@ -336,10 +338,11 @@ AFX_OBJECT(afxDisplay)
     DISPLAY_DEVICEA ddminfo;
 };
 
-AFX_OBJECT(afxDrawOutput)
+#if 0
+AFX_OBJECT(afxSurface)
 {
-    AFX_OBJECT(_avxDrawOutput) m;
-
+    AFX_OBJECT(_avxSurface) m;
+#if 0
     HINSTANCE               hInst;
     HWND                    hWnd;
     afxBool                 isWpp;
@@ -353,6 +356,7 @@ AFX_OBJECT(afxDrawOutput)
         GLuint      swapFbo;
         afxBool8    swapFboReady;
     } *gdiGlSwap;
+    afxBool swapOnWgl;
 
     struct
     {
@@ -380,6 +384,16 @@ AFX_OBJECT(afxDrawOutput)
         IDirect3DTexture9* sharedTexture;
         IDirect3DSurface9* pSurface;
     } d3dsw9;
+#endif
+};
+#endif
+
+AFX_DEFINE_STRUCT(_zglSyncSlot)
+{
+    GLenum rslt;
+    GLsync glFence;
+    afxUnit waitReqCnt;
+    afxDrawQueue dque;
 };
 
 AFX_DEFINE_STRUCT(_zglDeleteGlRes)
@@ -394,7 +408,7 @@ AFX_DEFINE_STRUCT(_zglDeleteGlRes)
 
 ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 
-ZGL afxError _DpuPresentDout(zglDpu* dpu, afxDrawOutput dout, afxUnit outBufIdx);
+ZGL afxError _DpuPresentDout(zglDpu* dpu, afxSurface dout, afxUnit outBufIdx);
 
 ZGL afxError _ZglDdevOpenCb(afxDrawDevice ddev, afxDrawSystem dsys, void** args, afxUnit invokeNo);
 ZGL afxError _ZglDdevCloseCb(afxDrawDevice ddev, afxDrawSystem dsys);
@@ -414,8 +428,6 @@ ZGL afxError _ZglViddCtorCb(afxDisplay vidd, void** args, afxUnit invokeNo);
 ZGL afxResult _ZglViddIoctrlCb(afxDisplay vidd, afxUnit reqCode, va_list va);
 
 ZGL afxError _ZglDinCtorCb(afxDrawInput din, void** args, afxUnit invokeNo);
-ZGL afxError _ZglDoutCtorCb(afxDrawOutput dout, void** args, afxUnit invokeNo);
-ZGL afxError _ZglDoutDtorCb(afxDrawOutput dout);
 
 ZGL afxError _ZglDsysDtorCb(afxDrawSystem dsys);
 ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo);
@@ -423,8 +435,8 @@ ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo);
 ZGL afxError _ZglDexuDtorCb(afxDrawBridge dexu);
 ZGL afxError _ZglDexuCtorCb(afxDrawBridge dexu, void** args, afxUnit invokeNo);
 
-ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
-ZGL afxError _ZglCreateHwContext(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool robust, HGLRC* phGLRC, glVmt* gl, afxBool echo);
+ZGL afxError wglCreateSurfaceSIGMA(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd);
+ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool fwd, afxBool robust, afxBool dbg, HGLRC* phGLRC, glVmt* gl, afxBool echo);
 ZGL afxError _ZglProcessDeletionQueue(glVmt const* gl, afxInterlockedQueue* ique);
 ZGL void    _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
 

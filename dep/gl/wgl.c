@@ -1,10 +1,11 @@
 /**
  * SPDX-License-Identifier: (WTFPL OR CC0-1.0) AND Apache-2.0
  */
+#include "icd_tarzgl4/src/zglInterop_WGL.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "wgl.h"
+//#include "wgl.h"
 
 #ifndef GLAD_IMPL_UTIL_C_
 #define GLAD_IMPL_UTIL_C_
@@ -578,27 +579,27 @@ int gladLoadWGL(HDC hdc, GLADloadfunc load) {
 
 #include "../src/zglInterop_WGL.h"
 
-int(WINAPI*wglChoosePixelFormatGDI)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
-int(WINAPI*wglDescribePixelFormatGDI)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
-BOOL(WINAPI*wglSetPixelFormatGDI)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
-int(WINAPI*wglGetPixelFormatGDI)(HDC hdc);
+int(WINAPI*wglChoosePixelFormatWIN)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
+int(WINAPI*wglDescribePixelFormatWIN)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+BOOL(WINAPI*wglSetPixelFormatWIN)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
+int(WINAPI*wglGetPixelFormatWIN)(HDC hdc);
 
-BOOL(WINAPI*wglCopyContextGDI)(HGLRC, HGLRC, UINT);
-HGLRC(WINAPI*wglCreateContextGDI)(HDC);
-HGLRC(WINAPI*wglCreateLayerContextGDI)(HDC, int);
-BOOL(WINAPI*wglDeleteContextGDI)(HGLRC);
-HGLRC(WINAPI*wglGetCurrentContextGDI)(VOID);
-HDC(WINAPI*wglGetCurrentDCGDI)(VOID);
-PROC(WINAPI*wglGetProcAddressGDI)(LPCSTR);
-BOOL(WINAPI*wglMakeCurrentGDI)(HDC, HGLRC);
-BOOL(WINAPI*wglSwapBuffersGDI)(HDC);// wglSwapBuffers;
-BOOL(WINAPI*wglSwapLayerBuffersGDI)(HDC, UINT);
+BOOL(WINAPI*wglCopyContextWIN)(HGLRC, HGLRC, UINT);
+HGLRC(WINAPI*wglCreateContextWIN)(HDC);
+HGLRC(WINAPI*wglCreateLayerContextWIN)(HDC, int);
+BOOL(WINAPI*wglDeleteContextWIN)(HGLRC);
+HGLRC(WINAPI*wglGetCurrentContextWIN)(VOID);
+HDC(WINAPI*wglGetCurrentDCWIN)(VOID);
+PROC(WINAPI*wglGetProcAddressWIN)(LPCSTR);
+BOOL(WINAPI*wglMakeCurrentWIN)(HDC, HGLRC);
+BOOL(WINAPI*wglSwapBuffersWIN)(HDC);// wglSwapBuffers;
+BOOL(WINAPI*wglSwapLayerBuffersWIN)(HDC, UINT);
 
 #ifdef GLAD_WGL
 
 static GLADapiproc /*glad_*/wgl_get_proc(void *vuserptr, const char* name) {
     GLAD_UNUSED(vuserptr);
-    return GLAD_GNUC_EXTENSION (GLADapiproc) wglGetProcAddressGDI(name);
+    return GLAD_GNUC_EXTENSION (GLADapiproc) wglGetProcAddressWIN(name);
 }
 
 int gladLoaderLoadWGL(HDC hdc) {
@@ -622,21 +623,21 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
     {
         hOpengl32Dll = opengl32;
 
-        wglGetProcAddressGDI = (void*)GetProcAddress(opengl32, "wglGetProcAddress");
+        wglGetProcAddressWIN = (void*)GetProcAddress(opengl32, "wglGetProcAddress");
 
-        wglCreateContextGDI = (void*)GetProcAddress(opengl32, "wglCreateContext");
-        wglDeleteContextGDI = (void*)GetProcAddress(opengl32, "wglDeleteContext");
-        wglGetCurrentContextGDI = (void*)GetProcAddress(opengl32, "wglGetCurrentContext");
-        wglGetCurrentDCGDI = (void*)GetProcAddress(opengl32, "wglGetCurrentDC");
-        wglMakeCurrentGDI = (void*)GetProcAddress(opengl32, "wglMakeCurrent");
-        wglChoosePixelFormatGDI = (void*)GetProcAddress(opengl32, "wglChoosePixelFormat");
-        wglSetPixelFormatGDI = (void*)GetProcAddress(opengl32, "wglSetPixelFormat");
-        wglDescribePixelFormatGDI = (void*)GetProcAddress(opengl32, "wglDescribePixelFormat");
-        wglGetPixelFormatGDI = (void*)GetProcAddress(opengl32, "wglGetPixelFormat");
-        wglSwapBuffersGDI = (void*)GetProcAddress(opengl32, "wglSwapBuffers");
-        wglSwapLayerBuffersGDI = (void*)GetProcAddress(opengl32, "wglSwapLayerBuffers");
+        wglCreateContextWIN = (void*)GetProcAddress(opengl32, "wglCreateContext");
+        wglDeleteContextWIN = (void*)GetProcAddress(opengl32, "wglDeleteContext");
+        wglGetCurrentContextWIN = (void*)GetProcAddress(opengl32, "wglGetCurrentContext");
+        wglGetCurrentDCWIN = (void*)GetProcAddress(opengl32, "wglGetCurrentDC");
+        wglMakeCurrentWIN = (void*)GetProcAddress(opengl32, "wglMakeCurrent");
+        wglChoosePixelFormatWIN = (void*)GetProcAddress(opengl32, "wglChoosePixelFormat");
+        wglSetPixelFormatWIN = (void*)GetProcAddress(opengl32, "wglSetPixelFormat");
+        wglDescribePixelFormatWIN = (void*)GetProcAddress(opengl32, "wglDescribePixelFormat");
+        wglGetPixelFormatWIN = (void*)GetProcAddress(opengl32, "wglGetPixelFormat");
+        wglSwapBuffersWIN = (void*)GetProcAddress(opengl32, "wglSwapBuffers");
+        wglSwapLayerBuffersWIN = (void*)GetProcAddress(opengl32, "wglSwapLayerBuffers");
 
-        DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DIRECT3D_ACCELERATED | PFD_SWAP_EXCHANGE;
+        DWORD pfdFlags = PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;// | PFD_DIRECT3D_ACCELERATED | PFD_SWAP_EXCHANGE;
         DWORD dwExStyle = WS_EX_APPWINDOW;
         DWORD wndStyles = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 
@@ -690,7 +691,7 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
             return err;
         }
 
-        if (!(tmpHrc = wglCreateContextGDI(tmpHdc)))
+        if (!(tmpHrc = wglCreateContextWIN(tmpHdc)))
         {
             AfxThrowError();
             ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
@@ -698,10 +699,10 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
             return err;
         }
 
-        if (!(wglMakeCurrentGDI(tmpHdc, tmpHrc)))
+        if (!(wglMakeCurrentWIN(tmpHdc, tmpHrc)))
         {
             AfxThrowError();
-            wglDeleteContextGDI(tmpHrc), tmpHrc = NIL;
+            wglDeleteContextWIN(tmpHrc), tmpHrc = NIL;
             ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
             DestroyWindow(tmpHwnd), tmpHwnd = NIL;
             return err;
@@ -709,7 +710,7 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
 
         afxString ver;
         afxUnit vMajor, vMinor, vPatch;
-        PFNGLGETSTRINGPROC _glGetString = (void*)wglGetProcAddressGDI("glGetString");
+        PFNGLGETSTRINGPROC _glGetString = (void*)wglGetProcAddressWIN("glGetString");
         AfxMakeString(&ver, 0, (afxChar const*)_glGetString(GL_VERSION), 0);
         AfxScanString(&ver, "%u.%u.%u", &vMajor, &vMinor, &vPatch);
 
@@ -719,7 +720,7 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
 
         gladLoaderLoadWGL(tmpHdc);
 
-        wglDeleteContextGDI(tmpHrc), tmpHrc = NIL;
+        wglDeleteContextWIN(tmpHrc), tmpHrc = NIL;
         ReleaseDC(tmpHwnd, tmpHdc), tmpHdc = NIL;
         DestroyWindow(tmpHwnd), tmpHwnd = NIL;
 

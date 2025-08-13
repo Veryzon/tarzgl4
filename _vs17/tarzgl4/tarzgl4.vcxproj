@@ -70,19 +70,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)d\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)d\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\qwd\w$(PlatformArchitecture)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -94,6 +94,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)..\..;$(ProjectDir)..;C:\Program Files (x86)\Visual Leak Detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>AVX_DRV_SRC;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,6 +109,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)..\..;$(ProjectDir)..;C:\Program Files (x86)\Visual Leak Detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>AVX_DRV_SRC;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +129,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,6 +151,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -170,14 +174,18 @@
   <ItemGroup>
     <ClCompile Include="..\..\dep\gl\wgl.c" />
     <ClCompile Include="..\..\src\zglCommandDecoder.c" />
-    <ClCompile Include="..\..\src\zglInterop_D3D.c" />
+    <ClCompile Include="..\..\src\zglInterop_D3D.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\zglLigature.c" />
     <ClCompile Include="..\..\src\zglBuffer.c" />
     <ClCompile Include="..\..\src\zglCanvas.c" />
-    <ClCompile Include="..\..\src\zglDrawSystem_W32.c" />
-    <ClCompile Include="..\..\src\zglDrawDevice_W32.c" />
-    <ClCompile Include="..\..\src\zglDrawOutput_GDI.c" />
-    <ClCompile Include="..\..\src\zglDrawBridge_W32.c" />
+    <ClCompile Include="..\..\src\zglDrawSystem_WGL.c" />
+    <ClCompile Include="..\..\src\zglDrawDevice_WGL.c" />
+    <ClCompile Include="..\..\src\zglDrawBridge_WGL.c" />
     <ClCompile Include="..\..\src\zglFence.c" />
     <ClCompile Include="..\..\src\zglInterop_WGL.c" />
     <ClCompile Include="..\..\src\zglPipeline.c" />
@@ -189,7 +197,7 @@
     <ClCompile Include="..\..\src\zglShader.c" />
     <ClCompile Include="..\..\src\zglTransformationOps.c" />
     <ClCompile Include="..\..\src\zglVertexDecl.c" />
-    <ClCompile Include="..\..\src\zglVideoDevice_W32.c" />
+    <ClCompile Include="..\..\src\zglDisplay_W32.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\zglWrapper.inl" />

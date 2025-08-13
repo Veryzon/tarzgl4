@@ -1410,16 +1410,16 @@ int(WINAPI*wglDescribePixelFormat)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIX
 BOOL(WINAPI*wglSetPixelFormat)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
 int(WINAPI*wglGetPixelFormat)(HDC hdc);
 
-BOOL(WINAPI*wglCopyContextGDI)(HGLRC, HGLRC, UINT) = wglCopyContext;
-HGLRC(WINAPI*wglCreateContextGDI)(HDC) = wglCreateContext;
-HGLRC(WINAPI*wglCreateLayerContextGDI)(HDC, int) = wglCreateLayerContext;
-BOOL(WINAPI*wglDeleteContextGDI)(HGLRC) = wglDeleteContext;
-HGLRC(WINAPI*wglGetCurrentContextGDI)(VOID) = wglGetCurrentContext;
-HDC(WINAPI*wglGetCurrentDCGDI)(VOID) = wglGetCurrentDC;
-PROC(WINAPI*wglGetProcAddressGDI)(LPCSTR) = wglGetProcAddress;
-BOOL(WINAPI*wglMakeCurrentGDI)(HDC, HGLRC) = wglMakeCurrent;
-BOOL(WINAPI*wglSwapBuffersGDI)(HDC) = NIL;// wglSwapBuffers;
-BOOL(WINAPI*wglSwapLayerBuffersGDI)(HDC, UINT) = wglSwapLayerBuffers;
+BOOL(WINAPI*wglCopyContextWIN)(HGLRC, HGLRC, UINT) = wglCopyContext;
+HGLRC(WINAPI*wglCreateContextWIN)(HDC) = wglCreateContext;
+HGLRC(WINAPI*wglCreateLayerContextWIN)(HDC, int) = wglCreateLayerContext;
+BOOL(WINAPI*wglDeleteContextWIN)(HGLRC) = wglDeleteContext;
+HGLRC(WINAPI*wglGetCurrentContextWIN)(VOID) = wglGetCurrentContext;
+HDC(WINAPI*wglGetCurrentDCWIN)(VOID) = wglGetCurrentDC;
+PROC(WINAPI*wglGetProcAddressWIN)(LPCSTR) = wglGetProcAddress;
+BOOL(WINAPI*wglMakeCurrentWIN)(HDC, HGLRC) = wglMakeCurrent;
+BOOL(WINAPI*wglSwapBuffersWIN)(HDC) = NIL;// wglSwapBuffers;
+BOOL(WINAPI*wglSwapLayerBuffersWIN)(HDC, UINT) = wglSwapLayerBuffers;
 #endif
 // ARB/EXT
 #if 0
@@ -1587,7 +1587,7 @@ _ZGL PROC wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName)
     afxError err = NIL;
     PROC f;
 
-    if (/*(!wgl.GetProcAddress) || */!wglGetProcAddressGDI || !(f = wglGetProcAddressGDI(lpProcName)))
+    if (/*(!wgl.GetProcAddress) || */!wglGetProcAddressWIN || !(f = wglGetProcAddressWIN(lpProcName)))
         f = GetProcAddress(opengl32, lpProcName);
 
     return f;
@@ -2265,7 +2265,7 @@ _ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum sev
     AfxReportError("%s %s %s %u %s", sourceStr, typeStr, severityStr, id, message);
 }
 
-_ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
+_ZGL afxError wglCreateSurfaceSIGMA(int atX, int atY, HWND* phWnd, HDC* phDC, int* pPixFmt, PIXELFORMATDESCRIPTOR* pPfd)
 {
     afxError err = NIL;
 
@@ -2279,7 +2279,8 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
     int dcPxlFmt = 0;
     PIXELFORMATDESCRIPTOR dcPfd = { 0 };
 
-    if (!(hWnd = CreateWindowExA(dwExStyle, vgiWndClss.lpszClassName, vgiWndClss.lpszClassName, wndStyles, atX, atY, 1, 1, NIL, NIL, vgiWndClss.hInstance, NIL)))
+    if (!(hWnd = CreateWindowExA(dwExStyle, vgiWndClss.lpszClassName, vgiWndClss.lpszClassName, 
+                                wndStyles, atX, atY, 1, 1, NIL, NIL, vgiWndClss.hInstance, NIL)))
     {
         AfxThrowError();
         return err;
@@ -2321,9 +2322,10 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
             it is the size of the color buffer, "excluding the alpha" bitplanes.
             For color-index pixels, it is the size of the color index buffer.
         */
-
+#if 0
         // ARGB8
         { WGL_COLOR_BITS_ARB, AFX_MIN(24, GetDeviceCaps(hDC, BITSPIXEL)) },
+#endif
 #if 0
         { WGL_RED_BITS_ARB, 8 },
         { WGL_GREEN_BITS_ARB, 8 },
@@ -2357,7 +2359,9 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
         //{ WGL_COLORSPACE_EXT, WGL_COLORSPACE_SRGB_EXT }, // WGL_COLORSPACE_LINEAR_EXT // works on Mesa, didn't work on Intel
         //{ WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE }, // works on Mesa, didn't work on Intel
 #endif
+#if 0
         { WGL_SWAP_METHOD_ARB, WGL_SWAP_EXCHANGE_ARB },
+#endif
 #if 0
         { WGL_NUMBER_OVERLAYS_ARB, 0 },
         { WGL_NUMBER_UNDERLAYS_ARB, 0 },
@@ -2389,7 +2393,7 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
     AfxZero(&dcPfd, sizeof(dcPfd));
     dcPfd.nSize = sizeof(dcPfd);
 
-    if (!wglDescribePixelFormatGDI(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd))
+    if (!wglDescribePixelFormatWIN(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd))
     {
         if (!DescribePixelFormat(hDC, dcPxlFmt, sizeof(dcPfd), &dcPfd))
         {
@@ -2406,7 +2410,7 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
             return err;
         }
     }
-    else if ((!wglSetPixelFormatGDI(hDC, dcPxlFmt, &dcPfd)) && (!SetPixelFormat(hDC, dcPxlFmt, &dcPfd)))
+    else if ((!wglSetPixelFormatWIN(hDC, dcPxlFmt, &dcPfd)) && (!SetPixelFormat(hDC, dcPxlFmt, &dcPfd)))
     {
         AfxThrowError();
         ReleaseDC(hWnd, hDC), hDC = NIL;
@@ -2424,67 +2428,81 @@ _ZGL afxError _ZglCreateHwSurface(int atX, int atY, HWND* phWnd, HDC* phDC, int*
     return err;
 }
 
-_ZGL afxError _ZglCreateHwContext(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool robust, HGLRC* phGLRC, glVmt* gl, afxBool echo)
+_ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int verMin, afxBool fwd, afxBool robust, afxBool dbg, HGLRC* phGLRC, glVmt* gl, afxBool echo)
 {
     afxError err = NIL;
 
-    HDC bkpHdc = wglGetCurrentDCGDI();
-    HGLRC bkpGlrc = wglGetCurrentContextGDI();
+    AFX_ASSERT(wglGetCurrentDCWIN);
+    AFX_ASSERT(wglGetCurrentContextWIN);
+    HDC bkpHdc = wglGetCurrentDCWIN();
+    HGLRC bkpGlrc = wglGetCurrentContextWIN();
 
     int ctxAttrPairs[][2] =
     {
         // GL Extensions Viewer 6.0.9.0 benchmark tests appointed 3.2 core as faster profile when 3.1 was not. 4.0 caused major drops.
         //{ WGL_CONTEXT_MAJOR_VERSION_ARB, dpu->verMajor },
-        { WGL_CONTEXT_MAJOR_VERSION_ARB, verMaj ? verMaj : 4 },
+        { WGL_CONTEXT_MAJOR_VERSION_ARB, verMaj ? verMaj : 3 },
         //{ WGL_CONTEXT_MINOR_VERSION_ARB, dpu->verMinor },
-        { WGL_CONTEXT_MINOR_VERSION_ARB, verMin },
+        { WGL_CONTEXT_MINOR_VERSION_ARB, (!verMin && !verMaj) ? 2 : verMin },
         { WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB }, // WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
-        { WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+        { WGL_CONTEXT_FLAGS_ARB, GL_NONE
+#ifndef ZGL_DONT_USE_FWD_COMPATIBILITY // v3.3+
+            | WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+#endif
 #ifndef ZGL_DONT_USE_ROBUST_ACCESS
-        | WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB
+            | WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB
 #endif
 #ifdef _AFX_DEBUG
-        | WGL_CONTEXT_DEBUG_BIT_ARB
+            | WGL_CONTEXT_DEBUG_BIT_ARB
 #endif
         },
-        { NIL, NIL },
-        { NIL, NIL },
+        { 0, 0 },
+        { 0, 0 },
     };
+
+    if (fwd)
+        ctxAttrPairs[3][1] |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
     if (robust)
         ctxAttrPairs[3][1] |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
 
+    if (dbg)
+        ctxAttrPairs[3][1] |= WGL_CONTEXT_DEBUG_BIT_ARB;
+
     // hShareCtx can't be active in another thread
     HGLRC hGLRC = NIL;
-
+    AFX_ASSERT(wglCreateContextAttribsARB);
     if (!(hGLRC = wglCreateContextAttribsARB(hDC, hShareCtx, (void*)ctxAttrPairs)))
     {
         AfxThrowError();
         return err;
     }
 
-    if (!(wglMakeCurrentGDI(hDC, hGLRC)))
+    AFX_ASSERT(wglMakeCurrentWIN);
+
+    if (!(wglMakeCurrentWIN(hDC, hGLRC)))
     {
-        wglDeleteContextGDI(hGLRC), hGLRC = NIL;
         AfxThrowError();
+        wglDeleteContextWIN(hGLRC), hGLRC = NIL;
     }
 
     if (gl)
     {
+        AFX_ASSERT(hOpengl32Dll);
         wglLoadSymbolsSIG(hOpengl32Dll, 0, sizeof(*gl) / sizeof(gl->ptr), (void**)gl, echo);
     }
     
     if (err)
-        wglDeleteContextGDI(hGLRC), hGLRC = NIL;
+        wglDeleteContextWIN(hGLRC), hGLRC = NIL;
 
     *phGLRC = hGLRC;
 
-    wglMakeCurrentGDI(bkpHdc, bkpGlrc);
+    wglMakeCurrentWIN(bkpHdc, bkpGlrc);
 
     return err;
 }
 
-_ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures)
+_ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures)
 {
     afxError err = NIL;
     afxDrawFeatures features = { 0 };
@@ -2625,7 +2643,7 @@ _ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFe
     *pFeatures = features;
 }
 
-_ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits)
+_ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, afxDrawLimits* pLimits)
 {
     afxError err = NIL;
     GLfloat dataf;

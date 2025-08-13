@@ -29,8 +29,9 @@ ZGL afxError _ZglTexSubImage(glVmt const* gl, GLenum glTarget, avxRasterRegion c
 ZGL afxError _ZglCompressedTexSubImage(glVmt const* gl, GLenum glTarget, avxRasterRegion const* rgn, GLenum glFmt, GLenum glType, afxUnit compressedSiz, afxAddress const src);
 
 
-ZGL afxError DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin);
+ZGL void DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin);
 ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, afxFlags dynamics);
+ZGL afxError _DpuFlushPipelineState(zglDpu* dpu);
 ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature legt, GLuint glHandle);
 ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, afxBool keepBound);
 
@@ -52,11 +53,12 @@ ZGL afxError DpuPackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit op
 ZGL afxError DpuUnpackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit opCnt, avxRasterIo const* ops);
 
 ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterCopy const ops[]);
+ZGL afxError _ZglDpuResolveRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterCopy const ops[]);
+ZGL afxError _ZglDpuBlitRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit opCnt, avxRasterBlit const ops[], avxTexelFilter flt);
 
-ZGL afxError _DpuPresentDout(zglDpu* dpu, afxDrawOutput dout, afxUnit outBufIdx);
+ZGL afxError _DpuPresentDout(zglDpu* dpu, afxSurface dout, afxUnit outBufIdx);
 
-ZGL afxError _ZglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint z);
-ZGL afxError _ZglBindFboAttachmentDirect(glVmt const* gl, GLuint fbo, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint z);
+ZGL afxError _ZglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLuint fbo, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint z, afxBool multilayered);
 
 ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, avxFence const fences[]);
 ZGL afxError _ZglResetFenc(afxUnit cnt, avxFence const fences[]);
@@ -70,6 +72,8 @@ ZGL void DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, avxViewport co
 
 ZGL void _ZglFlushTsChanges(zglDpu* dpu);
 ZGL void _ZglFlushRsChanges(zglDpu* dpu);
+ZGL void _ZglFlushLigatureState(zglDpu* dpu);
+ZGL void _ZglFlushVertexInputState(zglDpu* dpu);
 
 ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area, afxUnit baseLayer, afxUnit layerCnt, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo);
 ZGL void DpuConcludeDrawScope(zglDpu* dpu);
@@ -92,6 +96,8 @@ ZGL void DpuBindSamplers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, a
 ZGL void DpuBindBuffers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, avxBufferedMap const maps[]);
 
 ZGL void DpuPushConstants(zglDpu* dpu, afxUnit32 offset, afxUnit32 siz, void const* data);
+
+ZGL void _DpuPlacePipelineBarrier(zglDpu* dpu, avxPipelineStage dstStage, avxPipelineAccess dstAcc);
 
 ZGL _avxCmdLut const cmdDevmt;
 

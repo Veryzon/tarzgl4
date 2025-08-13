@@ -57,7 +57,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 gl->DeleteBuffers(1, &(glHandle)); _ZglThrowErrorOccuried();
                 buf->glHandle = NIL;
                 glHandle = NIL;
-
+#if 0
                 if (buf->glTexHandle)
                 {
                     AFX_ASSERT(buf->glTarget == GL_TEXTURE_BUFFER);
@@ -65,6 +65,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                     gl->DeleteTextures(1, &buf->glTexHandle); _ZglThrowErrorOccuried();
                     buf->glTexHandle = NIL;
                 }
+#endif
             }
 
             _ZglThrowErrorOccuried();
@@ -78,7 +79,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 {
                     gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
                 }
-                gl->NamedBufferStorage(glHandle, buf->m.size, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
+                gl->NamedBufferStorage(glHandle, buf->m.reqSiz, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
             }
             else
             {
@@ -89,7 +90,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 {
                     gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
                 }
-                gl->BufferStorage(buf->glTarget, buf->m.size, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
+                gl->BufferStorage(buf->glTarget, buf->m.reqSiz, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
                 bound = TRUE;
             }
 
@@ -130,6 +131,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                 }
             }
 
+#if 0
             if (buf->glTarget == GL_TEXTURE_BUFFER)
             {
                 AFX_ASSERT(buf->m.usage & avxBufferUsage_FETCH);
@@ -150,6 +152,7 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
                     gl->BindTexture(GL_TEXTURE_BUFFER, 0); _ZglThrowErrorOccuried();
                 }
             }
+#endif
         }
     }
     return err;
@@ -681,7 +684,7 @@ _ZGL afxError _BufRemapCb(avxBuffer buf, afxUnit offset, afxUnit range, afxFlags
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
     AFX_ASSERT_RANGE(buf->m.cap, offset, range);
 
-    afxDrawSystem dsys = AvxGetBufferContext(buf);
+    afxDrawSystem dsys = AvxGetBufferProvider(buf);
     AFX_ASSERT_OBJECTS(afxFcc_DSYS, 1, &dsys);
 
     afxDrawQueue dque;
@@ -705,7 +708,7 @@ _ZGL afxError _BufRemapCb(avxBuffer buf, afxUnit offset, afxUnit range, afxFlags
             queued = TRUE;
             afxBool wait = !!flags;
 
-            if (wait && AvxWaitForEmptyDrawQueue(dque, AFX_TIME_INFINITE))
+            if (wait && AvxWaitForEmptyDrawQueue(dque, AFX_TIMEOUT_INFINITE))
                 AfxThrowError();
         }
 
@@ -726,7 +729,7 @@ _ZGL afxError _BufRemapCb(avxBuffer buf, afxUnit offset, afxUnit range, afxFlags
             {
                 queued = TRUE;
 
-                if (AvxWaitForEmptyDrawQueue(dque, AFX_TIME_INFINITE))
+                if (AvxWaitForEmptyDrawQueue(dque, AFX_TIMEOUT_INFINITE))
                     AfxThrowError();
 
                 AFX_ASSERT(ptr);
@@ -747,7 +750,7 @@ _ZGL afxError _BufDtorCb(avxBuffer buf)
 {
     afxError err = AFX_ERR_NONE;
 
-    afxDrawSystem dsys = AvxGetBufferContext(buf);
+    afxDrawSystem dsys = AvxGetBufferProvider(buf);
 
     if (buf->m.storage[0].mapRange)
     {
@@ -761,12 +764,13 @@ _ZGL afxError _BufDtorCb(avxBuffer buf)
         buf->glHandle = 0;
     }
 
+#if 0
     if (buf->glTexHandle)
     {
         _ZglDsysEnqueueDeletion(dsys, 0, GL_TEXTURE, (afxSize)buf->glTexHandle);
         buf->glTexHandle = 0;
     }
-
+#endif
     if (_AVX_BUF_CLASS_CONFIG.dtor(buf))
         AfxThrowError();
 
@@ -778,19 +782,21 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
     afxResult err = NIL;
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
 
+    avxBufferInfo const *spec = ((avxBufferInfo const *)args[1]) + invokeNo;
+
     if (_AVX_BUF_CLASS_CONFIG.ctor(buf, args, invokeNo))
     {
         AfxThrowError();
         return err;
     }
 
-    avxBufferInfo const *spec = ((avxBufferInfo const *)args[1]) + invokeNo;
-
     afxDrawSystem dsys = AfxGetProvider(buf);
     buf->bufUniqueId = ++dsys->bufUniqueId;
 
     buf->glHandle = NIL;
+#if 0
     buf->glTexHandle = NIL;
+#endif
     buf->glTarget = NIL;
     buf->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
@@ -812,7 +818,7 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
         buf->glTarget = GL_ARRAY_BUFFER; // behind because any buffer can be bound as vertex source
     else if (usage & avxBufferUsage_QUERY)
         buf->glTarget = GL_QUERY_BUFFER;
-    else if (usage & avxBufferUsage_TENSOR)
+    else if (usage & avxBufferUsage_TENSOR) // pull buffer or drag buffer
         buf->glTarget = GL_TEXTURE_BUFFER;
     else if (usage & avxBufferUsage_FETCH)
         buf->glTarget = GL_TEXTURE_BUFFER;

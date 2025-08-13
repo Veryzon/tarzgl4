@@ -739,7 +739,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         for (afxUnit i = 0; i < vpCnt; i++)
         {
 #ifndef FORCE_SCISSOR_TEST
-            if (nextScisUpdMask & AFX_BIT(i))
+            if (nextScisUpdMask & AFX_BITMASK(i))
 #endif
             {
                 if (first == GL_INVALID_INDEX)
@@ -766,7 +766,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         {
             AFX_ASSERT_RANGE(ZGL_MAX_VIEWPORTS, i, 1);
 
-            if (AfxTestBitEnabled(updMask, i))
+            if (AFX_TEST_BIT_SET(updMask, i))
             {
                 v[i][0] = dpu->nextRs.scisRects[i].origin[0],
                 v[i][1] = dpu->nextRs.scisRects[i].origin[1],
@@ -796,19 +796,21 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
     afxBool blendUsed = FALSE;
     afxBool blendConstantsUsed = FALSE;
-    afxUnit nextOutCnt = dpu->outCnt;
+    afxUnit outCnt = dpu->nextOutCnt;
+    dpu->outCnt = outCnt;
 
-    for (afxUnit i = 0; i < nextOutCnt; i++)
+    for (afxUnit i = 0; i < outCnt; i++)
     {
-        avxColorOutput const* nextOut = &dpu->nextOuts[i];
+        avxColorOutput const* nco = &dpu->nextOuts[i];
+        avxColorOutput* co = &dpu->outs[i];
         //AvxGetColorOutputs(ras, 0, outCnt, ch);
 
 #ifndef _ZGL_DBG_IGNORE_BLEND
 
-        if (nextOut->blendEnabled != dpu->outs[i].blendEnabled)
-            dpu->outs[i].blendEnabled = nextOut->blendEnabled;
+        if (co->blendEnabled != nco->blendEnabled)
+            co->blendEnabled = nco->blendEnabled;
 
-        if (nextOut->blendEnabled)
+        if (nco->blendEnabled)
         {
             if (!blendUsed)
             {
@@ -825,8 +827,8 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
             }
 
 #ifndef FORCE_BLEND_EQUATION
-            if ((nextOut->blendConfig.rgbBlendOp != dpu->outs[i].blendConfig.rgbBlendOp) ||
-                (nextOut->blendConfig.aBlendOp != dpu->outs[i].blendConfig.aBlendOp))
+            if ((nco->blendConfig.rgbBlendOp != co->blendConfig.rgbBlendOp) ||
+                (nco->blendConfig.aBlendOp != co->blendConfig.aBlendOp))
 #endif
             {
                 /*
@@ -839,17 +841,17 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                     The blend equations use the source and destination blend factors specified by either glBlendFunc or glBlendFuncSeparate.
                     See glBlendFunc or glBlendFuncSeparate for a description of the various blend factors.
                 */
-                gl->BlendEquationSeparatei(i,   AfxToGlBlendOp(nextOut->blendConfig.rgbBlendOp),
-                                                AfxToGlBlendOp(nextOut->blendConfig.aBlendOp)); _ZglThrowErrorOccuried();
+                gl->BlendEquationSeparatei(i,   AfxToGlBlendOp(nco->blendConfig.rgbBlendOp),
+                                                AfxToGlBlendOp(nco->blendConfig.aBlendOp)); _ZglThrowErrorOccuried();
 
-                dpu->outs[i].blendConfig.rgbBlendOp = nextOut->blendConfig.rgbBlendOp;
-                dpu->outs[i].blendConfig.aBlendOp = nextOut->blendConfig.aBlendOp;
+                co->blendConfig.rgbBlendOp = nco->blendConfig.rgbBlendOp;
+                co->blendConfig.aBlendOp = nco->blendConfig.aBlendOp;
             }
 #ifndef FORCE_BLEND_FUNC
-            if ((nextOut->blendConfig.rgbSrcFactor != dpu->outs[i].blendConfig.rgbSrcFactor) ||
-                (nextOut->blendConfig.rgbDstFactor != dpu->outs[i].blendConfig.rgbDstFactor) ||
-                (nextOut->blendConfig.aSrcFactor != dpu->outs[i].blendConfig.aSrcFactor) ||
-                (nextOut->blendConfig.aDstFactor != dpu->outs[i].blendConfig.aDstFactor))
+            if ((nco->blendConfig.rgbSrcFactor != co->blendConfig.rgbSrcFactor) ||
+                (nco->blendConfig.rgbDstFactor != co->blendConfig.rgbDstFactor) ||
+                (nco->blendConfig.aSrcFactor != co->blendConfig.aSrcFactor) ||
+                (nco->blendConfig.aDstFactor != co->blendConfig.aDstFactor))
 #endif
             {
                 /*
@@ -864,28 +866,28 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
                     Likewise, srcAlpha specifies which method is used to scale the source alpha color component, and dstAlpha specifies which method is used to scale the destination alpha component.
                     The possible methods are described in the following table. Each method defines four scale factors, one each for red, green, blue, and alpha.
                 */
-                gl->BlendFuncSeparatei(i,   AfxToGlBlendFactor(nextOut->blendConfig.rgbSrcFactor),
-                                            AfxToGlBlendFactor(nextOut->blendConfig.rgbDstFactor),
-                                            AfxToGlBlendFactor(nextOut->blendConfig.aSrcFactor),
-                                            AfxToGlBlendFactor(nextOut->blendConfig.aDstFactor)); _ZglThrowErrorOccuried();
+                gl->BlendFuncSeparatei(i,   AfxToGlBlendFactor(nco->blendConfig.rgbSrcFactor),
+                                            AfxToGlBlendFactor(nco->blendConfig.rgbDstFactor),
+                                            AfxToGlBlendFactor(nco->blendConfig.aSrcFactor),
+                                            AfxToGlBlendFactor(nco->blendConfig.aDstFactor)); _ZglThrowErrorOccuried();
 
-                dpu->outs[i].blendConfig.rgbSrcFactor = nextOut->blendConfig.rgbSrcFactor;
-                dpu->outs[i].blendConfig.rgbDstFactor = nextOut->blendConfig.rgbDstFactor;
-                dpu->outs[i].blendConfig.aSrcFactor = nextOut->blendConfig.aSrcFactor;
-                dpu->outs[i].blendConfig.aDstFactor = nextOut->blendConfig.aDstFactor;
+                co->blendConfig.rgbSrcFactor = nco->blendConfig.rgbSrcFactor;
+                co->blendConfig.rgbDstFactor = nco->blendConfig.rgbDstFactor;
+                co->blendConfig.aSrcFactor = nco->blendConfig.aSrcFactor;
+                co->blendConfig.aDstFactor = nco->blendConfig.aDstFactor;
             }
 
             // do it at pipeline binding?
             if (!blendConstantsUsed)
             {
-                if ((nextOut->blendConfig.aDstFactor == avxBlendFactor_CONST_A) ||
-                    (nextOut->blendConfig.aSrcFactor == avxBlendFactor_CONST_A) ||
-                    (nextOut->blendConfig.rgbDstFactor == avxBlendFactor_CONST_RGB) ||
-                    (nextOut->blendConfig.rgbSrcFactor == avxBlendFactor_CONST_RGB) ||
-                    (nextOut->blendConfig.aDstFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
-                    (nextOut->blendConfig.aSrcFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
-                    (nextOut->blendConfig.rgbDstFactor == avxBlendFactor_ONE_MINUS_CONST_RGB) ||
-                    (nextOut->blendConfig.rgbSrcFactor == avxBlendFactor_ONE_MINUS_CONST_RGB))
+                if ((nco->blendConfig.aDstFactor == avxBlendFactor_CONST_A) ||
+                    (nco->blendConfig.aSrcFactor == avxBlendFactor_CONST_A) ||
+                    (nco->blendConfig.rgbDstFactor == avxBlendFactor_CONST_RGB) ||
+                    (nco->blendConfig.rgbSrcFactor == avxBlendFactor_CONST_RGB) ||
+                    (nco->blendConfig.aDstFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
+                    (nco->blendConfig.aSrcFactor == avxBlendFactor_ONE_MINUS_CONST_A) ||
+                    (nco->blendConfig.rgbDstFactor == avxBlendFactor_ONE_MINUS_CONST_RGB) ||
+                    (nco->blendConfig.rgbSrcFactor == avxBlendFactor_ONE_MINUS_CONST_RGB))
                 {
                     blendConstantsUsed = TRUE;
                 }
@@ -900,7 +902,7 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
         // The color write mask operation is applied only if Color Write Enable is enabled for the respective attachment. 
         // Otherwise the color write mask is ignored and writes to all components of the attachment are disabled.
 #ifndef FORCE_COLOR_WRITE_MASK
-        if (nextOut->discardMask != dpu->outs[i].discardMask)
+        if (nco->discardMask != co->discardMask)
 #endif
         {
 #if 0
@@ -916,11 +918,11 @@ _ZGL void _ZglFlushRsChanges(zglDpu* dpu)
 
                     Changes to individual bits of components cannot be controlled. Rather, changes are either enabled or disabled for entire color components.
                 */
-                gl->ColorMaski(i,   (nextOut->discardMask & avxColorMask_R) != avxColorMask_R,
-                                    (nextOut->discardMask & avxColorMask_G) != avxColorMask_G,
-                                    (nextOut->discardMask & avxColorMask_B) != avxColorMask_B,
-                                    (nextOut->discardMask & avxColorMask_A) != avxColorMask_A); _ZglThrowErrorOccuried();
-                dpu->outs[i].discardMask = nextOut->discardMask;
+                gl->ColorMaski(i,   (nco->discardMask & avxColorMask_R) != avxColorMask_R,
+                                    (nco->discardMask & avxColorMask_G) != avxColorMask_G,
+                                    (nco->discardMask & avxColorMask_B) != avxColorMask_B,
+                                    (nco->discardMask & avxColorMask_A) != avxColorMask_A); _ZglThrowErrorOccuried();
+                co->discardMask = nco->discardMask;
             }
         }
 #endif

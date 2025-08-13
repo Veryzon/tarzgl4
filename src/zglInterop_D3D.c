@@ -313,9 +313,9 @@ int main1()
 #endif
 
 
-ZGL afxError checkForResizeDxgi(zglDpu* dpu, afxDrawOutput dout);
+ZGL afxError checkForResizeDxgi(zglDpu* dpu, afxSurface dout);
 
-_ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxDrawOutput dout, afxBool locked)
+_ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxSurface dout, afxBool locked)
 {
     afxError err = AFX_ERR_NONE;
     afxDrawDevice ddev = AfxGetProvider(dout);
@@ -350,7 +350,7 @@ _ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxDrawOutput dout, afxBool lock
     return err;
 }
 
-_ZGL afxError swapDxgi(zglDpu* dpu, afxDrawOutput dout)
+_ZGL afxError swapDxgi(zglDpu* dpu, afxSurface dout)
 {
     afxError err;
     glVmt const* gl = dpu->gl;
@@ -369,7 +369,7 @@ _ZGL afxError swapDxgi(zglDpu* dpu, afxDrawOutput dout)
     return checkForResizeDxgi(dpu, dout);
 }
 
-_ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* rc)
+_ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxSurface dout, afxRect const* rc)
 {
     afxError err;
     glVmt const* gl = dpu->gl;
@@ -387,7 +387,7 @@ _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* 
     }
     else
     {
-        RECT rect = { (LONG)(rc->x), (LONG)(dout->m.extent.h - rc->y - rc->h), (LONG)(rc->x + rc->w), (LONG)(dout->m.extent.h - rc->y) };
+        RECT rect = { (LONG)(rc->x), (LONG)(dout->m.ccfg.whd.h - rc->y - rc->h), (LONG)(rc->x + rc->w), (LONG)(dout->m.ccfg.whd.h - rc->y) };
         DXGI_PRESENT_PARAMETERS params = { 1, &rect, NIL, NIL };
         result = IDXGISwapChain1_Present1(dout->dxgi.mSwapChain1, dout->dxgi.mSwapInterval, 0, &params);
     }
@@ -402,7 +402,7 @@ _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxDrawOutput dout, afxRect const* 
     return checkForResizeDxgi(dpu, dout);
 }
 
-_ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, avxRaster texture, GLint buffer)
+_ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxSurface dout, avxRaster texture, GLint buffer)
 {
     afxError err;
     afxDrawDevice ddev = AfxGetProvider(dout);
@@ -440,9 +440,9 @@ _ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxDrawOutput dout, avxRaster textur
     return err;
 }
 
-_ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout);
+_ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxSurface dout);
 
-_ZGL afxError checkForResizeDxgi(zglDpu* dpu, afxDrawOutput dout)
+_ZGL afxError checkForResizeDxgi(zglDpu* dpu, afxSurface dout)
 {
     afxError err = NIL;
 
@@ -501,7 +501,7 @@ _ZGL IDXGIFactory *GetDXGIFactoryFromDevice(ID3D11Device *device)
     return dxgiFactory;
 }
 
-_ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
+_ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxSurface dout)
 {
     afxError err = NIL;
     glVmt const* gl = dpu->gl;
@@ -541,8 +541,8 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
             DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
             swapChainDesc.BufferCount = 1;
             swapChainDesc.Format = dout->dxgi.mSwapChainFormat;
-            swapChainDesc.Width = (UINT)(dout->m.extent.w);
-            swapChainDesc.Height = (UINT)(dout->m.extent.h);
+            swapChainDesc.Width = (UINT)(dout->m.ccfg.whd.w);
+            swapChainDesc.Height = (UINT)(dout->m.ccfg.whd.h);
             swapChainDesc.Format = dout->dxgi.mSwapChainFormat;
             swapChainDesc.Stereo = FALSE;
             swapChainDesc.SampleDesc.Count = 1;
@@ -570,8 +570,8 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxDrawOutput dout)
             DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
             swapChainDesc.BufferCount = 1;
             swapChainDesc.BufferDesc.Format = dout->dxgi.mSwapChainFormat;
-            swapChainDesc.BufferDesc.Width = (UINT)(dout->m.extent.w);
-            swapChainDesc.BufferDesc.Height = (UINT)(dout->m.extent.h);
+            swapChainDesc.BufferDesc.Width = (UINT)(dout->m.ccfg.whd.w);
+            swapChainDesc.BufferDesc.Height = (UINT)(dout->m.ccfg.whd.h);
             swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
             swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
             swapChainDesc.BufferDesc.RefreshRate.Numerator = 0;

@@ -20,6 +20,57 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 //#define WIN32_LEAN_AND_MEAN 1
 
+#include "afx/src/draw/ddi/avxImplementation.h"
+#include "qwadro/inc/afxQwadro.h"
+
+#ifndef AVX_DRV_SRC
+#   ifdef _DEBUG
+#       define ZGL DLLIMPORT extern 
+#       define ZGLINL DLLIMPORT EMBED
+#   else
+#       define ZGL DLLIMPORT extern 
+#       define ZGLINL DLLIMPORT EMBED
+#   endif
+#   define _ZGL ZGL
+#   define _ZGLINL ZGLINL
+#else
+#   ifdef _DEBUG
+#       define _ZGL DLLEXPORT
+#       define ZGL DLLEXPORT extern 
+#       define _ZGLINL DLLEXPORT INLINE
+#       define ZGLINL DLLEXPORT EMBED
+#   else
+#       define _ZGL DLLEXPORT
+#       define ZGL DLLEXPORT extern 
+#       define _ZGLINL DLLEXPORT INLINE
+#       define ZGLINL DLLEXPORT EMBED
+#   endif
+#endif
+
+//#include "../dep/gl/_glcorearb.h"
+//#include "../dep/gl/_wglext.h"
+
+#define Assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
+#define AssertHR(hr) Assert(SUCCEEDED(hr))
+
+#ifndef GLAPI
+#if defined(EXPORT_GL_SYMBOLS)
+#define GLAPI DLLEXPORT  
+#else
+#define GLAPI DLLEXPORT extern 
+#endif
+#endif
+
+#define GLAD_API_CALL ZGL
+//#define GLAD_API_CALL_EXPORT 1
+//#define GLAD_API_CALL_EXPORT_BUILD 1
+
+//#include <gl/GL.h>
+//#include "../dep/gl/glad.h"
+//#include "../dep/gl/glad_wgl.h"
+
+#include "../dep/gl/wgl.h"
+
 #define COBJMACROS
 #define INITGUID
 #include <intrin.h>
@@ -46,53 +97,6 @@
 #include <shellapi.h>
 #include <assert.h>
 
-#include "afx/src/draw/impl/avxImplementation.h"
-#include "qwadro/inc/afxQwadro.h"
-
-//#include "../dep/gl/_glcorearb.h"
-//#include "../dep/gl/_wglext.h"
-
-#define Assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
-#define AssertHR(hr) Assert(SUCCEEDED(hr))
-
-#ifndef GLAPI
-#if defined(EXPORT_GL_SYMBOLS)
-#define GLAPI DLLEXPORT  
-#else
-#define GLAPI DLLEXPORT extern 
-#endif
-#endif
-
-//#include <gl/GL.h>
-//#include "../dep/gl/glad.h"
-//#include "../dep/gl/glad_wgl.h"
-
-#include "../dep/gl/wgl.h"
-
-#ifndef AVX_DRV_SRC
-#   ifdef _DEBUG
-#       define ZGL DLLIMPORT extern 
-#       define ZGLINL DLLIMPORT EMBED
-#   else
-#       define ZGL DLLIMPORT extern 
-#       define ZGLINL DLLIMPORT EMBED
-#   endif
-#   define _ZGL ZGL
-#   define _ZGLINL ZGLINL
-#else
-#   ifdef _DEBUG
-#       define _ZGL DLLEXPORT
-#       define ZGL DLLEXPORT extern 
-#       define _ZGLINL DLLEXPORT INLINE
-#       define ZGLINL DLLEXPORT EMBED
-#   else
-#       define _ZGL DLLEXPORT
-#       define ZGL DLLEXPORT extern 
-#       define _ZGLINL DLLEXPORT INLINE
-#       define ZGLINL DLLEXPORT EMBED
-#   endif
-#endif
-
 #if 0
 ZGL HMODULE opengl32;
 #if !0
@@ -112,21 +116,21 @@ ZGL BOOL(WINAPI* _wglSwapBuffers)(HDC);
 #endif
 
 
-ZGL BOOL(WINAPI*wglCopyContextGDI)(HGLRC, HGLRC, UINT);
-ZGL HGLRC(WINAPI*wglCreateContextGDI)(HDC);
-ZGL HGLRC(WINAPI*wglCreateLayerContextGDI)(HDC, int);
-ZGL BOOL(WINAPI*wglDeleteContextGDI)(HGLRC);
-ZGL HGLRC(WINAPI*wglGetCurrentContextGDI)(VOID);
-ZGL HDC(WINAPI*wglGetCurrentDCGDI)(VOID);
-ZGL PROC(WINAPI*wglGetProcAddressGDI)(LPCSTR);
-ZGL BOOL(WINAPI*wglMakeCurrentGDI)(HDC, HGLRC);
-ZGL BOOL(WINAPI*wglSwapBuffersGDI)(HDC);
-ZGL BOOL(WINAPI*wglSwapLayerBuffersGDI)(HDC, UINT);
+ZGL BOOL(WINAPI*wglCopyContextWIN)(HGLRC, HGLRC, UINT);
+ZGL HGLRC(WINAPI*wglCreateContextWIN)(HDC);
+ZGL HGLRC(WINAPI*wglCreateLayerContextWIN)(HDC, int);
+ZGL BOOL(WINAPI*wglDeleteContextWIN)(HGLRC);
+ZGL HGLRC(WINAPI*wglGetCurrentContextWIN)(VOID);
+ZGL HDC(WINAPI*wglGetCurrentDCWIN)(VOID);
+ZGL PROC(WINAPI*wglGetProcAddressWIN)(LPCSTR);
+ZGL BOOL(WINAPI*wglMakeCurrentWIN)(HDC, HGLRC);
+ZGL BOOL(WINAPI*wglSwapBuffersWIN)(HDC);
+ZGL BOOL(WINAPI*wglSwapLayerBuffersWIN)(HDC, UINT);
 
-ZGL int(WINAPI*wglChoosePixelFormatGDI)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
-ZGL int(WINAPI*wglDescribePixelFormatGDI)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
-ZGL BOOL(WINAPI*wglSetPixelFormatGDI)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
-ZGL int(WINAPI*wglGetPixelFormatGDI)(HDC hdc);
+ZGL int(WINAPI*wglChoosePixelFormatWIN)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
+ZGL int(WINAPI*wglDescribePixelFormatWIN)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+ZGL BOOL(WINAPI*wglSetPixelFormatWIN)(HDC hdc, int format, CONST PIXELFORMATDESCRIPTOR * ppfd); // "wglSetPixelFormat" funciona com Intel mas não com AMD.
+ZGL int(WINAPI*wglGetPixelFormatWIN)(HDC hdc);
 
 // ARB/EXT
 #if 0
@@ -971,8 +975,8 @@ typedef union wglVmt
 
 ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
-ZGL void ZglDetectDeviceFeatures(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
-ZGL void ZglDetectDeviceLimits(glVmt const* gl, afxDrawLimits* pLimits);
+ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
+ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, afxDrawLimits* pLimits);
 
 //ZGL wglVmt wgl;
 
