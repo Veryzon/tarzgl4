@@ -114,7 +114,8 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
     {
         dpu->nextVpUpdMask = NIL;
 
-        afxUnit vpCnt = dpu->activePip->m.vpCnt;
+        afxUnit vpCnt = dpu->nextVpCnt;
+        dpu->vpCnt = vpCnt;
         AFX_ASSERT(vpCnt);
 
 #if FORCE_GL_GENERIC_FUNCS
@@ -126,7 +127,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
         for (afxUnit i = 0; i < vpCnt; i++)
         {
-            if (nextVpUpdMask & AFX_BIT(i))
+            if (nextVpUpdMask & AFX_BITMASK(i))
             {
                 if (first == GL_INVALID_INDEX)
                     first = i;
@@ -176,7 +177,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 
             for (afxUnit i = 0; i < ZGL_MAX_VIEWPORTS; i++)
             {
-                if (AfxTestBitEnabled(updMask, i))
+                if (AFX_TEST_BIT_SET(updMask, i))
                 {
                     if (gl->ViewportArrayv)
                     {
@@ -284,6 +285,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
         dpu->depthClampEnabled = nextDepthClampEnabled;
     }
 #endif
+
 }
 
 _ZGL void DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, avxViewport const vp[])
@@ -295,61 +297,6 @@ _ZGL void DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, avxViewport c
     {
         afxUnit vpIdx = first + i;
         dpu->nextVps[vpIdx] = vp[i];
-        dpu->nextVpUpdMask |= AFX_BIT(vpIdx);
+        dpu->nextVpUpdMask |= AFX_BITMASK(vpIdx);
     }
-}
-
-_ZGL void DpuBindVertexBuffers(zglDpu* dpu, afxUnit first, afxUnit cnt, avxBufferedStream const src[])
-{
-    /*
-        The values taken from elements i of pBuffers and pOffsets replace the current state for the vertex input binding firstBinding + i, for i in[0, bindingCount).
-        The vertex input binding is updated to start at the offset indicated by pOffsets[i] from the start of the buffer pBuffers[i].
-        If pSizes is not NULL then pSizes[i] specifies the bound size of the vertex buffer starting from the corresponding elements of pBuffers[i] plus pOffsets[i].
-        All vertex input attributes that use each of these bindings will use these updated addresses in their address calculations for subsequent drawing commands.
-        If the nullDescriptor feature is enabled, elements of pBuffers can be VK_NULL_HANDLE, and can be used by the vertex shader.
-        If a vertex input attribute is bound to a vertex input binding that is VK_NULL_HANDLE, the values taken from memory are considered to be zero, and missing G, B, or A components are filled with(0, 0, 1).
-
-        This command also dynamically sets the byte strides between consecutive elements within buffer pBuffers[i] to the corresponding pStrides[i] value when drawing using shader objects, or when the graphics pipeline is created with VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE set in VkPipelineDynamicStateCreateInfo::pDynamicStates.Otherwise, strides are specified by the VkVertexInputBindingDescription::stride values used to create the currently active pipeline.
-
-        If drawing using shader objects or if the bound pipeline state object was also created with the VK_DYNAMIC_STATE_VERTEX_INPUT_EXT dynamic state enabled then vkCmdSetVertexInputEXT can be used instead of vkCmdBindVertexBuffers2 to set the stride.
-    */
-
-    afxError err = AFX_ERR_NONE;
-    glVmt const* gl = dpu->gl;
-
-    AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, first, cnt);
-
-    // deferred because it requires the vertex input info.
-
-    for (afxUnit i = 0; i < cnt; i++)
-    {
-        avxBufferedStream const* info = &src[i];
-        
-        avxBuffer buf = info->buf;
-        afxUnit32 offset = info->offset;
-        afxUnit32 range = info->range;
-        afxUnit32 stride = info->stride;
-
-        afxUnit bindingIdx = first + i;
-        AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
-
-        dpu->nextVinBindings.sources[bindingIdx].buf = buf;
-        dpu->nextVinBindings.sources[bindingIdx].offset = buf ? AFX_MIN(offset, AvxGetBufferCapacity(buf, 0) - 1) : offset;
-        dpu->nextVinBindings.sources[bindingIdx].range = !range && buf ? AvxGetBufferCapacity(buf, 0) - offset : range;
-        dpu->nextVinBindings.sources[bindingIdx].stride = stride;
-        dpu->nextVinBindings.sourcesUpdMask |= AFX_BIT(bindingIdx);
-    }
-}
-
-_ZGL void DpuBindIndexBuffer(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit32 range, afxUnit32 stride)
-{
-    afxError err = AFX_ERR_NONE;
-
-    // deferred because it requires the vertex input info.
-
-    dpu->nextVinBindings.idxSrcBuf = buf;
-    dpu->nextVinBindings.idxSrcOff = offset;
-    dpu->nextVinBindings.idxSrcRange = range;
-    dpu->nextVinBindings.idxSrcSiz = stride;
-    dpu->nextVinBindings.iboUpdReq = TRUE;
 }

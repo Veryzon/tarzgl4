@@ -59,7 +59,8 @@ AFX_OBJECT(avxQueryPool)
 AFX_OBJECT(avxLigature)
 {
     AFX_OBJECT(_avxLigature) m;
-    int a;
+    GLuint  texBufGlHandle[ZGL_MAX_VAO_HANDLES][8];
+    afxUnit tboCnt;
 };
 
 AFX_OBJECT(avxShader)
@@ -104,7 +105,7 @@ AFX_OBJECT(avxBuffer)
     afxUnit bufUniqueId;
     zglUpdateFlags  updFlags;
     afxUnit          glHandle;
-    afxUnit          glTexHandle; // if GL_TEXTURE_BUFFER, it would be a GL texture handle used to bind the buffer.
+    //afxUnit          glTexHandle; // if GL_TEXTURE_BUFFER, it would be a GL texture handle used to bind the buffer.
     // Since Vulkan doesn't share OpenGL's notion that this is some kind of texture, the descriptor's data is a VkBufferView, not a VkImage or VkImageView. Specifically, VkWriteDescriptorSet::pTexelBufferView.
     GLenum          glTexIntFmt;
     GLenum          glTarget;
