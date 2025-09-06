@@ -38,6 +38,8 @@ _ZGL void DpuBindBuffers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, a
         afxUnit32 offset = map->offset;
         afxUnit32 range = map->range;
 
+        AFX_TRY_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+
         dpu->nextLs[set][entryIdx].buf = buf;
         dpu->nextLs[set][entryIdx].offset = offset;
         dpu->nextLs[set][entryIdx].range = range;
@@ -57,6 +59,7 @@ _ZGL void DpuBindRasters(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, a
     {
         afxUnit entryIdx = first + i;
         avxRaster ras = rasters[i];
+        AFX_TRY_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
         dpu->nextLs[set][entryIdx].ras = ras;
         dpu->nextLsUpdMask[set] |= AFX_BITMASK(entryIdx);
     }
@@ -74,6 +77,7 @@ _ZGL void DpuBindSamplers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, 
     {
         afxUnit entryIdx = first + i;
         avxSampler smp = samplers[i];
+        AFX_TRY_ASSERT_OBJECTS(afxFcc_SAMP, 1, &smp);
         dpu->nextLs[set][entryIdx].smp = smp;
         dpu->nextLsUpdMask[set] |= AFX_BITMASK(entryIdx);
     }
@@ -83,14 +87,15 @@ _ZGL void DpuUnbindSamplers(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
     
-    // Samplers are bound to GL program. So we must unbind them to provoke rebinding on next program binding.
+    // Samplers are bound to GL program. 
+    // So we must unbind them to provoke rebinding on next program binding.
 
     avxLigature liga;
     if (!(liga = dpu->activeLiga))
         return;
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);
 
-    _avxLigatureSet* sets = liga->m.sets;
+    _avxLigamentSet* sets = liga->m.sets;
     _avxLigament* totalEntries = liga->m.totalEntries;
     for (afxUnit i = 0; i < liga->m.setCnt; i++)
     {
@@ -117,10 +122,11 @@ _ZGL void DpuPushConstants(zglDpu* dpu, afxUnit32 offset, afxUnit32 siz, void co
 
     // copy right into mapped memory.
     // Copy or just hold the pointer to data in command buffer?
-    AfxCopy(&dpu->pushConstMappedMem[offset], data, siz);
-    dpu->shouldPushConsts = TRUE;
-    dpu->shouldPushConstRange = (dpu->shouldPushConstBase + dpu->shouldPushConstRange) > (offset + siz) ? dpu->shouldPushConstRange : siz;
-    dpu->shouldPushConstBase = AFX_MIN(dpu->shouldPushConstBase, offset);
+    afxUnit pushSetIdx = dpu->dpuIterIdx % _ZGL_PUSH_SET_POP;
+    AfxCopy(&dpu->pushSets[pushSetIdx].pushConstMappedMem[offset], data, siz);
+    dpu->pushSets[pushSetIdx].shouldPushConsts = TRUE;
+    dpu->pushSets[pushSetIdx].shouldPushConstRange = (dpu->pushSets[pushSetIdx].shouldPushConstBase + dpu->pushSets[pushSetIdx].shouldPushConstRange) > (offset + siz) ? dpu->pushSets[pushSetIdx].shouldPushConstRange : siz;
+    dpu->pushSets[pushSetIdx].shouldPushConstBase = AFX_MIN(dpu->pushSets[pushSetIdx].shouldPushConstBase, offset);
 }
 
 _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
@@ -174,6 +180,8 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                 The unit number is stored in the program, but the texture bound to that unit is global.
     */
 
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
+
     avxLigature liga = dpu->nextLiga;
     if (liga != dpu->activeLiga)
     {
@@ -197,24 +205,26 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
 #endif
             )
         {
+            afxUnit pushSetIdx = dpu->dpuIterIdx % _ZGL_PUSH_SET_POP;
+
             if (gl->FlushMappedNamedBufferRange)
             {
-                gl->FlushMappedNamedBufferRange(dpu->pushConstUbo, dpu->shouldPushConstBase, dpu->shouldPushConstRange); _ZglThrowErrorOccuried();
+                gl->FlushMappedNamedBufferRange(dpu->pushSets[pushSetIdx].pushConstUbo, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
             }
             else
             {
-                gl->BindBuffer(GL_COPY_WRITE_BUFFER, dpu->pushConstUbo); _ZglThrowErrorOccuried();
-                gl->FlushMappedBufferRange(GL_COPY_WRITE_BUFFER, dpu->shouldPushConstBase, dpu->shouldPushConstRange); _ZglThrowErrorOccuried();
+                gl->BindBuffer(GL_COPY_WRITE_BUFFER, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
+                gl->FlushMappedBufferRange(GL_COPY_WRITE_BUFFER, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
             }
-            dpu->shouldPushConstBase = 0;
-            dpu->shouldPushConstRange = 0;
-            dpu->shouldPushConsts = FALSE;
+            dpu->pushSets[pushSetIdx].shouldPushConstBase = 0;
+            dpu->pushSets[pushSetIdx].shouldPushConstRange = 0;
+            dpu->pushSets[pushSetIdx].shouldPushConsts = FALSE;
         }
 #endif//COHERENT_PUSHABLES
 
         // BIND RESOURCES (TEXTURES, SAMPLERS AND BUFFERS)
 
-        _avxLigatureSet* sets = liga->m.sets;
+        _avxLigamentSet* sets = liga->m.sets;
         _avxLigament* totalEntries = liga->m.totalEntries;
         for (afxUnit i = 0; i < liga->m.setCnt; i++)
         {
@@ -293,6 +303,17 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                         }
                         else
                         {
+                            AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+                            if (entry->type == avxShaderParam_UNIFORM)
+                            {
+                                AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_UNIFORM) == avxBufferUsage_UNIFORM);
+                            }
+                            else if (entry->type == avxShaderParam_STORAGE)
+                            {
+                                AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_STORAGE) == avxBufferUsage_STORAGE);
+                            }
+                            else AfxThrowError();
+
                             DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE);
                             bufSiz = AvxGetBufferCapacity(buf, 0);
 
@@ -377,6 +398,9 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                             }
                             else
                             {
+                                AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+                                AFX_ASSERT(AvxGetRasterUsage(ras, avxRasterUsage_TEXTURE) == avxRasterUsage_TEXTURE);
+
                                 if (gl->BindTextureUnit)
                                 {
                                     DpuBindAndSyncRas(dpu, glUnit, ras, FALSE);
@@ -404,6 +428,7 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                             }
                             else
                             {
+                                AFX_ASSERT_OBJECTS(afxFcc_SAMP, 1, &samp);
                                 _DpuBindAndSyncSamp(dpu, glUnit, samp);
                                 gl->BindSampler(glUnit, samp->glHandle); _ZglThrowErrorOccuried();
                             }
@@ -445,7 +470,10 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                         }
                         else
                         {
-                            gl->BindImageTexture(glUnit, ras->glHandle, ras->m.baseLod, (ras->m.whd.d > 1), ras->m.baseLayer, GL_READ_WRITE, ras->glIntFmt); _ZglThrowErrorOccuried();
+                            AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+                            AFX_ASSERT(AvxGetRasterUsage(ras, avxRasterUsage_STORAGE) == avxRasterUsage_STORAGE);
+
+                            gl->BindImageTexture(glUnit, ras->glHandle, ras->m.baseMip, (ras->m.whd.d > 1), ras->m.baseLayer, GL_READ_WRITE, ras->glIntFmt); _ZglThrowErrorOccuried();
                         }
                     }
                     break;
@@ -484,7 +512,7 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                     if (rebind)
 #endif
                     {
-                        GLuint glFixedTboHandle = liga->texBufGlHandle[dpu->m.exuIdx][resIdx];
+                        GLuint glFixedTboHandle = liga->perDpu[dpu->m.exuIdx][psoHandleIdx].texBufGlHandle[resIdx];
 
                         if (!buf)
                         {
@@ -510,14 +538,19 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                         }
                         else
                         {
+                            AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+
                             if (entry->type == avxShaderParam_TSBO)
                             {
+                                AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_TENSOR) == avxBufferUsage_TENSOR);
                                 DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE);
                                 AFX_ASSERT(gl->BindImageTexture);
                                 gl->BindImageTexture(glUnit, buf->glHandle, 0, FALSE, 0, GL_READ_WRITE, buf->glTexIntFmt);
                             }
                             else
                             {
+                                AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_FETCH) == avxBufferUsage_FETCH);
+
                                 if (gl->BindTextureUnit)
                                 {
                                     DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE);
@@ -693,7 +726,9 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);
     glVmt const* gl = dpu->gl;
     AFX_ASSERT(glHandle);
-    
+
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
+
     afxString32 tmp;
     AfxMakeString32(&tmp, 0);
     afxChar const *rawName = (void const *)AfxGetStringStorage(&tmp.s, 0);
@@ -706,7 +741,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
 
         if (unifBlckIdx != GL_INVALID_INDEX)
         {
-            gl->UniformBlockBinding(glHandle, unifBlckIdx, dpu->pushConstUboIdx); _ZglThrowErrorOccuried();
+            gl->UniformBlockBinding(glHandle, unifBlckIdx, dpu->activePushUboReservedBindPoint); _ZglThrowErrorOccuried();
         }
         else
         {
@@ -716,7 +751,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
     }
 
     afxUnit setCnt = liga->m.setCnt;
-    _avxLigatureSet* sets = liga->m.sets;
+    _avxLigamentSet* sets = liga->m.sets;
     for (afxUnit i = 0; i < setCnt; i++)
     {
         afxUnit set = liga->m.sets[i].set;
@@ -838,13 +873,13 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
 
                 if (gl->CreateTextures && gl->TextureBuffer)
                 {
-                    gl->CreateTextures(GL_TEXTURE_BUFFER, 1, &liga->texBufGlHandle[dpu->m.exuIdx][baseEntry + j]); _ZglThrowErrorOccuried();
+                    gl->CreateTextures(GL_TEXTURE_BUFFER, 1, &liga->perDpu[dpu->m.exuIdx][psoHandleIdx].texBufGlHandle[baseEntry + j]); _ZglThrowErrorOccuried();
                 }
                 else
                 {
                     gl->ActiveTexture(GL_TEXTURE0 + ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT); _ZglThrowErrorOccuried();
-                    gl->GenTextures(1, &liga->texBufGlHandle[dpu->m.exuIdx][baseEntry + j]); _ZglThrowErrorOccuried();
-                    gl->BindTexture(GL_TEXTURE_BUFFER, liga->texBufGlHandle[dpu->m.exuIdx][baseEntry + j]); _ZglThrowErrorOccuried();
+                    gl->GenTextures(1, &liga->perDpu[dpu->m.exuIdx][psoHandleIdx].texBufGlHandle[baseEntry + j]); _ZglThrowErrorOccuried();
+                    gl->BindTexture(GL_TEXTURE_BUFFER, liga->perDpu[dpu->m.exuIdx][psoHandleIdx].texBufGlHandle[baseEntry + j]); _ZglThrowErrorOccuried();
                     gl->BindTexture(GL_TEXTURE_BUFFER, 0); _ZglThrowErrorOccuried();
                 }
                 break;
@@ -865,7 +900,7 @@ _ZGL afxError _ZglLigaDtor(avxLigature liga)
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);
 
-    afxDrawSystem dsys = AfxGetProvider(liga);
+    afxDrawSystem dsys = AvxGetLigatureHost(liga);
 
     for (afxUnit i = 0; i < liga->m.totalEntryCnt; i++)
     {
@@ -876,12 +911,15 @@ _ZGL afxError _ZglLigaDtor(avxLigature liga)
         {
             for (afxUnit j = 0; j < dsys->m.bridgeCnt; j++)
             {
-                GLuint glTexHandle = liga->texBufGlHandle[j][i];
-
-                if (glTexHandle)
+                for (afxUnit k = 0; k < _ZGL_PSO_SET_POP; k++)
                 {
-                    _ZglDsysEnqueueDeletion(dsys, j, GL_TEXTURE, (afxSize)glTexHandle);
-                    liga->texBufGlHandle[j][i] = 0;
+                    GLuint glTexHandle = liga->perDpu[j][k].texBufGlHandle[i];
+
+                    if (glTexHandle)
+                    {
+                        _ZglDsysEnqueueDeletion(dsys, j, GL_TEXTURE, (afxSize)glTexHandle);
+                        liga->perDpu[j][k].texBufGlHandle[i] = 0;
+                    }
                 }
             }
         }
@@ -906,7 +944,13 @@ _ZGL afxError _ZglLigaCtor(avxLigature liga, void** args, afxUnit invokeNo)
 
     afxUnit tboCnt = 0;
     afxUnit tboIndices[80];
-    AfxZero(liga->texBufGlHandle, sizeof(liga->texBufGlHandle));
+    AfxZero(liga->perDpu, sizeof(liga->perDpu));
+
+    /*
+        Texture and buffers can be shared across contexts if created in a shared context.
+        The association (i.e., glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, bufferID)) is per-context.
+        That means that if Context A binds a buffer to a texture, Context B won't see that binding unless it does the binding itself.
+    */
 
     for (afxUnit i = 0; i < liga->m.totalEntryCnt; i++)
     {

@@ -90,7 +90,7 @@ _ZGL afxError _ZglShdDtor(avxShader shd)
 {
     afxError err = AFX_ERR_NONE;
 
-    afxDrawSystem dsys = AfxGetProvider(shd);
+    afxDrawSystem dsys = AvxGetShaderHost(shd);
     
     if (shd->glHandle)
     {
@@ -123,7 +123,7 @@ _ZGL afxError _ZglShdCtor(avxShader shd, void** args, afxUnit invokeNo)
         shd->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
         shd->compiled = FALSE;
 
-        afxDrawSystem dsys = AfxGetProvider(shd);
+        afxDrawSystem dsys = AvxGetShaderHost(shd);
         shd->shdUniqueId = ++dsys->shdUniqueId;
 
         if (err && _AVX_SHD_CLASS_CONFIG.dtor(shd))

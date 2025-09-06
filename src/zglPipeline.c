@@ -130,6 +130,7 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
 
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
     avxPipeline pip = dpu->nextPip;
     
     if (pip != dpu->activePip)
@@ -147,7 +148,7 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
         {
             AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
-            GLuint glHandle = pip->glHandle[dpu->m.exuIdx];
+            GLuint glHandle = pip->perDpu[dpu->m.exuIdx][psoHandleIdx].glHandle;
             zglUpdateFlags devUpdReq = (pip->updFlags & ZGL_UPD_FLAG_DEVICE);
             afxBool bound = FALSE;
 
@@ -384,7 +385,7 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
                         pip->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
                     }
 
-                    pip->glHandle[dpu->m.exuIdx] = glHandle;
+                    pip->perDpu[dpu->m.exuIdx][psoHandleIdx].glHandle = glHandle;
                 }
             }
         }
@@ -392,6 +393,16 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
 
     _ZglFlushTsChanges(dpu);
     _ZglFlushRsChanges(dpu);
+}
+
+_ZGL afxError DpuBindShadersEXT(zglDpu* dpu, avxShaderType stage, avxShader shd)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    GLuint glStage = AfxToGlShaderStageBit(stage);
+
+    gl->UseProgramStages(dpu->activeProgPipGlHandle, glStage, shd->glProgHandle);
 }
 
 _ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, afxFlags dynamics)
@@ -499,7 +510,7 @@ _ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, 
 #if 0
 _ZGL afxResult _AfxRegisterOpenGlResourcesToQwadroDrawPipeline(avxPipeline pip)
 {
-    glVmt* gl = &(((afxDrawSystem)AfxGetProvider(&pip->obj))->vmt);
+    glVmt* gl = &(((afxDrawSystem)AfxGetHost(&pip->obj))->vmt);
 #if 0
     avxShaderType                      stages;
     avxShaderParam              type;
@@ -625,14 +636,17 @@ _ZGL afxError _ZglPipDtor(avxPipeline pip)
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
-    afxDrawSystem dsys = AfxGetProvider(pip);
+    afxDrawSystem dsys = AvxGetPipelineHost(pip);
 
-    for (afxUnit i = 0; i < ZGL_MAX_PSO_HANDLES; i++)
+    for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        if (pip->glHandle[i])
+        for (afxUnit j = 0; j < _ZGL_PSO_SET_POP; j++)
         {
-            _ZglDsysEnqueueDeletion(dsys, i, GL_PROGRAM, (afxSize)pip->glHandle[i]);
-            pip->glHandle[i] = 0;
+            if (pip->perDpu[i][j].glHandle)
+            {
+                _ZglDsysEnqueueDeletion(dsys, i, GL_PROGRAM, (afxSize)pip->perDpu[i][j].glHandle);
+                pip->perDpu[i][j].glHandle = 0;
+            }
         }
     }
 
@@ -651,12 +665,11 @@ _ZGL afxError _ZglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo)
     else
     {
         afxDrawSystem dsys = args[0];
-        avxPipelineBlueprint const *pipb = ((avxPipelineBlueprint const*)args[1]) + invokeNo;
+        avxPipelineConfig const *pipb = ((avxPipelineConfig const*)args[1]) + invokeNo;
         //AfxAssertType(pipb, afxFcc_PIPB);
 
-        AfxZero(pip->glHandle, sizeof(pip->glHandle));
+        AfxZero(pip->perDpu, sizeof(pip->perDpu));
         pip->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
-
 
         pip->pipUniqueId = ++dsys->pipUniqueId;
 

@@ -30,6 +30,10 @@ _ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp)
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
 
+    /*
+        Despite samplers being data-like, these are not always reliably shared between contexts.
+    */
+
     if (!samp)
     {
         gl->BindSampler(glUnit, 0); _ZglThrowErrorOccuried();
@@ -142,7 +146,7 @@ _ZGL afxError _ZglSampDtor(avxSampler samp)
 
     if (samp->glHandle)
     {
-        afxDrawSystem dsys = AfxGetProvider(samp);
+        afxDrawSystem dsys = AvxGetSamplerHost(samp);
         _ZglDsysEnqueueDeletion(dsys, 0, GL_SAMPLER, (afxSize)samp->glHandle);
         samp->glHandle = 0;
     }

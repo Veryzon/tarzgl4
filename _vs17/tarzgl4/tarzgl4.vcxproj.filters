@@ -53,9 +53,6 @@
     <ClCompile Include="..\..\dep\gl\wgl.c">
       <Filter>tarzgl4\dep\gl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zglDisplay_W32.c">
-      <Filter>tarzgl4</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\zglDrawSystem_WGL.c">
       <Filter>tarzgl4</Filter>
     </ClCompile>
@@ -101,11 +98,11 @@
     <ClCompile Include="..\..\src\zglShader.c">
       <Filter>tarzgl4\pipe</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zglVertexDecl.c">
-      <Filter>tarzgl4\pipe</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\zglUtils.c">
       <Filter>tarzgl4\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zglVertexInput.c">
+      <Filter>tarzgl4\pipe</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

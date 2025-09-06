@@ -18,6 +18,28 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
+/*
+    We are creating per-context and per-frame duplicates of VAOs as a solid strategy to allow multithreading and 
+    avoid contention  and improve parallelism. VAOs encapsulate attribute bindings, buffer bindings, and formats. 
+    If multiple stages in a frame modify the same VAO concurrently (or even serially in tight succession), 
+    we can introduce data races, performance stalls, or state bugs.
+
+    Per-frame VAOs (double or triple buffering)
+     - Create 2–3 versions of each VAO (or related stateful object).
+     - Rotate them each frame.
+     - Prevents driver from stalling while the GPU finishes using a VAO still being modified.
+
+    Per-thread VAOs (thread-local or command submission model)
+     - If you use multiple threads for rendering, allocate one VAO per thread or command stream.
+     - Avoids locking and keeps command recording thread-safe.
+
+    glBindVertexBuffers modifies VAO state.
+    If we're changing vertex buffer bindings every frame, we're also mutating the VAO.
+    This requires synchronization (or duplication) to avoid modifying a VAO that's still in use by the GPU.
+    We current solution it to use separate VAOs for each frame (or submission thread), 
+    so we can modify them freely without affecting rendering still in flight.
+*/
+
 _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
@@ -27,23 +49,26 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
 
     if (!vin)
     {
+        afxUnit emptyVaoIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
         dpu->activeVin = NIL;
 
-        if (dpu->activeVinGpuHandle != dpu->emptyVao)
+        if (dpu->activeVinGpuHandle != dpu->emptyVaos[emptyVaoIdx])
         {
-            gl->BindVertexArray(dpu->emptyVao); _ZglThrowErrorOccuried();
-            dpu->activeVinGpuHandle = dpu->emptyVao;
+            gl->BindVertexArray(dpu->emptyVaos[emptyVaoIdx]); _ZglThrowErrorOccuried();
+            dpu->activeVinGpuHandle = dpu->emptyVaos[emptyVaoIdx];
         }
+        // skip the whole buffer binding stuff.
         return;
     }
 
+    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+
     AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
-    GLuint glHandle = vin->glHandle[dpu->m.exuIdx];
+    GLuint glHandle = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle;
 
     if (glHandle && !(vin->updFlags & ZGL_UPD_FLAG_DEVICE_INST))
     {
-        if ((dpu->activeVin != vin) ||
-            (dpu->activeVinGpuHandle != glHandle))
+        if ((dpu->activeVin != vin) || (dpu->activeVinGpuHandle != glHandle))
         {
             AFX_ASSERT(gl->IsVertexArray(glHandle));
             gl->BindVertexArray(glHandle); _ZglThrowErrorOccuried();
@@ -59,6 +84,7 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
         if (glHandle)
         {
             gl->DeleteVertexArrays(1, &glHandle), glHandle = NIL; _ZglThrowErrorOccuried();
+            AfxReportComment("VAO rebuild: %u", glHandle);
         }
         gl->GenVertexArrays(1, &glHandle); _ZglThrowErrorOccuried();
         gl->BindVertexArray(glHandle); _ZglThrowErrorOccuried();
@@ -74,11 +100,11 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
             gl->ObjectLabel(GL_VERTEX_ARRAY, glHandle, vin->m.tag.len, (GLchar const*)vin->m.tag.start); _ZglThrowErrorOccuried();
         }
 
-        avxVertexFetch const* srcs = vin->m.srcs;
-        afxUnit streamCnt = vin->m.srcCnt;
+        avxVertexStream const* bins = vin->m.bins;
+        afxUnit streamCnt = vin->m.binCnt;
         for (afxUnit i = 0; i < streamCnt; i++)
         {
-            avxVertexFetch const* stream = &srcs[i];
+            avxVertexStream const* stream = &bins[i];
             AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->pin, 1);
             //AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_STRIDE, 0, stream->stride);
             //gl->BindVertexBuffer(stream->slotIdx, 0, 0, stream->stride); _ZglThrowErrorOccuried();
@@ -206,141 +232,162 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
                 }
             }
         }
-        vin->glHandle[dpu->m.exuIdx] = glHandle;
+        vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle = glHandle;
         vin->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
     }
 
     // BIND RESOURCES (VERTEX AND INDEX BUFFERS)
 
-    zglVertexInputState* activeBindings = &vin->bindings;
+    zglVertexInputState* activeBindings = &vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings;
     zglVertexInputState* nextBindings = &dpu->nextVinBindings;
     afxMask sourcesUpdMask = nextBindings->sourcesUpdMask;
 
 #ifndef FORCE_VBO_REBIND
-    if (sourcesUpdMask)
+    if (activeBindings->vboUpdReq != nextBindings->vboUpdReq)
 #endif
     {
-        nextBindings->sourcesUpdMask = NIL;
+        activeBindings->vboUpdReq = nextBindings->vboUpdReq;
 
-        for (afxUnit i = 0; i < vin->m.srcCnt; i++)
+        for (afxUnit i = 0; i < vin->m.binCnt; i++)
         {
-            avxVertexFetch const* stream = &vin->m.srcs[i];
+            avxVertexStream const* stream = &vin->m.bins[i];
             afxUnit streamIdx = stream->pin;
             AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, streamIdx, 1);
 
 #ifndef FORCE_VBO_REBIND
-            if (!(sourcesUpdMask & AFX_BITMASK(streamIdx))) // skip if has not updates
-                continue;
+            //if (!(sourcesUpdMask & AFX_BITMASK(streamIdx))) // skip if has not updates
+                //continue;
 #endif
 
             avxBuffer nextBuf = nextBindings->sources[streamIdx].buf;
-            afxUnit nextOff = nextBindings->sources[streamIdx].offset;
-            afxUnit nextRange = nextBindings->sources[streamIdx].range;
-            afxUnit nextStride = nextBindings->sources[streamIdx].stride;
-            afxBool forceRebind = TRUE;
 
-            afxUnit bufUniqueId = nextBuf ? nextBuf->bufUniqueId : activeBindings->sources[streamIdx].bufUniqueId;
-
-#ifndef FORCE_VBO_REBIND
-            if ((forceRebind) ||
-                (activeVinBindings->sources[streamIdx].bufUniqueId != bufUniqueId) || // if it has not a GL handle yet or it is different.
-                (activeVinBindings->sources[streamIdx].buf != nextBuf) ||
-                (activeVinBindings->sources[streamIdx].offset != nextOff) ||
-                (activeVinBindings->sources[streamIdx].range != nextRange) ||
-                (activeVinBindings->sources[streamIdx].stride != nextStride))
-#endif
+            if (!nextBuf)
             {
-                if (!nextBuf)
+                if (activeBindings->sources[streamIdx].buf)
                 {
+                    /*
+                        According to the OpenGL specification, if buffer is zero (i.e., unbinding), 
+                        the values for offset and stride are ignored.
+                        However, some drivers or debug layers may still validate the stride value and flag zero stride as 
+                        invalid even when buffer is 0; which is an implementation bug or quirk, but you have to work around it.
+                    */
+
                     AFX_ASSERT(gl->BindVertexBuffer);
-                    gl->BindVertexBuffer(streamIdx, 0, 0, 16); _ZglThrowErrorOccuried();
+                    gl->BindVertexBuffer(streamIdx, 0, 0, AFX_OR(vin->m.bins[streamIdx].minStride, 16)); _ZglThrowErrorOccuried();
 
                     activeBindings->sources[streamIdx].buf = 0;
                     activeBindings->sources[streamIdx].offset = 0;
                     activeBindings->sources[streamIdx].range = 0;
                     activeBindings->sources[streamIdx].stride = 0;
+                    activeBindings->sources[streamIdx].bufGlHandle = 0;
+                    activeBindings->sources[streamIdx].bufUniqueId = 0;
                 }
-                else
+            }
+            else
+            {
+                AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &nextBuf);
+                AFX_ASSERT(AvxGetBufferUsage(nextBuf, avxBufferUsage_VERTEX) == avxBufferUsage_VERTEX);
+
+                afxUnit nextOff = nextBindings->sources[streamIdx].offset;
+                afxUnit nextRange = nextBindings->sources[streamIdx].range;
+                afxUnit nextStride = nextBindings->sources[streamIdx].stride;
+                afxBool forceRebind = FALSE;
+
+                if (!nextBuf->glHandle)
+                {
+                    DpuBindAndSyncBuf(dpu, GL_ARRAY_BUFFER, nextBuf, FALSE); // sync
+                    forceRebind = TRUE;
+                }
+
+                GLuint glHandle = nextBuf->glHandle;
+
+#ifndef FORCE_VBO_REBIND
+                if ((forceRebind) ||
+                    (activeBindings->sources[streamIdx].bufUniqueId != nextBuf->bufUniqueId) || // if it has not a GL handle yet or it is different.
+                    (activeBindings->sources[streamIdx].bufGlHandle != glHandle) ||
+                    (activeBindings->sources[streamIdx].buf != nextBuf) ||
+                    (activeBindings->sources[streamIdx].offset != nextOff) ||
+                    //(activeBindings->sources[streamIdx].range != nextRange) ||
+                    (activeBindings->sources[streamIdx].stride != nextStride))
+#endif
                 {
                     activeBindings->sources[streamIdx].buf = nextBuf;
                     activeBindings->sources[streamIdx].offset = nextOff;
                     activeBindings->sources[streamIdx].range = nextRange;
                     activeBindings->sources[streamIdx].stride = nextStride;
-
+                    activeBindings->sources[streamIdx].bufUniqueId = nextBuf->bufUniqueId;
+                    activeBindings->sources[streamIdx].bufGlHandle = glHandle;
                     AFX_ASSERT(nextRange);
                     AFX_ASSERT(nextStride);
 
-                    if (!nextBuf->glHandle)
-                        DpuBindAndSyncBuf(dpu, GL_ARRAY_BUFFER, nextBuf, FALSE);
-
                     /*
-                        glBindVertexBuffer is kind of like glBindBufferRange, but it is specifically intended for vertex buffer objects. 
-                        The bindingindex is, as the name suggests, not a vertex attribute. It is a binding index, which can range from 0 to GL_MAX_VERTEX_ATTRIB_BINDINGS - 1. 
+                        glBindVertexBuffer is kind of like glBindBufferRange, but it is specifically intended for vertex buffer objects.
+                        The bindingindex is, as the name suggests, not a vertex attribute. It is a binding index, which can range from 0 to GL_MAX_VERTEX_ATTRIB_BINDINGS - 1.
                         This will almost certainly be 16.
                     */
 
                     AFX_ASSERT(gl->BindVertexBuffer);
                     gl->BindVertexBuffer(streamIdx, nextBuf->glHandle, nextOff, nextStride); _ZglThrowErrorOccuried();
-
-                    // What to do about it? Dynamic divisors vs instance rate being set on attribute specification.
-                    //gl->VertexBindingDivisor(streamIdx, stream->instRate); _ZglThrowErrorOccuried();
+                    int a = 1;
                 }
-
-                activeBindings->sources[streamIdx].bufUniqueId = bufUniqueId;
-
-                //nextVinBindings->sources[streamIdx].buf = NIL; // force update in "next first time".
             }
         }
     }
 
 #ifndef FORCE_IBO_REBIND
-    if (nextVinBindings->iboUpdReq)
+    if (activeBindings->iboUpdReq != nextBindings->iboUpdReq)
 #endif
     {
-        nextBindings->iboUpdReq = FALSE;
+        activeBindings->iboUpdReq = nextBindings->iboUpdReq;
 
         avxBuffer nextBuf = nextBindings->idxSrcBuf;
-        afxUnit nextOff = nextBindings->idxSrcOff;
-        afxUnit nextRange = nextBindings->idxSrcRange;
-        afxUnit nextStride = nextBindings->idxSrcSiz;
-        afxBool forceRebind = FALSE;
-        afxBool bound = FALSE;
 
-        afxUnit bufUniqueId = nextBuf ? nextBuf->bufUniqueId : activeBindings->iboUniqueId;
+        if (!nextBuf)
+        {
+            //gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            DpuBindAndSyncBuf(dpu, GL_ELEMENT_ARRAY_BUFFER, NIL, TRUE);
+
+            activeBindings->iboUniqueId = 0;
+            activeBindings->idxSrcGpuHandle = 0;
+            activeBindings->idxSrcBuf = NIL;
+            activeBindings->idxSrcOff = 0;
+            activeBindings->idxSrcRange = 0;
+            activeBindings->idxSrcSiz = 0;
+        }
+        else
+        {
+            AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &nextBuf);
+            AFX_ASSERT(AvxGetBufferUsage(nextBuf, avxBufferUsage_INDEX) == avxBufferUsage_INDEX);
+            afxBool forceRebind = FALSE;
+
+            if (!nextBuf->glHandle)
+            {
+                forceRebind = TRUE;
+            }
+
+            afxUnit nextOff = nextBindings->idxSrcOff;
+            afxUnit nextRange = nextBindings->idxSrcRange;
+            afxUnit nextStride = nextBindings->idxSrcSiz;
+
+            activeBindings->idxSrcBuf = nextBuf;
+            activeBindings->idxSrcOff = nextOff;
+            activeBindings->idxSrcRange = nextRange;
 
 #ifndef FORCE_IBO_REBIND
-        if ((forceRebind) ||
-            (activeVinBindings->iboUniqueId != bufUniqueId) || // if it has not a GL handle yet or it is different.
-            (activeVinBindings->idxSrcBuf != nextBuf) ||
-            (activeVinBindings->idxSrcOff != nextOff) ||
-            (activeVinBindings->idxSrcRange != nextRange) ||
-            (activeVinBindings->idxSrcSiz != nextStride))
+            if ((forceRebind) ||
+                (activeBindings->iboUniqueId != nextBuf->bufUniqueId) || // if it has not a GL handle yet or it is different.
+                (activeBindings->idxSrcBuf != nextBuf) ||
+                //(activeBindings->idxSrcOff != nextOff) ||
+                //(activeBindings->idxSrcRange != nextRange) ||
+                //(activeBindings->idxSrcSiz != nextStride) ||
+                (activeBindings->idxSrcGpuHandle != nextBuf->glHandle))
 #endif
-        {
-            DpuBindAndSyncBuf(dpu, GL_ELEMENT_ARRAY_BUFFER, nextBuf, TRUE);
-
-            if (!nextBuf)
             {
-                //gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-                activeBindings->idxSrcBuf = NIL;
-                activeBindings->idxSrcOff = 0;
-                activeBindings->idxSrcRange = 0;
-                activeBindings->idxSrcSiz = 0;
-            }
-            else
-            {
-                //DpuBindAndSyncBuf(dpu, GL_ELEMENT_ARRAY_BUFFER, nextBuf);
-                //gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf->glHandle);
-
-                activeBindings->idxSrcBuf = nextBuf;
-                activeBindings->idxSrcOff = nextOff;
-                activeBindings->idxSrcRange = nextRange;
+                activeBindings->iboUniqueId = nextBuf->bufUniqueId;
+                activeBindings->idxSrcGpuHandle = nextBuf->glHandle;
                 activeBindings->idxSrcSiz = nextStride;
+                DpuBindAndSyncBuf(dpu, GL_ELEMENT_ARRAY_BUFFER, nextBuf, TRUE);
             }
-
-            activeBindings->iboUniqueId = bufUniqueId;
-            //nextBindings->idxSrcBuf = NIL; // force update in "next first time".
         }
     }
 }
@@ -379,12 +426,19 @@ _ZGL void DpuBindVertexBuffers(zglDpu* dpu, afxUnit first, afxUnit cnt, avxBuffe
         afxUnit bindingIdx = first + i;
         AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, bindingIdx, 1);
 
+        if (buf)
+        {
+            AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+            AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_VERTEX) == avxBufferUsage_VERTEX);
+        }
+
         dpu->nextVinBindings.sources[bindingIdx].buf = buf;
         dpu->nextVinBindings.sources[bindingIdx].offset = /*buf ? AFX_MIN(offset, AvxGetBufferCapacity(buf, 0) - 1) : */offset;
         dpu->nextVinBindings.sources[bindingIdx].range = !range && buf ? AvxGetBufferCapacity(buf, 0) - offset : range;
         dpu->nextVinBindings.sources[bindingIdx].stride = stride;
         dpu->nextVinBindings.sourcesUpdMask |= AFX_BITMASK(bindingIdx);
     }
+    ++dpu->nextVinBindings.vboUpdReq;
 }
 
 _ZGL void DpuBindIndexBuffer(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit32 range, afxUnit32 stride)
@@ -397,29 +451,38 @@ _ZGL void DpuBindIndexBuffer(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUn
     dpu->nextVinBindings.idxSrcOff = offset;
     dpu->nextVinBindings.idxSrcRange = range;
     dpu->nextVinBindings.idxSrcSiz = stride;
-    dpu->nextVinBindings.iboUpdReq = TRUE;
-}
+    ++dpu->nextVinBindings.iboUpdReq;
 
+    if (buf)
+    {
+        AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
+        AFX_ASSERT(AvxGetBufferUsage(buf, avxBufferUsage_INDEX) == avxBufferUsage_INDEX);
+    }
+}
 
 _ZGL void DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin)
 {
     afxError err = AFX_ERR_NONE;
     
     dpu->nextVin = vin;
+    AFX_TRY_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
 }
 
 _ZGL afxError _ZglVinDtor(avxVertexInput vin)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
-    afxDrawSystem dsys = AfxGetProvider(vin);
+    afxDrawSystem dsys = AfxGetHost(vin);
 
-    for (afxUnit i = 0; i < ZGL_MAX_VAO_HANDLES; i++)
+    for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        if (vin->glHandle)
+        for (afxUnit j = 0; j < _ZGL_VAO_SET_POP; j++)
         {
-            _ZglDsysEnqueueDeletion(dsys, i, GL_VERTEX_ARRAY, (afxSize)vin->glHandle[i]);
-            vin->glHandle[i] = 0;
+            if (vin->perDpu[i][j].glHandle)
+            {
+                _ZglDsysEnqueueDeletion(dsys, i, GL_VERTEX_ARRAY, (afxSize)vin->perDpu[i][j].glHandle);
+                vin->perDpu[i][j].glHandle = 0;
+            }
         }
     }
 
@@ -437,10 +500,10 @@ _ZGL afxError _ZglVinCtor(avxVertexInput vin, void** args, afxUnit invokeNo)
     if (_AVX_VIN_CLASS_CONFIG.ctor(vin, args, invokeNo)) AfxThrowError();
     else
     {
-        AfxZero(vin->glHandle, sizeof(vin->glHandle));
+        AfxZero(vin->perDpu, sizeof(vin->perDpu));
         vin->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
-        afxDrawSystem dsys = AfxGetProvider(vin);
+        afxDrawSystem dsys = AfxGetHost(vin);
         vin->vdeclUniqueId = ++dsys->vdecUniqueId;
 
         if (err && _AVX_VIN_CLASS_CONFIG.dtor(vin))

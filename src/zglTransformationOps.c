@@ -300,3 +300,145 @@ _ZGL void DpuSetViewports(zglDpu* dpu, afxUnit first, afxUnit cnt, avxViewport c
         dpu->nextVpUpdMask |= AFX_BITMASK(vpIdx);
     }
 }
+
+_ZGL void DpuBeginQueryIndexedEXT(zglDpu* dpu, avxQueryPool queryPool, afxUnit query, afxBool precise, afxUnit index)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        Begin an indexed query.
+
+        queryPool is the query pool that will manage the results of the query.
+        query is the query index within the query pool that will contain the results.
+        flags is a bitmask of VkQueryControlFlagBits specifying constraints on the types of queries that can be performed.
+        index is the query type specific index. When the query type is VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT or VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT, the index represents the vertex stream.
+    */
+
+    GLenum glTarget = GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN /*queryPool->glTarget*/;
+    gl->BeginQueryIndexed(glTarget, index, queryPool->perDpu[dpu->m.exuIdx].glHandle[query]); _ZglThrowErrorOccuried();
+}
+
+_ZGL void DpuBeginTransformFeedbackEXT(zglDpu* dpu, afxUnit firstCounterBuffer, afxUnit counterBufferCount, avxBuffer pCounterBuffers[], const afxSize pCounterBufferOffsets[])
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        Make transform feedback active in the command buffer.
+
+        firstCounterBuffer is the index of the first transform feedback buffer corresponding to pCounterBuffers[0] and pCounterBufferOffsets[0].
+        counterBufferCount is the size of the pCounterBuffers and pCounterBufferOffsets arrays.
+        pCounterBuffers is NULL or a pointer to an array of VkBuffer handles to counter buffers. Each buffer contains a 4 byte integer value representing the byte offset from the start of the corresponding transform feedback buffer from where to start capturing vertex data. If the byte offset stored to the counter buffer location was done using vkCmdEndTransformFeedbackEXT it can be used to resume transform feedback from the previous location. In that case, a pipeline barrier is required between the calls to vkCmdEndTransformFeedbackEXT and vkCmdBeginTransformFeedbackEXT, with VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT as the source and destination stages, VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT as the source access and VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT as the destination access. If pCounterBuffers is NULL, then transform feedback will start capturing vertex data to byte offset zero in all bound transform feedback buffers. For each element of pCounterBuffers that is VK_NULL_HANDLE, transform feedback will start capturing vertex data to byte zero in the corresponding bound transform feedback buffer.
+        pCounterBufferOffsets is NULL or a pointer to an array of VkDeviceSize values specifying offsets within each of the pCounterBuffers where the counter values were previously written. The location in each counter buffer at these offsets must be large enough to contain 4 bytes of data. This data is the number of bytes captured by the previous transform feedback to this buffer. If pCounterBufferOffsets is NULL, then it is assumed the offsets are zero.
+    */
+
+    GLenum fillMode[] =
+    {
+        [avxFillMode_POINT] = GL_POINTS, // GL_POINTS
+        [avxFillMode_LINE] = GL_LINES, // GL_LINES, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINES_ADJACENCY, GL_LINE_STRIP_ADJACENCY
+        [avxFillMode_FACE] = GL_TRIANGLES, // GL_TRIANGLES, GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_TRIANGLES_ADJACENCY, GL_TRIANGLE_STRIP_ADJACENCY
+    };
+
+    gl->BeginTransformFeedback(fillMode[dpu->nextFillMode]); _ZglThrowErrorOccuried();
+}
+
+_ZGL void DpuBindTransformFeedbackBuffersEXT(zglDpu* dpu, afxUnit firstBinding, afxUnit bindingCount, avxBuffer pBuffers[], const afxSize pOffsets[], const afxSize pSizes[])
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    GLuint xfbo = 0;
+    for (afxUnit i = 0; i < bindingCount; i++)
+    {
+        if (pOffsets || pSizes)
+        {
+            afxUnit offset = pOffsets ? pOffsets[i] : 0;
+            afxUnit range = pSizes ? pSizes[i] : pBuffers[i]->m.reqSiz - offset;
+            gl->TransformFeedbackBufferRange(xfbo, firstBinding, pBuffers[i]->glHandle, offset, range); _ZglThrowErrorOccuried();
+        }
+        else
+        {
+            gl->TransformFeedbackBufferBase(xfbo, firstBinding, pBuffers[i]->glHandle); _ZglThrowErrorOccuried();
+        }
+    }
+}
+
+_ZGL void DpuDrawIndirectByteCountEXT(zglDpu* dpu, afxUnit instanceCount, afxUnit firstInstance, avxBuffer counterBuffer, afxSize counterBufferOffset, afxUnit counterOffset, afxUnit vertexStride)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        Draw primitives with indirect parameters where the vertex count is derived from the counter byte value in the counter buffer.
+
+        instanceCount is the number of instances to draw.
+        firstInstance is the instance ID of the first instance to draw.
+        counterBuffer is the buffer handle from where the byte count is read.
+        counterBufferOffset is the offset into the buffer used to read the byte count, which is used to calculate the vertex count for this draw call.
+        counterOffset is subtracted from the byte count read from the counterBuffer at the counterBufferOffset
+        vertexStride is the stride in bytes between each element of the vertex data that is used to calculate the vertex count from the counter value. This value is typically the same value that was used in the graphics pipeline state when the transform feedback was captured as the XfbStride.
+    */
+
+    // To record a non-indexed draw call, where the vertex count is based on a byte count read from a buffer and the passed in vertex stride parameter.
+
+    GLenum top = AfxToGlTopology(dpu->nextPrimTop);
+
+    GLuint xfbo = 0;
+
+    //for (afxUnit i = 0; i < )
+    if (instanceCount > 1)
+    {
+        // NOTE: Stopped because counter is internally managed by GL driver.
+        // render multiple instances of primitives using a count derived from a transform feedback object.
+        gl->DrawTransformFeedbackInstanced(top, xfbo, instanceCount); _ZglThrowErrorOccuried();
+
+
+        // render multiple instances of primitives using a count derived from a specifed stream of a transform feedback object.
+        //gl->DrawTransformFeedbackStreamInstanced(top, xfbo, stream, instanceCount); _ZglThrowErrorOccuried();
+    }
+    else
+    {
+        // NOTE: Stopped because counter is internally managed by GL driver.
+        // render primitives using a count derived from a specifed stream of a transform feedback object.
+        //gl->DrawTransformFeedbackStream(top, xfbo, stream); _ZglThrowErrorOccuried();
+
+        // render primitives using a count derived from a transform feedback object.
+        gl->DrawTransformFeedback(top, xfbo); _ZglThrowErrorOccuried();
+    }
+}
+
+_ZGL void DpuEndQueryIndexedEXT(zglDpu* dpu, avxQueryPool queryPool, afxUnit query, afxUnit index)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        Ends a query.
+
+        queryPool is the query pool that is managing the results of the query.
+        query is the query index within the query pool where the result is stored.
+        index is the query type specific index.
+    */
+
+    GLenum glTarget = GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN /*queryPool->glTarget*/;
+    gl->EndQueryIndexed(glTarget, index); _ZglThrowErrorOccuried();
+}
+
+_ZGL void DpuEndTransformFeedbackEXT(zglDpu* dpu, afxUnit firstCounterBuffer, afxUnit counterBufferCount, avxBuffer pCounterBuffers[], const afxSize pCounterBufferOffsets[])
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        Make transform feedback inactive in the command buffer.
+
+        firstCounterBuffer is the index of the first transform feedback buffer corresponding to pCounterBuffers[0] and pCounterBufferOffsets[0].
+        counterBufferCount is the size of the pCounterBuffers and pCounterBufferOffsets arrays.
+        pCounterBuffers is NULL or a pointer to an array of VkBuffer handles to counter buffers. The counter buffers are used to record the current byte positions of each transform feedback buffer where the next vertex output data would be captured. This can be used by a subsequent vkCmdBeginTransformFeedbackEXT call to resume transform feedback capture from this position. It can also be used by vkCmdDrawIndirectByteCountEXT to determine the vertex count of the draw call.
+        pCounterBufferOffsets is NULL or a pointer to an array of VkDeviceSize values specifying offsets within each of the pCounterBuffers where the counter values can be written. The location in each counter buffer at these offsets must be large enough to contain 4 bytes of data. The data stored at this location is the byte offset from the start of the transform feedback buffer binding where the next vertex data would be written. If pCounterBufferOffsets is NULL, then it is assumed the offsets are zero.
+    */
+
+    gl->EndTransformFeedback(); _ZglThrowErrorOccuried();
+}
+

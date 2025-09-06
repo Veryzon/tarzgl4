@@ -2420,6 +2420,18 @@ _ZGL afxError wglCreateSurfaceSIGMA(int atX, int atY, HWND* phWnd, HDC* phDC, in
 
     AFX_ASSERT(dcPfd.dwFlags & pfdFlags);
 
+    if (_WGL_EXT_swap_control)
+    {
+        if (_WGL_EXT_swap_control_tear)
+        {
+            wglSwapIntervalEXT(-1);
+        }
+        else
+        {
+            wglSwapIntervalEXT(0);
+        }
+    }
+
     *phWnd = hWnd;
     *phDC = hDC;
     *pPixFmt = dcPxlFmt;
@@ -2458,6 +2470,7 @@ _ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int ve
         },
         { 0, 0 },
         { 0, 0 },
+        { 0, 0 },
     };
 
     if (fwd)
@@ -2467,7 +2480,38 @@ _ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int ve
         ctxAttrPairs[3][1] |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
 
     if (dbg)
+    {
         ctxAttrPairs[3][1] |= WGL_CONTEXT_DEBUG_BIT_ARB;
+    }
+    else
+    {
+        /*
+            GL_KHR_no_error Extension:
+            This extension allows OpenGL to skip error checking for better performance.
+            It's useful in production environments where the application is known to be correct and validated.
+
+            When you enable GL_KHR_no_error, the OpenGL driver:
+                Skips all internal error checking.
+                Does not detect or report errors like invalid enums, invalid states, buffer overflows, etc.
+                Will not return error codes via glGetError(); because it doesn't track them anymore.
+                Assumes your application is perfect and never makes invalid OpenGL calls.
+            It's relying on you, the programmer, to "do everything right."
+
+            Pros: Performance Gains.
+                Error checking in OpenGL is not free; especially in driver layers. 
+                Skipping it can significantly reduce overhead in performance-critical or high-frequency draw/update calls.
+
+            Cons/Risks: No Safety Net if you accidentally:            
+                Bind the wrong buffer,
+                Use invalid shaders,
+                Use unsupported formats,
+                Overrun buffer boundaries...
+                
+            You may get undefined behavior, crashes, or silent visual bugs. Debugging becomes harder, because glGetError() 
+            always returns GL_NO_ERROR and validation tools won't catch mistakes unless you're using external validation layers.
+        */
+        ctxAttrPairs[3][1] |= GL_CONTEXT_FLAG_NO_ERROR_BIT;
+    }
 
     // hShareCtx can't be active in another thread
     HGLRC hGLRC = NIL;

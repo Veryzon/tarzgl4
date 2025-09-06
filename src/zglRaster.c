@@ -18,11 +18,6 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-#define UNBIND_GL_TEX TRUE
-#define RENDERBUFFER_ENABLED TRUE
-#define _BLIT_RASTER_WITH_GEN_FBOS TRUE
-#define _RESOLVE_RASTER_WITH_GEN_FBOS TRUE
-
 # if 0
 _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, avxRaster ras) // ras must be bound
 {
@@ -34,8 +29,8 @@ _ZGL afxError _ZglTexFlushDevice(glVmt const* gl, GLenum glTarget, avxRaster ras
     //afxWarp whd;
     //AfxImage.GetExtent(&ras->img, whd);
 
-    //afxBool const isSurface = AvxTestRasterFlags(ras, avxRasterUsage_DRAW);
-    afxBool const isCubemap = AvxTestRasterFlags(ras, avxRasterFlag_CUBEMAP);
+    //afxBool const isSurface = AvxGetRasterFlags(ras, avxRasterUsage_DRAW);
+    afxBool const isCubemap = AvxGetRasterFlags(ras, avxRasterFlag_CUBEMAP);
     
     afxUnit const lvlCnt = AfxCountRasterMipmaps(ras);
     AFX_ASSERT(lvlCnt);
@@ -163,21 +158,15 @@ _ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster ras, afxB
                     ras->glHandle = NIL;
                 }
 
-                afxUnit samples = (ras->m.lodCnt > 1) ? ras->m.lodCnt : 0;
+                afxUnit samples = ras->m.spp;
 
                 if ((!keepBound) && 
                     gl->CreateRenderbuffers && 
-                    (((samples == 0) && gl->NamedRenderbufferStorage) ||
-                    (samples && gl->NamedRenderbufferStorageMultisample)))
+                    (((1 >= samples) && gl->NamedRenderbufferStorage) ||
+                    ((samples > 1) && gl->NamedRenderbufferStorageMultisample)))
                 {
                     gl->CreateRenderbuffers(1, &glHandle); _ZglThrowErrorOccuried();
-
-                    if (ras->m.tag.len)
-                    {
-                        gl->ObjectLabel(GL_RENDERBUFFER, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
-                    }
-
-                    if (1 >= samples)
+                    if (ras->m.flags & avxRasterFlag_MULTISAMP)//(1 >= samples)
                     {
                         gl->NamedRenderbufferStorage(glHandle, ras->glIntFmt, ras->m.whd.w, ras->m.whd.h); _ZglThrowErrorOccuried();
                     }
@@ -192,10 +181,6 @@ _ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster ras, afxB
                     gl->BindRenderbuffer(GL_RENDERBUFFER, glHandle); _ZglThrowErrorOccuried();
                     bound = TRUE;
 
-                    if (ras->m.tag.len)
-                    {
-                        gl->ObjectLabel(GL_RENDERBUFFER, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
-                    }
                     if (1 >= samples)
                     {
                         gl->RenderbufferStorage(GL_RENDERBUFFER, ras->glIntFmt, ras->m.whd.w, ras->m.whd.h); _ZglThrowErrorOccuried();
@@ -208,6 +193,10 @@ _ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster ras, afxB
 
                 if (!err)
                 {
+                    if (ras->m.tag.len)
+                    {
+                        gl->ObjectLabel(GL_RENDERBUFFER, glHandle, ras->m.tag.len, (GLchar const*)ras->m.tag.start); _ZglThrowErrorOccuried();
+                    }
                     ras->glHandle = glHandle;
                     ras->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
                     //AfxReportMessage("GPU RBO %p ready. %x, %x, [%u,%u,%u]", ras, ras->glTarget, ras->glIntFmt, ras->m.whd.w, ras->m.whd.h, ras->m.whd.d);
@@ -268,8 +257,11 @@ _ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster ras, afxB
                 afxUnit width = ras->m.whd.w;
                 afxUnit height = ras->m.whd.h;
                 afxUnit depth = ras->m.whd.d;
-                afxUnit levelsOrSamples = ras->m.lodCnt;
-                GLboolean fixedsamplelocations = GL_FALSE;
+                afxUnit levelsOrSamples = ras->m.mipCnt;
+
+                // If you don't use the VK_EXT_sample_locations extension, 
+                // Vulkan uses implementation-defined fixed sample locations (equivalent to fixedsamplelocations = GL_TRUE in OpenGL).
+                GLboolean fixedsamplelocations = GL_TRUE;
 
                 switch (glTarget)
                 {
@@ -514,8 +506,6 @@ _ZGL afxError _DpuUpdateRaster(zglDpu* dpu, avxRaster ras, afxByte const* src, a
     afxBool rasBound = FALSE;
 
     DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, NIL, TRUE); // KEEP IT HERE?
-    //DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, FALSE); // sync
-    rasSynced = TRUE;
 
     avxFormatDescription pfd;
     AvxDescribeFormats(1, &ras->m.fmt, &pfd);
@@ -538,7 +528,7 @@ _ZGL afxError _DpuUpdateRaster(zglDpu* dpu, avxRaster ras, afxByte const* src, a
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
-        if (!AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (!AvxTestCompressedFormat(ras->m.fmt))
         {
             switch (glTarget)
             {
@@ -654,7 +644,7 @@ _ZGL afxError _DpuUpdateRaster(zglDpu* dpu, avxRaster ras, afxByte const* src, a
                     }
                     for (afxUnit i = 0; i < rgn->whd.d; i++)
                     {
-                        gl->TextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z + i + (glTarget - GL_TEXTURE_CUBE_MAP_POSITIVE_X), rgn->whd.w, rgn->whd.h, 1, glFmt, glType, &src[op->offset]); _ZglThrowErrorOccuried();
+                        gl->TextureSubImage3D(ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z + i, rgn->whd.w, rgn->whd.h, 1, glFmt, glType, &src[op->offset]); _ZglThrowErrorOccuried();
                     }
                 }
                 else
@@ -836,7 +826,6 @@ _ZGL afxError _DpuDumpRaster(zglDpu* dpu, avxRaster ras, afxByte* dst, afxUnit o
     AFX_ASSERT(dpu->inDrawScope == FALSE); // This is a transfer operation.
 
     DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, NIL, TRUE);
-    //DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
 
     GLenum glTarget = ras->glTarget;
 
@@ -862,7 +851,7 @@ _ZGL afxError _DpuDumpRaster(zglDpu* dpu, avxRaster ras, afxByte* dst, afxUnit o
         gl->PixelStorei(GL_PACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
-        if (AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (AvxTestCompressedFormat(ras->m.fmt))
         {
             if (gl->GetCompressedTextureSubImage)
             {
@@ -1011,7 +1000,6 @@ _ZGL afxError DpuUnpackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit
     afxBool rasBound = FALSE;
     afxBool bufBound = FALSE;
 
-    //DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE);
     DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, buf, TRUE);
     bufBound = TRUE; // required for all ops.
 
@@ -1038,7 +1026,7 @@ _ZGL afxError DpuUnpackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit
 
         // load from PBO
 
-        if (!AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (!AvxTestCompressedFormat(ras->m.fmt))
         {
             switch (glTarget)
             {
@@ -1310,6 +1298,7 @@ _ZGL afxError DpuUnpackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit
             }
         }
     }
+
 #if UNBIND_GL_TEX
     DpuBindAndSyncBuf(dpu, GL_PIXEL_UNPACK_BUFFER, NIL, TRUE);
     if (rasBound)
@@ -1333,7 +1322,6 @@ _ZGL afxError DpuPackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit o
     afxBool rasSynced = FALSE;
     afxBool rasBound = FALSE;
     DpuBindAndSyncBuf(dpu, GL_PIXEL_PACK_BUFFER, buf, TRUE);
-    //DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
 
     for (afxUnit i = 0; i < opCnt; i++)
     {
@@ -1355,7 +1343,7 @@ _ZGL afxError DpuPackRaster(zglDpu* dpu, avxRaster ras, avxBuffer buf, afxUnit o
         afxUnit bufSiz = op->rowStride * op->rowStride;
         // TODO: obrigar a especificação de um tamanho sempre que for exportar?
 
-        if (AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (AvxTestCompressedFormat(ras->m.fmt))
         {
             if (gl->GetCompressedTextureSubImage)
             {
@@ -1498,7 +1486,7 @@ _ZGL afxError _DpuDownloadRaster(zglDpu* dpu, avxRaster ras, afxStream out, afxU
     AFX_ASSERT(dpu->inDrawScope == FALSE); // This is a transfer operation.
 
     DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
-    afxBool is3d = AvxTestRasterFlags(ras, avxRasterFlag_3D);
+    afxBool is3d = AvxGetRasterFlags(ras, avxRasterFlag_3D);
 
     avxFormatDescription pfd;
     AvxDescribeFormats(1, &ras->m.fmt, &pfd);
@@ -1521,15 +1509,15 @@ _ZGL afxError _DpuDownloadRaster(zglDpu* dpu, avxRaster ras, afxStream out, afxU
         GLuint pbo;
         zglCreateBuffers(gl, GL_PIXEL_PACK_BUFFER, 1, &pbo); _ZglThrowErrorOccuried();
         
-        avxRasterLayout lay;
-        AvxQueryRasterLayout(ras, op->rgn.lodIdx, (is3d ? 0 : op->rgn.origin.z), &lay);
+        avxRasterArrangement lay;
+        AvxQueryRasterArrangement(ras, &op->rgn, &lay);
 
         GLint lodSiz = 0;
 
         afxUnit bufSiz = op->rowStride * op->rowStride;
         // TODO: obrigar a especificação de um tamanho sempre que for exportar?
 
-        if (AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (AvxTestCompressedFormat(ras->m.fmt))
         {
             GLint compressed;
             gl->GetTexLevelParameteriv(ras->glTarget, op->rgn.lodIdx, GL_TEXTURE_COMPRESSED, &compressed);
@@ -1573,6 +1561,7 @@ _ZGL afxError _DpuDownloadRaster(zglDpu* dpu, avxRaster ras, afxStream out, afxU
     gl->PixelStorei(GL_PACK_SKIP_IMAGES, 0); _ZglThrowErrorOccuried();
 
     DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
+
     return err;
 }
 
@@ -1584,7 +1573,7 @@ _ZGL afxError _DpuUploadRaster(zglDpu* dpu, avxRaster ras, afxStream in, afxUnit
 
     glVmt const* gl = dpu->gl;
     DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, ras, TRUE);
-    afxBool is3d = AvxTestRasterFlags(ras, avxRasterFlag_3D);
+    afxBool is3d = AvxGetRasterFlags(ras, avxRasterFlag_3D);
 
     GLenum glTarget = ras->glTarget;
     GLenum glType = ras->glType;
@@ -1605,8 +1594,8 @@ _ZGL afxError _DpuUploadRaster(zglDpu* dpu, avxRaster ras, afxStream in, afxUnit
         if (rowsPerImg == op->rgn.whd.h)
             rowsPerImg = 0;
 
-        avxRasterLayout lay;
-        AvxQueryRasterLayout(ras, op->rgn.lodIdx, (is3d ? 0 : op->rgn.origin.z), &lay);
+        avxRasterArrangement lay;
+        AvxQueryRasterArrangement(ras, &op->rgn, &lay);
         afxUnit bufSiz = lay.size;
 
         GLuint pbo;
@@ -1622,7 +1611,7 @@ _ZGL afxError _DpuUploadRaster(zglDpu* dpu, avxRaster ras, afxStream in, afxUnit
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, rowLen); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, rowsPerImg); _ZglThrowErrorOccuried();
 
-        if (!AfxIsPixelFormatCompressed(ras->m.fmt))
+        if (!AvxTestCompressedFormat(ras->m.fmt))
         {
             if (zglUnpackTextureSubImage(gl, ras->glTarget, ras->glHandle, rgn->lodIdx, rgn->origin.x, rgn->origin.y, rgn->origin.z, rgn->whd.w, rgn->whd.h, rgn->whd.d, ras->glFmt, ras->glType, pbo, 0))
                 AfxThrowError();
@@ -1669,6 +1658,7 @@ _ZGL afxError _DpuUploadRaster(zglDpu* dpu, avxRaster ras, afxStream in, afxUnit
     }
 
     DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, NIL, TRUE);
+
     return err;
 }
 
@@ -1681,6 +1671,9 @@ _ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit o
     glVmt const* gl = dpu->gl;
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &dst);
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &src);
+    // keep bound because wrapper functions have workaround for missing DSA functions.
+    DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, dst, TRUE);
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, src, TRUE);
 
     avxFormatDescription srcPfd, dstPfd;
     AvxDescribeFormats(1, &src->m.fmt, &srcPfd);
@@ -1690,8 +1683,8 @@ _ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit o
     {
         avxRasterCopy const* op = &ops[i];
 
-        avxRasterLayout lay;
-        AvxQueryRasterLayout(src, 0, 0, &lay);
+        avxRasterArrangement lay;
+        AvxQueryRasterArrangement(src, &op->src, &lay);
         
         GLuint pbo;
         gl->GenBuffers(1, &pbo); _ZglThrowErrorOccuried();
@@ -1706,7 +1699,7 @@ _ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit o
         gl->PixelStorei(GL_UNPACK_ROW_LENGTH, 0); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0); _ZglThrowErrorOccuried();
 
-        if ((srcPfd.flags & avxFormatFlag_COMPRESSED) == avxFormatFlag_COMPRESSED)
+        if ((srcPfd.flags & avxFormatFlag_BC) == avxFormatFlag_BC)
         {
             if (zglPackTextureSubImageCompressed(gl, src->glTarget, src->glHandle, op->src.lodIdx, op->src.origin.x, op->src.origin.y, op->src.origin.z, op->src.whd.w, op->src.whd.h, op->src.whd.d, lay.size, pbo, 0))
                 AfxThrowError();
@@ -1727,6 +1720,11 @@ _ZGL afxError DpuCopyRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUnit o
         gl->BindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); _ZglThrowErrorOccuried();
         gl->DeleteBuffers(1, &pbo); _ZglThrowErrorOccuried();
     }
+
+    // unbind textures
+    DpuBindAndSyncRas(dpu, ZGL_COPY_WRITE_RASTER, NIL, TRUE);
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, NIL, TRUE);
+
     return err;
 }
 
@@ -1754,10 +1752,10 @@ _ZGL afxError _ZglDpuResolveRaster(zglDpu* dpu, avxRaster src, avxRaster dst, af
             Ensure that we resolve from a multisample framebuffer into a single-sample texture.
             Avoid any format conversion or scaling.
     */
-    AFX_ASSERT(src->m.lodCnt > 1);
-    AFX_ASSERT(AvxTestRasterFlags(src, avxRasterFlag_MULTISAMP));
-    AFX_ASSERT(src->m.lodCnt == 1);
-    AFX_ASSERT(!AvxTestRasterFlags(dst, avxRasterFlag_MULTISAMP));
+    AFX_ASSERT(src->m.mipCnt > 1);
+    AFX_ASSERT(AvxGetRasterFlags(src, avxRasterFlag_MULTISAMP));
+    AFX_ASSERT(src->m.mipCnt == 1);
+    AFX_ASSERT(!AvxGetRasterFlags(dst, avxRasterFlag_MULTISAMP));
     //AFX_ASSERT(src->m.fmt == dst->m.fmt); // GL can deal with some potential convertions.
 
     DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, src, FALSE); // sync
@@ -1960,12 +1958,143 @@ _ZGL afxError _ZglDpuBlitRaster(zglDpu* dpu, avxRaster src, avxRaster dst, afxUn
     return err;
 }
 
+_ZGL afxError _ZglDpuClearRaster(zglDpu* dpu, avxRaster ras, avxClearValue const* clearVal, afxUnit baseLodIdx, afxUnit lodCnt, afxUnit baseLayer, afxUnit layerCnt)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+
+    DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, FALSE); // sync
+
+    // TODO: replace it to support non-drawable formats.
+
+
+    GLuint fboOpDst;
+    GLuint tempFbo;
+    afxBool useTempFbo = _CLEAR_RASTER_WITH_GEN_FBOS;
+    if (useTempFbo)
+    {
+        gl->GenFramebuffers(1, &tempFbo); _ZglThrowErrorOccuried();
+        fboOpDst = tempFbo;
+    }
+    else
+    {
+        fboOpDst = dpu->fboOpDst;
+    }
+
+    gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, fboOpDst);
+
+    for (afxUnit i = 0; i < lodCnt; i++)
+    {
+        afxUnit lodIdx = baseLodIdx + i;
+        avxRange whd = AvxGetRasterExtent(ras, lodIdx);
+
+        afxLayeredRect const* area = &AFX_LAYERED_RECT(0, 0, whd.w, whd.h, 0, 1);
+        GLint scissor[4];
+        scissor[0] = area->area.x;
+        scissor[1] = area->area.y;
+        scissor[2] = area->area.w;
+        scissor[3] = area->area.h;
+        AFX_ASSERT(area->area.w);
+        AFX_ASSERT(area->area.h);
+        AFX_ASSERT(gl->ScissorArrayv);
+        gl->ScissorArrayv(0, 1, scissor);
+
+        for (afxUnit j = 0; j < layerCnt; j++)
+        {
+            afxUnit layerIdx = baseLayer + j;
+
+            if (gl->ClearNamedFramebufferfv)
+            {
+                _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, fboOpDst, ras->glAttachment, ras->glTarget, ras->glHandle, lodIdx, layerIdx, FALSE);
+
+                switch (ras->glAttachment)
+                {
+                case GL_DEPTH_ATTACHMENT:
+                {
+                    gl->ClearNamedFramebufferfv(fboOpDst, GL_DEPTH, 0, &clearVal->depth); _ZglThrowErrorOccuried();
+                    break;
+                }
+                case GL_DEPTH_STENCIL_ATTACHMENT:
+                {
+                    gl->ClearNamedFramebufferfi(fboOpDst, GL_DEPTH_STENCIL, 0, clearVal->depth, clearVal->stencil); _ZglThrowErrorOccuried();
+                    break;
+                }
+                case GL_STENCIL_ATTACHMENT:
+                {
+                    GLint sCv = clearVal->stencil;
+                    gl->ClearNamedFramebufferiv(fboOpDst, GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
+                    break;
+                }
+                default:
+                {
+                    afxReal const* rgba = clearVal->rgba;
+                    GLint dbi = GL_COLOR_ATTACHMENT0;
+                    gl->ClearNamedFramebufferfv(fboOpDst, GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
+                    break;
+                }
+                }
+            }
+            else
+            {
+                _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, NIL, ras->glAttachment, ras->glTarget, ras->glHandle, lodIdx, layerIdx, FALSE);
+
+                switch (ras->glAttachment)
+                {
+                case GL_DEPTH_ATTACHMENT:
+                {
+                    gl->ClearBufferfv(GL_DEPTH, 0, &clearVal->depth); _ZglThrowErrorOccuried();
+                    break;
+                }
+                case GL_DEPTH_STENCIL_ATTACHMENT:
+                {
+                    gl->ClearBufferfi(GL_DEPTH_STENCIL, 0, clearVal->depth, clearVal->stencil); _ZglThrowErrorOccuried();
+                    break;
+                }
+                case GL_STENCIL_ATTACHMENT:
+                {
+                    GLint sCv = clearVal->stencil;
+                    gl->ClearBufferiv(GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
+                    break;
+                }
+                default:
+                {
+                    afxReal const* rgba = clearVal->rgba;
+                    GLint dbi = GL_COLOR_ATTACHMENT0;
+                    gl->ClearBufferfv(GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
+                    break;
+                }
+                }
+            }
+        }
+    }
+
+    if (useTempFbo)
+    {
+        gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        gl->DeleteFramebuffers(1, &tempFbo); _ZglThrowErrorOccuried();
+    }
+    else
+    {
+        if (gl->BlitNamedFramebuffer)
+        {
+            _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, fboOpDst, ras->glAttachment, ras->glTarget, NIL, 0, 0, FALSE);
+        }
+        else
+        {
+            _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, NIL, ras->glAttachment, ras->glTarget, NIL, 0, 0, FALSE);
+        }
+        gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
+    return err;
+}
+
 _ZGL afxError _ZglRasDtor(avxRaster ras)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
 
-    afxDrawSystem dsys = AfxGetProvider(ras);
+    afxDrawSystem dsys = AvxGetRasterHost(ras);
 
     if (ras->glHandle)
     {
@@ -1990,7 +2119,7 @@ _ZGL afxError _ZglRasCtor(avxRaster ras, void** args, afxUnit invokeNo)
     if (_AVX_RAS_CLASS_CONFIG.ctor(ras, args, invokeNo)) AfxThrowError();
     else
     {
-        afxDrawSystem dsys = AfxGetProvider(ras);
+        afxDrawSystem dsys = AvxGetRasterHost(ras);
         ras->rasUniqueId = ++dsys->rasUniqueId;
 
         ras->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
@@ -2001,7 +2130,7 @@ _ZGL afxError _ZglRasCtor(avxRaster ras, void** args, afxUnit invokeNo)
         if ((ras->m.usage & avxRasterUsage_DRAW) == avxRasterUsage_DRAW)
         {
             avxFormatDescription pfd;
-            AvxDescribeRasterFormat(ras, 0, &pfd);
+            AvxDescribeRasterFormat(ras, &pfd);
 
             if ((pfd.flags & (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL)) == (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL))
                 ras->glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
@@ -2015,7 +2144,7 @@ _ZGL afxError _ZglRasCtor(avxRaster ras, void** args, afxUnit invokeNo)
 #ifdef RENDERBUFFER_ENABLED
             if (((ras->m.usage & avxRasterUsage_ALL) == avxRasterUsage_DRAW) && // RBO can not be read/written out of a draw pass.
                 (ras->m.whd.d == 1) && // RBO can not be layered
-                (!(ras->m.flags & avxRasterFlag_MIPMAP))) // RBO can not be subsampled
+                (!(ras->m.flags & avxRasterFlag_MIP))) // RBO can not be subsampled
             {
                 if (ras->glTarget == GL_TEXTURE_2D)
                 {

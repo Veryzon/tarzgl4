@@ -24,6 +24,7 @@ AFX_DEFINE_STRUCT(zglVertexInputState)
     struct
     {
         afxUnit          bufUniqueId;
+        GLuint           bufGlHandle;
         avxBuffer       buf;
         afxUnit32        offset;
         afxUnit32        range;
@@ -32,6 +33,7 @@ AFX_DEFINE_STRUCT(zglVertexInputState)
     // used by queue
     afxMask             sourcesUpdMask;
     afxUnit              sourcesUpdCnt;
+    afxBool             vboUpdReq;
 
     afxUnit             iboUniqueId;
     GLuint              idxSrcGpuHandle;
@@ -102,8 +104,8 @@ AFX_DEFINE_STRUCT(zglDpu)
     afxBool             nextDepthBoundsTestEnabled; // controls whether depth bounds testing is enabled. // FALSE
     afxV2d              nextDepthBounds; // is the minimum depth bound used in the depth bounds test. // [ min, max ]
     afxBool             nextStencilTestEnabled; // FALSE
-    avxStencilInfo      nextStencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
-    avxStencilInfo      nextStencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
+    avxStencilConfig      nextStencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
+    avxStencilConfig      nextStencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
 
     afxRect             nextScisRects[ZGL_MAX_VIEWPORTS];
     afxUnit32           nextScisUpdMask;
@@ -123,7 +125,8 @@ AFX_DEFINE_STRUCT(zglDpu)
     avxCanvas       canv;
     GLuint          canvGpuHandle;
     afxBool         canvIsDefFbo;
-    afxRect         drawArea;
+    avxDrawScopeFlags drawScopeFlags;
+    afxLayeredRect  drawArea;
     afxBool         drawAreaClipped;
     afxBool         mustCloseDrawScopeDgbGrp;
     afxUnit32       baseLayer;
@@ -159,8 +162,8 @@ AFX_DEFINE_STRUCT(zglDpu)
     afxBool             depthBoundsTestEnabled; // controls whether depth bounds testing is enabled. // FALSE
     afxV2d              depthBounds; // is the minimum depth bound used in the depth bounds test. // [ min, max ]
     afxBool             stencilTestEnabled; // FALSE
-    avxStencilInfo  stencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
-    avxStencilInfo  stencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
+    avxStencilConfig  stencilFront; // is the configuration values controlling the corresponding parameters of the stencil test.
+    avxStencilConfig  stencilBack; // is the configuration controlling the corresponding parameters of the stencil test.
 
     afxUnit              scisCnt; // must be the same as viewport
     afxRect             scisRects[ZGL_MAX_VIEWPORTS];
@@ -182,9 +185,11 @@ AFX_DEFINE_STRUCT(zglDpu)
     avxLigature             activeLiga, nextLiga;
     avxPipeline             activePip, nextPip;
     GLuint                  activePipGpuHandle;
+    GLuint                  activeProgPipGlHandle;
     avxVertexInput          activeVin, nextVin;
     GLuint                  activeVinGpuHandle;
     zglVertexInputState     nextVinBindings;
+    afxUnit                 nextVinUpdReq;
 
     union
     {
@@ -218,24 +223,29 @@ AFX_DEFINE_STRUCT(zglDpu)
     GLuint          copySrcBufGpuHandle; // GL_COPY_READ_BUFFER 
 
     GLuint          tmpFbo[_ZGL_MAX_SWAPCHAIN_CAP];
-    afxUnit          activeTmpFboIdx;
 
-    GLuint          emptyVao;
+    GLuint          emptyVaos[_ZGL_VAO_SET_POP];
     GLuint          fboOpSrc;
     avxRaster       fboOpSrcAnnex;
     GLuint          fboOpDst;
     avxRaster       fboOpDstAnnex;
 
-    GLuint          pushConstUbo;
-    afxUnit         pushConstUboIdx;
-    afxByte*        pushConstMappedMem;
-    afxBool         shouldPushConsts;
-    afxUnit         shouldPushConstBase;
-    afxUnit         shouldPushConstRange;
+    struct
+    {
+        GLuint      pushConstUbo;
+        afxByte*    pushConstMappedMem;
+        afxBool     shouldPushConsts;
+        afxUnit     shouldPushConstBase;
+        afxUnit     shouldPushConstRange;
+    }               pushSets[_ZGL_PUSH_SET_POP];
+    afxUnit         activePushUboReservedBindPoint;
 
     GLuint          timeElapsedQueryIdActive;
-    
+    GLuint64        maxSrvWaitTimeout;
+
     afxBool         emulatedDrawParams;
+
+    afxUnit         dpuIterIdx; // used to mod cnt inter-frame resources.
 };
 
 #if 0
@@ -302,12 +312,6 @@ AFX_OBJECT(afxDrawSystem)
     avxPipeline presentRazr;
     avxSampler  presentSmp;
 
-    avxPipeline fntRazr;
-    avxSampler  fntSamp;
-    avxRaster   fntRas;
-    avxBuffer   fntDataBuf;
-    avxBuffer   fntUnifBuf;
-
     //avxBuffer tristrippedQuad2dPosBuf;
     HWND                    hPrimeWnd;
     HDC                     hPrimeDC;
@@ -331,6 +335,7 @@ AFX_OBJECT(afxDrawSystem)
     afxUnit qrypUniqueId;
 };
 
+#if 0
 AFX_OBJECT(afxDisplay)
 {
     AFX_OBJECT(_avxDisplay) m;
@@ -338,7 +343,6 @@ AFX_OBJECT(afxDisplay)
     DISPLAY_DEVICEA ddminfo;
 };
 
-#if 0
 AFX_OBJECT(afxSurface)
 {
     AFX_OBJECT(_avxSurface) m;
@@ -422,12 +426,6 @@ ZGL afxError _DpuWork_SyncMaps(zglDpu* dpu, _avxIoReqPacket* subm);
 ZGL afxError _DpuWork_Remap(zglDpu* dpu, _avxIoReqPacket* subm);
 
 ZGL afxClassConfig const _ZglDsysMgrCfg;
-
-ZGL afxError _ZglViddDtorCb(afxDisplay vidd);
-ZGL afxError _ZglViddCtorCb(afxDisplay vidd, void** args, afxUnit invokeNo);
-ZGL afxResult _ZglViddIoctrlCb(afxDisplay vidd, afxUnit reqCode, va_list va);
-
-ZGL afxError _ZglDinCtorCb(afxDrawInput din, void** args, afxUnit invokeNo);
 
 ZGL afxError _ZglDsysDtorCb(afxDrawSystem dsys);
 ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo);
