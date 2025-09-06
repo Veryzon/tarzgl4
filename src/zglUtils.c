@@ -398,10 +398,10 @@ _ZGL void ZglDetermineGlTargetInternalFormatType(avxRaster ras, GLenum *target, 
     AFX_ASSERT(intFmt);
     AFX_ASSERT(fmt);
     AFX_ASSERT(type);
-    afxResult cubemap = AvxTestRasterFlags(ras, avxRasterFlag_CUBEMAP);
+    afxResult cubemap = AvxGetRasterFlags(ras, avxRasterFlag_CUBEMAP);
     AFX_ASSERT(ras->m.whd.w); // always have at least one dimension.
     
-    if (AvxTestRasterFlags(ras, avxRasterFlag_1D)) // Y
+    if (AvxGetRasterFlags(ras, avxRasterFlag_1D)) // Y
     {
         if (ras->m.whd.d > 1)
         {
@@ -416,7 +416,7 @@ _ZGL void ZglDetermineGlTargetInternalFormatType(avxRaster ras, GLenum *target, 
     {
         // 2D or 2D array?
 
-        if (!AvxTestRasterFlags(ras, avxRasterFlag_3D))
+        if (!AvxGetRasterFlags(ras, avxRasterFlag_3D))
         {
             if (cubemap)
             {
@@ -1381,7 +1381,7 @@ _ZGL afxError zglUnpackTextureSubImage(glVmt const* gl, GLenum target, GLuint te
         }
         else
         {
-            zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
+            zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, target, texture);
             gl->TexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, (void const*)offset); _ZglThrowErrorOccuried();
         }
         break;
@@ -1410,7 +1410,7 @@ _ZGL afxError zglUnpackTextureSubImage(glVmt const* gl, GLenum target, GLuint te
         }
         else
         {
-            zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
+            zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, target, texture);
             gl->TexSubImage2D(target, level, xoffset, zoffset, width, depth, format, type, (void const*)offset); _ZglThrowErrorOccuried();
         }
         break;
@@ -1426,7 +1426,7 @@ _ZGL afxError zglUnpackTextureSubImage(glVmt const* gl, GLenum target, GLuint te
         }
         else
         {
-            zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
+            zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, target, texture);
             gl->TexSubImage1D(target, level, xoffset, width, format, type, (void const*)offset); _ZglThrowErrorOccuried();
         }
         break;
@@ -1439,7 +1439,7 @@ _ZGL afxError zglUnpackTextureSubImage(glVmt const* gl, GLenum target, GLuint te
         }
         else
         {
-            zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
+            zglBindTextureUnit(gl, ZGL_COPY_WRITE_RASTER, target, texture);
             gl->TexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + zoffset, level, xoffset, yoffset, width, height, format, type, (void const*)offset); _ZglThrowErrorOccuried();
             AFX_ASSERT(1 >= depth);
         }
@@ -1567,7 +1567,7 @@ _ZGL afxError zglDumpTextureSubImage(glVmt const* gl, GLenum target, GLuint text
     }
     else if (gl->GetnTexImage)
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1583,7 +1583,7 @@ _ZGL afxError zglDumpTextureSubImage(glVmt const* gl, GLenum target, GLuint text
     }
     else
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1612,7 +1612,7 @@ _ZGL afxError zglDumpTextureSubImageCompressed(glVmt const* gl, GLenum target, G
     }
     else if (gl->GetnCompressedTexImage)
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1628,7 +1628,7 @@ _ZGL afxError zglDumpTextureSubImageCompressed(glVmt const* gl, GLenum target, G
     }
     else
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1671,7 +1671,7 @@ _ZGL afxError zglPackTextureSubImage(glVmt const* gl, GLenum target, GLuint text
     }
     else if (gl->GetnTexImage)
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1687,7 +1687,7 @@ _ZGL afxError zglPackTextureSubImage(glVmt const* gl, GLenum target, GLuint text
     }
     else
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1716,7 +1716,7 @@ _ZGL afxError zglPackTextureSubImageCompressed(glVmt const* gl, GLenum target, G
     }
     else if (gl->GetnCompressedTexImage)
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();
@@ -1732,7 +1732,7 @@ _ZGL afxError zglPackTextureSubImageCompressed(glVmt const* gl, GLenum target, G
     }
     else
     {
-        zglBindTextureUnit(gl, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, target, texture);
+        zglBindTextureUnit(gl, ZGL_COPY_READ_RASTER, target, texture);
 
         gl->PixelStorei(GL_PACK_SKIP_PIXELS, xoffset); _ZglThrowErrorOccuried();
         gl->PixelStorei(GL_PACK_SKIP_ROWS, yoffset); _ZglThrowErrorOccuried();

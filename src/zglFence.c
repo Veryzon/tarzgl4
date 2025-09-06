@@ -41,7 +41,7 @@ _ZGL afxError _ZglSignalFence(zglDpu* dpu, avxFence fenc)
 {
     afxError err = AFX_ERR_NONE;
     afxInt32 expected = 0;
-    AfxCasAtom32(&fenc->m.signaled, &expected, 1);
+    //AfxCasAtom32(&fenc->m.signaled, &expected, 1);
     AfxStoreAtom32(&fenc->m.signaled, 1);
     return err;
 }
@@ -50,7 +50,7 @@ _ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, avxF
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, cnt, fences);
-    afxDrawSystem dsys = (void*)AvxGetFenceContext(fences[0]);
+    afxDrawSystem dsys = (void*)AvxGetFenceHost(fences[0]);
     afxUnit txuIdx = 0;
     glVmt const* gl = NIL;// &ddev->idd->dpus[txuIdx].gl;
 
@@ -79,26 +79,26 @@ _ZGL afxError _ZglWaitFenc(afxBool waitAll, afxUnit64 timeout, afxUnit cnt, avxF
             case GL_ALREADY_SIGNALED:
             {
                 // the sync object was signaled before the function was called.
-                fenc->m.signaled = TRUE;
+                AfxStoreAtom32(&fenc->m.signaled, 1);
                 break;
             }
             case GL_TIMEOUT_EXPIRED:
             {
                 // the sync object did not signal within the given timeout period.
-                fenc->m.signaled = FALSE;
+                //fenc->m.signaled = FALSE;
                 break;
             }
             case GL_CONDITION_SATISFIED:
             {
                 // the sync object was signaled within the given timeout period.
-                fenc->m.signaled = TRUE;
+                AfxStoreAtom32(&fenc->m.signaled, 1);
                 break;
             }
             case GL_WAIT_FAILED:
             default:
             {
                 // If an OpenGL Error occurred, then GL_WAIT_FAILED will be returned in addition to raising an error.
-                fenc->m.signaled = FALSE;
+                //fenc->m.signaled = FALSE;
                 break;
             }
             }
@@ -140,7 +140,7 @@ _ZGL afxError _ZglResetFenc(afxUnit cnt, avxFence const fences[])
     {
         avxFence fenc = fences[i];
         AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, fenc);
-        fenc->m.signaled = FALSE;
+        AfxStoreAtom32(&fenc->m.signaled, 0);
     }
     return err;
 }
@@ -149,7 +149,7 @@ _ZGL afxError _ZglFencDtorCb(avxFence fenc)
 {
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_FENC, 1, &fenc);
-    afxDrawSystem dsys = (void*)AvxGetFenceContext(fenc);
+    afxDrawSystem dsys = (void*)AvxGetFenceHost(fenc);
 
     if (fenc->glHandle)
     {
@@ -171,7 +171,7 @@ _ZGL afxError _ZglFencCtorCb(avxFence fenc, void** args, afxUnit invokeNo)
     if (_AVX_FENC_CLASS_CONFIG.ctor(fenc, args, invokeNo)) AfxThrowError();
     else
     {
-        afxDrawSystem dsys = AfxGetProvider(fenc);
+        afxDrawSystem dsys = AfxGetHost(fenc);
         fenc->fencUniqueId = ++dsys->fencUniqueId;
 
         fenc->glHandle = 0;

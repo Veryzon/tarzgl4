@@ -32,6 +32,14 @@ _ZGL void _DecodeCmdBindPipeline(zglDpu* dpu, _avxCmd const* cmd)
     DpuBindPipeline(dpu, cmd->BindPipeline.pip, cmd->BindPipeline.vin, cmd->BindPipeline.dynamics);
 }
 
+_ZGL void _DecodeCmdBindShadersEXT(zglDpu* dpu, _avxCmd const* cmd)
+{
+    for (afxUnit i = 0; i < cmd->BindShadersEXT.cnt; i++)
+    {
+        DpuBindShadersEXT(dpu, cmd->BindShadersEXT.stages[i].stage, cmd->BindShadersEXT.stages[i].shd);
+    }
+}
+
 _ZGL void _DecodeCmdBindBuffers(zglDpu* dpu, _avxCmd const* cmd)
 {
     DpuBindBuffers(dpu, cmd->BindBuffers.set, cmd->BindBuffers.pin, cmd->BindBuffers.cnt, cmd->BindBuffers.maps);
@@ -57,9 +65,9 @@ _ZGL void _DecodeCmdBindIndexBuffer(zglDpu* dpu, _avxCmd const* cmd)
     DpuBindIndexBuffer(dpu, cmd->BindIndexBuffer.buf, cmd->BindIndexBuffer.offset, cmd->BindIndexBuffer.range, cmd->BindIndexBuffer.idxSiz);
 }
 
-_ZGL void _DecodeCmdBindVertexInput(zglDpu* dpu, _avxCmd const* cmd)
+_ZGL void _DecodeCmdUseVertexInput(zglDpu* dpu, _avxCmd const* cmd)
 {
-    DpuBindVertexInput(dpu, cmd->DeclareVertex.vin);
+    DpuBindVertexInput(dpu, cmd->UseVertexInput.vin);
 }
 
 _ZGL void _DecodeCmdPushConstants(zglDpu* dpu, _avxCmd const* cmd)
@@ -171,7 +179,7 @@ _ZGL void _DecodeCmdRegenerateMipmapsSIGMA(zglDpu* dpu, _avxCmd const* cmd)
         AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
         AFX_ASSERT(flags == 0);
 
-        afxUnit rasLodCnt = ras->m.lodCnt;
+        afxUnit rasLodCnt = ras->m.mipCnt;
 
         DpuBindAndSyncRas(dpu, ZGL_COPY_READ_RASTER, ras, TRUE);
         gl->GenerateMipmap(ras->glTarget); _ZglThrowErrorOccuried();
@@ -191,6 +199,12 @@ _ZGL void _DecodeCmdRasBlit(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = AFX_ERR_NONE;
     _ZglDpuBlitRaster(dpu, cmd->BlitRaster.src, cmd->BlitRaster.dst, cmd->BlitRaster.opCnt, cmd->BlitRaster.ops, cmd->BlitRaster.flt);
+}
+
+_ZGL void _DecodeCmdRasClear(zglDpu* dpu, _avxCmd const* cmd)
+{
+    afxError err = AFX_ERR_NONE;
+    _ZglDpuClearRaster(dpu, cmd->ClearRaster.ras, &cmd->ClearRaster.value, cmd->ClearRaster.baseLod, cmd->ClearRaster.lodCnt, cmd->ClearRaster.baseLayer, cmd->ClearRaster.layerCnt);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -228,14 +242,13 @@ _ZGL void _DecodeCmdSetCullMode(zglDpu* dpu, _avxCmd const* cmd)
 _ZGL void _DecodeCmdCommenceDrawScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     DpuCommenceDrawScope(dpu, 
+        cmd->CommenceDrawScope.flags,
         cmd->CommenceDrawScope.canv, 
         &cmd->CommenceDrawScope.area, 
-        cmd->CommenceDrawScope.baseLayer, 
-        cmd->CommenceDrawScope.layerCnt, 
         cmd->CommenceDrawScope.targetCnt, 
         &cmd->CommenceDrawScope.targets[0], 
-        /*cmd->CommenceDrawScope.hasD ? &cmd->CommenceDrawScope.depth : NIL, */&cmd->CommenceDrawScope.depth,
-        /*cmd->CommenceDrawScope.hasS ? &cmd->CommenceDrawScope.stencil : NIL, */&cmd->CommenceDrawScope.stencil,
+        /*cmd->CommenceDrawScope.hasD ? &cmd->CommenceDrawScope.depth : NIL, */&cmd->CommenceDrawScope.ds[0],
+        /*cmd->CommenceDrawScope.hasS ? &cmd->CommenceDrawScope.stencil : NIL, */&cmd->CommenceDrawScope.ds[1],
         &cmd->CommenceDrawScope.dbgTag,
         FALSE);
 }
@@ -249,7 +262,13 @@ _ZGL void _DecodeCmdConcludeDrawScope(zglDpu* dpu, _avxCmd const* cmd)
 _ZGL void _DecodeCmdNextPass(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err;
-    AfxThrowError();
+    DpuNextPass(dpu);
+}
+
+_ZGL void _DecodeCmdClearCanvas(zglDpu* dpu, _avxCmd const* cmd)
+{
+    afxError err;
+    _ZglDpuClearCanvas(dpu, cmd->ClearCanvas.bufCnt, cmd->ClearCanvas.bins, cmd->ClearCanvas.values, cmd->ClearCanvas.areaCnt, cmd->ClearCanvas.areas);
 }
 
 _ZGL void _DecodeCmdDisableRasterization(zglDpu* dpu, _avxCmd const* cmd)
@@ -419,6 +438,7 @@ _ZGL _avxCmdLut const cmdDevmt =
     .MarkDebugStep = (void*)_DecodeCmdMarkDebugStep,
 
     .BindPipeline = (void*)_DecodeCmdBindPipeline,
+    .BindShadersEXT = (void*)_DecodeCmdBindShadersEXT,
     .BindBuffers = (void*)_DecodeCmdBindBuffers,
     .BindRasters = (void*)_DecodeCmdBindRasters,
     .BindSamplers = (void*)_DecodeCmdBindSamplers,
@@ -434,7 +454,7 @@ _ZGL _avxCmdLut const cmdDevmt =
     .DispatchIndirect = (void*)_DecodeCmdDispatchIndirect,
     .PushConstants = (void*)_DecodeCmdPushConstants,
 
-    .DeclareVertex = (void*)_DecodeCmdBindVertexInput,
+    .UseVertexInput = (void*)_DecodeCmdUseVertexInput,
     .BindVertexBuffers = (void*)_DecodeCmdBindVertexBuffers,
     .BindIndexBuffer = (void*)_DecodeCmdBindIndexBuffer,
     .SetPrimitiveTopology = (void*)_DecodeCmdSetPrimitiveTopology,
@@ -445,6 +465,7 @@ _ZGL _avxCmdLut const cmdDevmt =
     .CommenceDrawScope = (void*)_DecodeCmdCommenceDrawScope,
     .ConcludeDrawScope = (void*)_DecodeCmdConcludeDrawScope,
     .NextPass = (void*)_DecodeCmdNextPass,
+    .ClearCanvas = (void*)_DecodeCmdClearCanvas,
 
     .DisableRasterization = (void*)_DecodeCmdDisableRasterization,
     .EnableDepthBias = (void*)_DecodeCmdEnableDepthBias,
@@ -462,11 +483,12 @@ _ZGL _avxCmdLut const cmdDevmt =
     .SetDepthCompareOp = (void*)_DecodeCmdSetDepthCompareOp,
     .DisableDepthWrite = (void*)_DecodeCmdDisableDepthWrite,
     .SetBlendConstants = (void*)_DecodeCmdSetBlendConstants,
-
+    
     .RegenerateMipmapsSIGMA = (void*)_DecodeCmdRegenerateMipmapsSIGMA,
     .CopyRaster = (void*)_DecodeCmdRasCopy,
     .BlitRaster = (void*)_DecodeCmdRasBlit,
     .ResolveRaster = (void*)_DecodeCmdRasResolve,
+    .ClearRaster = (void*)_DecodeCmdRasClear,
     .PackRaster = (void*)_DecodeCmdRasPack,
     .UnpackRaster = (void*)_DecodeCmdRasUnpack,
 

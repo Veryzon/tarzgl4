@@ -21,7 +21,7 @@
 //#define WIN32_LEAN_AND_MEAN 1
 
 #include "afx/src/draw/ddi/avxImplementation.h"
-#include "qwadro/inc/afxQwadro.h"
+#include "qwadro/afxQwadro.h"
 
 #ifndef AVX_DRV_SRC
 #   ifdef _DEBUG

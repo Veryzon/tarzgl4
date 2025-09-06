@@ -19,6 +19,10 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
+//#define _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE TRUE
+//#define _FLUSH_ON_DRAW_SCOPE_CONCLUSION TRUE
+#define _CLEAR_CANVAS_WITH_GEN_FBOS TRUE
+
 _ZGL afxError _ZglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLuint fbo, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint z, afxBool multilayered)
 {
     afxError err = AFX_ERR_NONE;
@@ -161,6 +165,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
     if (!canv)
     {
         //if (dpu->canv || dpu->canvGpuHandle)
+        if (keepBound)
         {
             gl->BindFramebuffer(glTarget, 0); _ZglThrowErrorOccuried();
             dpu->canvGpuHandle = NIL;
@@ -169,8 +174,10 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
         return err;
     }
 
+    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SET_POP;
+
     AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
-    GLuint glHandle = canv->glHandle[dpu->m.exuIdx];
+    GLuint glHandle = canv->perDpu[dpu->m.exuIdx][fboHandleIdx].glHandle;
     zglUpdateFlags devUpdReq = (canv->updFlags & ZGL_UPD_FLAG_DEVICE);
 
     if (glHandle && !(devUpdReq & ZGL_UPD_FLAG_DEVICE_INST))
@@ -190,7 +197,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
         {
             AFX_ASSERT(gl->IsFramebuffer(glHandle));
             gl->DeleteFramebuffers(1, &(glHandle)); _ZglThrowErrorOccuried();
-            canv->glHandle[dpu->m.exuIdx] = NIL;
+            canv->perDpu[dpu->m.exuIdx][fboHandleIdx].glHandle = NIL;
             glHandle = NIL;
         }
 #if 0
@@ -217,72 +224,103 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
             }
         }
 
-        canv->glHandle[dpu->m.exuIdx] = glHandle;
+        canv->perDpu[dpu->m.exuIdx][fboHandleIdx].glHandle = glHandle;
         dpu->canv = canv;
 
-        afxUnit dsSurIdx[2] = { AFX_INVALID_INDEX, AFX_INVALID_INDEX };
-        afxUnit surCnt = AvxQueryDrawBufferSlots(canv, &surCnt, &dsSurIdx[0], &dsSurIdx[1]);
-        afxBool combinedDs = (dsSurIdx[1] == dsSurIdx[0]) && (dsSurIdx[0] != AFX_INVALID_INDEX);
-        avxRaster surfaces[_ZGL_MAX_SURF_PER_CANV];
-        AFX_ASSERT(_ZGL_MAX_SURF_PER_CANV >= surCnt);
-        AvxGetDrawBuffers(canv, 0, surCnt, surfaces);
-
-        afxUnit colorIdx = 0;
-        GLenum glAttachment;
-        GLuint glTexHandle;
-        GLenum glTexTarget;
-
-        for (afxUnit i = 0; i < surCnt; i++)
+        if (canv->m.flags & avxCanvasFlag_VOID)
         {
-            if (dsSurIdx[0] == i) // depth
-            {
-                if (!combinedDs)
-                    glAttachment = GL_DEPTH_ATTACHMENT;
-                else
-                    glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
-            }
-            else if (dsSurIdx[1] == i)
-            {
-                if (!combinedDs)
-                    glAttachment = GL_STENCIL_ATTACHMENT;
-                else
-                    glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
-            }
-            else
-            {
-                glAttachment = GL_COLOR_ATTACHMENT0 + colorIdx;
-                ++colorIdx;
-            }
+            /*
+                GL_ARB_framebuffer_no_attachments
+                (Or its equivalent in OpenGL ES: EXT_framebuffer_no_attachments)
+                Introduced in OpenGL 4.3, this extension allows framebuffers to be complete with no attachments; provided certain parameters are explicitly specified.
 
-            avxRaster ras = surfaces[i];
+                How to Use GL_ARB_framebuffer_no_attachments.
+                Instead of attaching textures or renderbuffers, we define the framebuffer's default width, 
+                height, layers, samples, and format. Then, the framebuffer can be complete with no attachments.
+            */
 
-            if (!ras)
+            // Set framebuffer defaults (required when no attachments are used
+            gl->FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, canv->m.whd.w);
+            gl->FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, canv->m.whd.h);
+            gl->FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_LAYERS, canv->m.whd.d);
+            gl->FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_SAMPLES, (2 ^ canv->m.lodCnt));
+            // From zglRaster.c
+            // If you don't use the VK_EXT_sample_locations extension, 
+            // Vulkan uses implementation-defined fixed sample locations (equivalent to fixedsamplelocations = GL_TRUE in OpenGL).
+            GLboolean fixedsamplelocations = GL_TRUE;
+            gl->FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS, fixedsamplelocations);
+
+            // No attachments at all
+            gl->DrawBuffer(GL_NONE);
+            gl->ReadBuffer(GL_NONE);
+        }
+        else
+        {
+            afxUnit dsSurIdx[2] = { AFX_INVALID_INDEX, AFX_INVALID_INDEX };
+            afxUnit surCnt = AvxQueryCanvasBins(canv, &surCnt, &dsSurIdx[0], &dsSurIdx[1]);
+            afxBool combinedDs = (dsSurIdx[1] == dsSurIdx[0]) && (dsSurIdx[0] != AFX_INVALID_INDEX);
+            avxRaster surfaces[_ZGL_MAX_SURF_PER_CANV];
+            AFX_ASSERT(_ZGL_MAX_SURF_PER_CANV >= surCnt);
+            AvxGetDrawBuffers(canv, 0, surCnt, surfaces);
+
+            afxUnit colorIdx = 0;
+            GLenum glAttachment;
+            GLuint glTexHandle;
+            GLenum glTexTarget;
+
+            for (afxUnit i = 0; i < surCnt; i++)
             {
-                AfxThrowError();
-                glTexHandle = 0;
-                glTexTarget = GL_TEXTURE_2D;
-                _ZglBindFboAttachment(dpu->gl, glTarget, NIL, glAttachment, glTexTarget, glTexHandle, 0, 0, (canv->m.whdMin.d > 1));
-            }
-            else
-            {
-                AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
-                AFX_ASSERT(AvxTestRasterUsage(ras, avxRasterUsage_DRAW));
-
-                DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras, FALSE);
-
-                if (avxRasterUsage_DRAW == AvxTestRasterUsage(ras, avxRasterUsage_ALL))
+                if (dsSurIdx[0] == i) // depth
                 {
-                    glTexHandle = ras->glHandle;
-                    glTexTarget = GL_RENDERBUFFER;
-                    AFX_ASSERT(gl->IsRenderBuffer(glTexHandle));
+                    if (!combinedDs)
+                        glAttachment = GL_DEPTH_ATTACHMENT;
+                    else
+                        glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
+                }
+                else if (dsSurIdx[1] == i)
+                {
+                    if (!combinedDs)
+                        glAttachment = GL_STENCIL_ATTACHMENT;
+                    else
+                        glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
                 }
                 else
                 {
-                    glTexHandle = ras->glHandle;
-                    glTexTarget = ras->glTarget;
-                    AFX_ASSERT(gl->IsTexture(glTexHandle));
+                    glAttachment = GL_COLOR_ATTACHMENT0 + colorIdx;
+                    ++colorIdx;
                 }
-                _ZglBindFboAttachment(dpu->gl, glTarget, NIL, glAttachment, glTexTarget, glTexHandle, ras->m.baseLod, ras->m.baseLayer, (canv->m.whdMin.d > 1));
+
+                avxRaster ras = surfaces[i];
+
+                if (!ras)
+                {
+                    AfxThrowError();
+                    glTexHandle = 0;
+                    glTexTarget = GL_TEXTURE_2D;
+                    _ZglBindFboAttachment(dpu->gl, glTarget, NIL, glAttachment, glTexTarget, glTexHandle, 0, 0, (canv->m.whdMin.d > 1));
+                }
+                else
+                {
+                    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+                    AFX_ASSERT(AvxGetRasterUsage(ras, avxRasterUsage_DRAW));
+
+                    DpuBindAndSyncRas(dpu, ZGL_LAST_COMBINED_TEXTURE_IMAGE_UNIT, ras, FALSE);
+#if RENDERBUFFER_ENABLED
+                    if (avxRasterUsage_DRAW == AvxGetRasterUsage(ras, avxRasterUsage_ALL))
+                    {
+                        glTexHandle = ras->glHandle;
+                        glTexTarget = GL_RENDERBUFFER;
+                        AFX_ASSERT(gl->IsRenderBuffer(glTexHandle));
+                    }
+                    else
+#endif
+                    {
+                        glTexHandle = ras->glHandle;
+                        glTexTarget = ras->glTarget;
+                        AFX_ASSERT(gl->IsTexture(glTexHandle));
+                    }
+                    _ZglBindFboAttachment(dpu->gl, glTarget, NIL, glAttachment, glTexTarget, glTexHandle, ras->m.baseMip, ras->m.baseLayer, (canv->m.whdMin.d > 1));
+                }
             }
         }
 
@@ -338,6 +376,16 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
     return err;
 }
 
+
+_ZGL void DpuNextPass(zglDpu* dpu)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
+    gl->Flush(); _ZglThrowErrorOccuried();
+}
+
 _ZGL void DpuConcludeDrawScope(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
@@ -345,9 +393,6 @@ _ZGL void DpuConcludeDrawScope(zglDpu* dpu)
 
     AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
     dpu->inDrawScope = FALSE;
-
-    // https://graphics1600.rssing.com/chan-25333833/all_p4.html
-    // Switch to zero to immediately trigger any pending buffer operation.
 
     afxUnit invalidCnt = dpu->invalidDrawBufCnt;
     afxBool clipped = dpu->drawAreaClipped;
@@ -366,22 +411,33 @@ _ZGL void DpuConcludeDrawScope(zglDpu* dpu)
     }
 #endif
 
-    _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, 0, TRUE);
-    _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, 0, TRUE);
+    // https://graphics1600.rssing.com/chan-25333833/all_p4.html
+    // Switch to zero to immediately trigger any pending buffer operation.
 
-    if (dpu->mustCloseDrawScopeDgbGrp)
+    afxBool toSuspend = (dpu->drawScopeFlags & avxDrawScopeFlag_SUSPEND);
+
+    if (!toSuspend)
     {
-        gl->PopDebugGroup(); _ZglThrowErrorOccuried();
+#if _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE
+        _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, 0, TRUE);
+#endif
+        _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, 0, TRUE);
+
+        if (dpu->mustCloseDrawScopeDgbGrp)
+        {
+            gl->PopDebugGroup(); _ZglThrowErrorOccuried();
+        }
+
+#if _FLUSH_ON_DRAW_SCOPE_CONCLUSION
+        gl->Flush(); _ZglThrowErrorOccuried(); // flush was presenting/swapping without wglSwapBuffers.
+#endif
     }
-
-    gl->Flush(); _ZglThrowErrorOccuried(); // flush was presenting/swapping without wglSwapBuffers.
-
     avxCanvas canv = dpu->canv;
 
     if (canv)
     {
         afxUnit surCnt;
-        surCnt = AvxQueryDrawBufferSlots(canv, NIL, NIL, NIL);
+        surCnt = AvxQueryCanvasBins(canv, NIL, NIL, NIL);
 #if 0
         if (surCnt)
         {
@@ -404,7 +460,7 @@ _ZGL void DpuConcludeDrawScope(zglDpu* dpu)
     }
 }
 
-_ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area, afxUnit baseLayer, afxUnit layerCnt, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo)
+_ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas canv, afxLayeredRect const* area, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
@@ -539,7 +595,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
 
     afxUnit maxColSurCnt;
     afxUnit dsSurIdx[2] = { AFX_INVALID_INDEX, AFX_INVALID_INDEX };
-    afxUnit maxSurCnt = AvxQueryDrawBufferSlots(canv, &maxColSurCnt, &dsSurIdx[0], &dsSurIdx[1]);
+    afxUnit maxSurCnt = AvxQueryCanvasBins(canv, &maxColSurCnt, &dsSurIdx[0], &dsSurIdx[1]);
     afxBool hasDs = ((dsSurIdx[1] != AFX_INVALID_INDEX) || (dsSurIdx[0] != AFX_INVALID_INDEX));
     afxBool combinedDs = (hasDs && (dsSurIdx[1] == dsSurIdx[0]));
     cCnt = AFX_MIN(cCnt, maxColSurCnt);
@@ -558,8 +614,8 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
 
     for (afxUnit i = 0; i < cCnt; i++)
     {
-        glAttach = GL_COLOR_ATTACHMENT0 + i;
         dt = &c[i];
+        glAttach = GL_COLOR_ATTACHMENT0 + dt->bufIdx;
 
         if (!(i < maxColSurCnt))
             continue;
@@ -570,7 +626,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
         {
             storeBufs[storeCnt] = glAttach;
             storeCnt++;
-            storeBitmask |= AFX_BITMASK(i);
+            storeBitmask |= AFX_BITMASK(dt->bufIdx);
             break;
         }
         case avxStoreOp_DISCARD:
@@ -579,7 +635,8 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
         {
             storeBufs[storeCnt] = GL_NONE;
             storeCnt++;
-            storeBitmask |= AFX_BITMASK(8 + i);
+            storeBitmask &= ~AFX_BITMASK(dt->bufIdx);
+            //storeBitmask |= AFX_BITMASK(8 + i);
 
             invalidBufs[invalidCnt] = glAttach;
             dpu->invalidDrawBufs[invalidCnt] = glAttach;
@@ -655,35 +712,47 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
 
     // TODO iterate for each canvas surface against arguments
 
-    _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, canv, TRUE);
+    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SET_POP;
+
+#if _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE
     _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, canv, TRUE);
-    GLuint glHandle = canv->glHandle[dpu->m.exuIdx];
+#endif
+    _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, canv, TRUE);
+    GLuint glHandle = canv->perDpu[dpu->m.exuIdx][fboHandleIdx].glHandle;
     AFX_ASSERT(gl->IsFramebuffer(glHandle));
     //dpu->activeRs.canv = canv;
 
-    afxBool clipped = ((area->x && (area->x > 0)) ||
-        (area->y && (area->y > 0)) ||
-        (area->w && (area->w < canvWhd.w)) ||
-        (area->h && (area->h < canvWhd.h)));
-    dpu->drawAreaClipped = clipped;
+    afxBool resuming = (flags & avxDrawScopeFlag_RESUME);
 
-    if (invalidCnt)
+    afxBool clipped = ((area->area.x && (area->area.x > 0)) ||
+        (area->area.y && (area->area.y > 0)) ||
+        (area->area.w && (area->area.w < canvWhd.w)) ||
+        (area->area.h && (area->area.h < canvWhd.h)));
+    dpu->drawAreaClipped = clipped;
+    dpu->drawArea = *area;
+
+    dpu->drawScopeFlags = flags;
+
+    if (!resuming)
     {
-        if (clipped)
+        if (invalidCnt)
         {
-            gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, area->x, area->y, area->w, area->h); _ZglThrowErrorOccuried();
-        }
-        else
-        {
-            gl->InvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs); _ZglThrowErrorOccuried();
+            if (clipped)
+            {
+                gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, area->area.x, area->area.y, area->area.w, area->area.h); _ZglThrowErrorOccuried();
+            }
+            else
+            {
+                gl->InvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs); _ZglThrowErrorOccuried();
+            }
         }
     }
 
-#if 0
-    if (canv->storeBitmask != storeBitmask)
+#if !0
+    if (canv->perDpu[dpu->m.exuIdx][fboHandleIdx].storeBitmask != storeBitmask)
 #endif
     {
-        canv->storeBitmask = storeBitmask; // cache it
+        canv->perDpu[dpu->m.exuIdx][fboHandleIdx].storeBitmask = storeBitmask; // cache it
         gl->DrawBuffers(storeCnt, storeBufs); _ZglThrowErrorOccuried();
 
         // What to do with depth/stencil storage set to discard?
@@ -695,56 +764,189 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxCanvas canv, afxRect const* area,
 
     // TODO: Sanitize area to canvas' bounds.
     GLint scissor[4];
-    scissor[0] = area->x;
-    scissor[1] = area->y;
-    scissor[2] = area->w;
-    scissor[3] = area->h;
-    AFX_ASSERT(area->w);
-    AFX_ASSERT(area->h);
+    scissor[0] = area->area.x;
+    scissor[1] = area->area.y;
+    scissor[2] = area->area.w;
+    scissor[3] = area->area.h;
+    AFX_ASSERT(area->area.w);
+    AFX_ASSERT(area->area.h);
     AFX_ASSERT(gl->ScissorArrayv);
     gl->ScissorArrayv(0, 1, scissor);
 
     // We must store the scissor rects to avoid DPU to further apply invalid rects.
     for (afxUnit iter = 0; iter < ZGL_MAX_VIEWPORTS; iter++)
     {
-        dpu->nextScisRects[iter] = *area;
+        dpu->nextScisRects[iter] = area->area;
         dpu->nextScisUpdMask |= AFX_BITMASK(iter);
     }
 
     // Effectively clear the buffers.
-
-    for (afxUnit i = 0; i < clearCnt; i++)
+    if (!resuming)
     {
-        switch (clearBufs[i])
+        for (afxUnit i = 0; i < clearCnt; i++)
         {
-        case GL_DEPTH_ATTACHMENT:
+            switch (clearBufs[i])
+            {
+            case GL_DEPTH_ATTACHMENT:
+            {
+                dt = d;
+                gl->ClearBufferfv(GL_DEPTH, 0, &dt->clearVal.depth); _ZglThrowErrorOccuried();
+                break;
+            }
+            case GL_DEPTH_STENCIL_ATTACHMENT:
+            {
+                dt = d;
+                gl->ClearBufferfi(GL_DEPTH_STENCIL, 0, dt->clearVal.depth, dt->clearVal.stencil); _ZglThrowErrorOccuried();
+                break;
+            }
+            case GL_STENCIL_ATTACHMENT:
+            {
+                dt = s;
+                GLint sCv = dt->clearVal.stencil;
+                gl->ClearBufferiv(GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
+                break;
+            }
+            default:
+            {
+                dt = &c[i];
+                afxReal const* rgba = dt->clearVal.rgba;
+                GLint dbi = clearBufs[i] - GL_COLOR_ATTACHMENT0;
+                gl->ClearBufferfv(GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
+                break;
+            }
+            }
+        }
+    }
+}
+
+_ZGL afxError _ZglDpuClearCanvas(zglDpu* dpu, afxUnit bufCnt, afxUnit const bins[], avxClearValue const values[], afxUnit areaCnt, afxLayeredRect const areas[])
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+    AFX_ASSERT(dpu->inDrawScope);
+    // This is not a transfer command, as it required a ongoing draw scope to having a target canvas.
+
+    // void vkCmdClearAttachments( VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount, const VkClearRect* pRects);
+
+    GLuint fboOpDst;
+    GLuint tempFbo;
+    afxBool useTempFbo = _CLEAR_CANVAS_WITH_GEN_FBOS;
+    if (useTempFbo)
+    {
+        gl->GenFramebuffers(1, &tempFbo); _ZglThrowErrorOccuried();
+        fboOpDst = tempFbo;
+    }
+    else
+    {
+        fboOpDst = dpu->fboOpDst;
+    }
+
+    AfxThrowError();
+    // What about the bound FBO via draw scope?
+    gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, fboOpDst);
+
+#if !0
+    // TODO: It will be need to generate a new FBO, bind attachments to it, to be able to choose LOD and layer, then clear.
+    for (afxUnit i = 0; i < bufCnt; i++)
+    {
+        avxRaster ras;
+        if(!AvxGetDrawBuffers(dpu->canv, bins[i], 1, &ras))
+            continue;
+
+        for (afxUnit j = 0; j < areaCnt; j++)
         {
-            dt = d;
-            gl->ClearBufferfv(GL_DEPTH, 0, &dt->clearVal.depth); _ZglThrowErrorOccuried();
-            break;
+            afxLayeredRect const* area = &areas[j];
+            GLint scissor[4];
+            scissor[0] = area->area.x;
+            scissor[1] = area->area.y;
+            scissor[2] = area->area.w;
+            scissor[3] = area->area.h;
+            AFX_ASSERT(area->area.w);
+            AFX_ASSERT(area->area.h);
+            AFX_ASSERT(gl->ScissorArrayv);
+            gl->ScissorArrayv(0, 1, scissor);
+
+            for (afxUnit k = 0; k < area->layerCnt; k++)
+            {
+                afxUnit layerIdx = area->baseLayer + k;
+
+                if (gl->ClearNamedFramebufferfv)
+                {
+                    _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, fboOpDst, ras->glAttachment, ras->glTarget, ras->glHandle, 0, layerIdx, FALSE);
+
+                    switch (ras->glAttachment)
+                    {
+                    case GL_DEPTH_ATTACHMENT:
+                    {
+                        gl->ClearNamedFramebufferfv(fboOpDst, GL_DEPTH, 0, &values[i].depth); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    case GL_DEPTH_STENCIL_ATTACHMENT:
+                    {
+                        gl->ClearNamedFramebufferfi(fboOpDst, GL_DEPTH_STENCIL, 0, values[i].depth, values[i].stencil); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    case GL_STENCIL_ATTACHMENT:
+                    {
+                        GLint sCv = values[i].stencil;
+                        gl->ClearNamedFramebufferiv(fboOpDst, GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    default:
+                    {
+                        afxReal const* rgba = values[i].rgba;
+                        GLint dbi = GL_COLOR_ATTACHMENT0;
+                        gl->ClearNamedFramebufferfv(fboOpDst, GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    }
+                    _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, fboOpDst, ras->glAttachment, ras->glTarget, NIL, 0, layerIdx, FALSE);
+                }
+                else
+                {
+                    _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, NIL, ras->glAttachment, ras->glTarget, ras->glHandle, 0, layerIdx, FALSE);
+
+                    switch (ras->glAttachment)
+                    {
+                    case GL_DEPTH_ATTACHMENT:
+                    {
+                        gl->ClearBufferfv(GL_DEPTH, 0, &values[i].depth); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    case GL_DEPTH_STENCIL_ATTACHMENT:
+                    {
+                        gl->ClearBufferfi(GL_DEPTH_STENCIL, 0, values[i].depth, values[i].stencil); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    case GL_STENCIL_ATTACHMENT:
+                    {
+                        GLint sCv = values[i].stencil;
+                        gl->ClearBufferiv(GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    default:
+                    {
+                        afxReal const* rgba = values[i].rgba;
+                        GLint dbi = GL_COLOR_ATTACHMENT0;
+                        gl->ClearBufferfv(GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
+                        break;
+                    }
+                    }
+                    _ZglBindFboAttachment(gl, GL_DRAW_FRAMEBUFFER, NIL, ras->glAttachment, ras->glTarget, NIL, 0, layerIdx, FALSE);
+                }
+            }
         }
-        case GL_DEPTH_STENCIL_ATTACHMENT:
-        {
-            dt = d;
-            gl->ClearBufferfi(GL_DEPTH_STENCIL, 0, dt->clearVal.depth, dt->clearVal.stencil); _ZglThrowErrorOccuried();
-            break;
-        }
-        case GL_STENCIL_ATTACHMENT:
-        {
-            dt = s;
-            GLint sCv = dt->clearVal.stencil;
-            gl->ClearBufferiv(GL_STENCIL, 0, &sCv); _ZglThrowErrorOccuried();
-            break;
-        }
-        default:
-        {
-            dt = &c[i];
-            afxReal const* rgba = dt->clearVal.rgba;
-            GLint dbi = clearBufs[i] - GL_COLOR_ATTACHMENT0;
-            gl->ClearBufferfv(GL_COLOR, /*GL_DRAW_BUFFER0 +*/ dbi, rgba); _ZglThrowErrorOccuried();
-            break;
-        }
-        }
+    }
+#endif
+
+    if (useTempFbo)
+    {
+        gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        gl->DeleteFramebuffers(1, &tempFbo); _ZglThrowErrorOccuried();
+    }
+    else
+    {
+        gl->BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
 }
 
@@ -773,10 +975,10 @@ _ZGL afxError _ZglDpuResolveCanvas(zglDpu* dpu, avxCanvas src, avxCanvas dst, af
             Avoid any format conversion or scaling.
     */
 
-    for (afxUnit sbufIdx = 0, dbufIdx = 0; (sbufIdx < src->m.slotCnt) && (dbufIdx < dst->m.slotCnt); sbufIdx++, dbufIdx++)
+    for (afxUnit sbufIdx = 0, dbufIdx = 0; (sbufIdx < src->m.binCnt) && (dbufIdx < dst->m.binCnt); sbufIdx++, dbufIdx++)
     {
-        if (src->m.slots[sbufIdx].ras && dst->m.slots[dbufIdx].ras)
-            _ZglDpuResolveRaster(dpu, src->m.slots[sbufIdx].ras, dst->m.slots[dbufIdx].ras, opCnt, ops);
+        if (src->m.bins[sbufIdx].buf && dst->m.bins[dbufIdx].buf)
+            _ZglDpuResolveRaster(dpu, src->m.bins[sbufIdx].buf, dst->m.bins[dbufIdx].buf, opCnt, ops);
     }
     return err;
 }
@@ -801,10 +1003,10 @@ _ZGL afxError _ZglDpuBlitCanvas(zglDpu* dpu, avxCanvas src, avxCanvas dst, afxUn
         (e.g., for mipmap generation or format conversion), a shader-based blit might be required.
     */
 
-    for (afxUnit sbufIdx = 0, dbufIdx = 0; (sbufIdx < src->m.slotCnt) && (dbufIdx < dst->m.slotCnt); sbufIdx++, dbufIdx++)
+    for (afxUnit sbufIdx = 0, dbufIdx = 0; (sbufIdx < src->m.binCnt) && (dbufIdx < dst->m.binCnt); sbufIdx++, dbufIdx++)
     {
-        if (src->m.slots[sbufIdx].ras && dst->m.slots[dbufIdx].ras)
-            _ZglDpuBlitRaster(dpu, src->m.slots[sbufIdx].ras, dst->m.slots[dbufIdx].ras, opCnt, ops, flt);
+        if (src->m.bins[sbufIdx].buf && dst->m.bins[dbufIdx].buf)
+            _ZglDpuBlitRaster(dpu, src->m.bins[sbufIdx].buf, dst->m.bins[dbufIdx].buf, opCnt, ops, flt);
     }
     return err;
 }
@@ -819,9 +1021,9 @@ _ZGL afxError _ZglReadjustCanvasCb(avxCanvas canv, afxWarp const whd)
 	AFX_ASSERT(whd[1]);
     afxWarp minWhd = { ZGL_MAX_CANVAS_WIDTH, ZGL_MAX_CANVAS_HEIGHT, ZGL_MAX_CANVAS_LAYERS }, surWhd;
     
-    for (afxUnit i = 0; i < canv->m.slotCnt; i++)
+    for (afxUnit i = 0; i < canv->m.binCnt; i++)
     {
-        avxRaster ras = canv->m.slots[i].ras;
+        avxRaster ras = canv->m.bins[i].ras;
 
         if (ras)
         {
@@ -861,26 +1063,29 @@ _ZGL afxError _ZglCanvDtor(avxCanvas canv)
     afxError err = AFX_ERR_NONE;
     AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
 
-    afxDrawSystem dsys = AfxGetProvider(canv);
+    afxDrawSystem dsys = AvxGetCanvasHost(canv);
 
-    for (afxUnit i = 0; i < canv->m.slotCnt; i++)
+    for (afxUnit i = 0; i < canv->m.binCnt; i++)
     {
-        avxRaster ras = canv->m.slots[i].ras;
+        avxRaster ras = canv->m.bins[i].buf;
 
         if (ras)
         {
             AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
             AfxDisposeObjects(1, &ras);
-            canv->m.slots[i].ras = NIL;
+            canv->m.bins[i].buf = NIL;
         }
     }
 
-    for (afxUnit i = 0; i < ZGL_MAX_FBO_HANDLES; i++)
+    for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        if (canv->glHandle[i])
+        for (afxUnit j = 0; j < _ZGL_FBO_SET_POP; j++)
         {
-            _ZglDsysEnqueueDeletion(dsys, i, GL_FRAMEBUFFER, (afxSize)canv->glHandle[i]);
-            canv->glHandle[i] = 0;
+            if (canv->perDpu[i][j].glHandle)
+            {
+                _ZglDsysEnqueueDeletion(dsys, i, GL_FRAMEBUFFER, (afxSize)canv->perDpu[i][j].glHandle);
+                canv->perDpu[i][j].glHandle = 0;
+            }
         }
     }
 
@@ -899,12 +1104,11 @@ _ZGL afxError _ZglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo)
     {
         //canv->m.readjust = _ZglReadjustCanvasCb;
 
-        afxDrawSystem dsys = AfxGetProvider(canv);
+        afxDrawSystem dsys = AvxGetCanvasHost(canv);
         canv->canvUniqueId = ++dsys->canvUniqueId;
 
         canv->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
-        AfxZero(canv->glHandle, sizeof(canv->glHandle));
-        canv->storeBitmask = NIL;
+        AfxZero(canv->perDpu, sizeof(canv->perDpu));
     }
     return err;
 }

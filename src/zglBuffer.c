@@ -28,7 +28,10 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
 
     if (!buf)
     {
-        gl->BindBuffer(glTarget, 0); _ZglThrowErrorOccuried();
+        if (keepBound)
+        {
+            gl->BindBuffer(glTarget, 0); _ZglThrowErrorOccuried();
+        }
     }
     else
     {
@@ -74,27 +77,21 @@ _ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afx
             if ((!keepBound) && (glTarget == buf->glTarget) && gl->CreateBuffers && gl->NamedBufferStorage)
             {
                 gl->CreateBuffers(1, &glHandle); _ZglThrowErrorOccuried();
-
-                if (buf->m.tag.len)
-                {
-                    gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
-                }
                 gl->NamedBufferStorage(glHandle, buf->m.reqSiz, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
             }
             else
             {
                 gl->GenBuffers(1, &glHandle); _ZglThrowErrorOccuried();
                 gl->BindBuffer(buf->glTarget, glHandle); _ZglThrowErrorOccuried();
-
-                if (buf->m.tag.len)
-                {
-                    gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
-                }
                 gl->BufferStorage(buf->glTarget, buf->m.reqSiz, NIL, buf->glGenAccess); _ZglThrowErrorOccuried();
                 bound = TRUE;
             }
 
             AFX_ASSERT(gl->IsBuffer(glHandle));
+            if (buf->m.tag.len)
+            {
+                gl->ObjectLabel(GL_BUFFER, glHandle, buf->m.tag.len, (GLchar const*)buf->m.tag.start); _ZglThrowErrorOccuried();
+            }
             buf->glHandle = glHandle;
             buf->updFlags &= ~(ZGL_UPD_FLAG_DEVICE);
             //AfxReportMessage("GPU buffer %p ready. %u, %u, %x", buf, buf->glTarget, glHandle, buf->m.usage);
@@ -244,14 +241,13 @@ _ZGL afxError DpuDumpBuffer(zglDpu* dpu, avxBuffer buf, afxByte* dst, afxUnit op
     afxBool bufSynced = FALSE;
     afxBool bufBound = FALSE;
 
-    // LINEAR VERSION
-
     for (afxUnit i = 0; i < opCnt; i++)
     {
         avxBufferIo const* op = &ops[i];
 
         if (op->srcStride == op->dstStride)
         {
+            // LINEAR VERSION
             afxUnit bufRange = AFX_MIN(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
 
             if (gl->GetNamedBufferSubData)
@@ -274,16 +270,9 @@ _ZGL afxError DpuDumpBuffer(zglDpu* dpu, avxBuffer buf, afxByte* dst, afxUnit op
                 gl->GetBufferSubData(glTarget, op->srcOffset, bufRange, &dst[op->dstOffset]); _ZglThrowErrorOccuried();
             }
         }
-    }
-
-    // STRIDED VERSION
-
-    for (afxUnit i = 0; i < opCnt; i++)
-    {
-        avxBufferIo const* op = &ops[i];
-
-        if (op->srcStride != op->dstStride)
+        else
         {
+            // STRIDED VERSION
             afxUnit bufRange = AFX_MIN(op->rowCnt * op->srcStride, AvxGetBufferCapacity(buf, op->srcOffset));
 
             if (gl->MapNamedBufferRange)
@@ -345,14 +334,17 @@ _ZGL afxError DpuUpdateBuffer(zglDpu* dpu, avxBuffer buf, afxByte const* src, af
     afxBool bufSynced = FALSE;
     afxBool bufBound = FALSE;
 
-    // LINEAR VERSION
-
     for (afxUnit i = 0; i < opCnt; i++)
     {
         avxBufferIo const* op = &ops[i];
 
+        /*
+            If your project is crashing here, maybe it is because you are not waiting for completion before deallocating the source.
+        */
+
         if (op->srcStride == op->dstStride)
         {
+            // LINEAR VERSION
             afxUnit bufRange = AFX_MIN(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
 
             if (gl->NamedBufferSubData)
@@ -375,16 +367,9 @@ _ZGL afxError DpuUpdateBuffer(zglDpu* dpu, avxBuffer buf, afxByte const* src, af
                 gl->BufferSubData(glTarget, op->dstOffset, bufRange, &src[op->srcOffset]); _ZglThrowErrorOccuried();
             }
         }
-    }
-
-    // STRIDED VERSION
-
-    for (afxUnit i = 0; i < opCnt; i++)
-    {
-        avxBufferIo const* op = &ops[i];
-
-        if (op->srcStride != op->dstStride)
+        else
         {
+            // STRIDED VERSION
             afxUnit bufRange = AFX_MIN(op->rowCnt * op->dstStride, AvxGetBufferCapacity(buf, op->dstOffset));
 
             if (gl->MapNamedBufferRange)
@@ -532,7 +517,7 @@ _ZGL afxError _DpuUploadBuffer(zglDpu* dpu, avxBuffer buf, afxStream in, afxUnit
                 bufSynced = TRUE;
             }
 
-            afxByte const* dstAt = gl->MapNamedBufferRange(buf->glHandle, op->dstOffset, bufRange, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
+            afxByte* dstAt = gl->MapNamedBufferRange(buf->glHandle, op->dstOffset, bufRange, buf->glMapRangeAccess); _ZglThrowErrorOccuried();
 
             if (!dstAt)
             {
@@ -541,9 +526,9 @@ _ZGL afxError _DpuUploadBuffer(zglDpu* dpu, avxBuffer buf, afxStream in, afxUnit
             }
 
             if (op->dstStride != op->srcStride)
-                AfxWriteStreamAt2(in, op->srcOffset, bufRange, op->dstStride, dstAt, op->srcStride);
+                AfxReadStreamAt2(in, op->srcOffset, bufRange, op->dstStride, dstAt, op->srcStride);
             else
-                AfxWriteStreamAt(in, op->srcOffset, bufRange, 0, dstAt);
+                AfxReadStreamAt(in, op->srcOffset, bufRange, 0, dstAt);
 
             gl->UnmapNamedBuffer(buf->glHandle); _ZglThrowErrorOccuried();
         }
@@ -684,7 +669,7 @@ _ZGL afxError _BufRemapCb(avxBuffer buf, afxUnit offset, afxUnit range, afxFlags
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
     AFX_ASSERT_RANGE(buf->m.cap, offset, range);
 
-    afxDrawSystem dsys = AvxGetBufferProvider(buf);
+    afxDrawSystem dsys = AvxGetBufferHost(buf);
     AFX_ASSERT_OBJECTS(afxFcc_DSYS, 1, &dsys);
 
     afxDrawQueue dque;
@@ -750,7 +735,7 @@ _ZGL afxError _BufDtorCb(avxBuffer buf)
 {
     afxError err = AFX_ERR_NONE;
 
-    afxDrawSystem dsys = AvxGetBufferProvider(buf);
+    afxDrawSystem dsys = AvxGetBufferHost(buf);
 
     if (buf->m.storage[0].mapRange)
     {
@@ -790,7 +775,7 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
         return err;
     }
 
-    afxDrawSystem dsys = AfxGetProvider(buf);
+    afxDrawSystem dsys = AvxGetBufferHost(buf);
     buf->bufUniqueId = ++dsys->bufUniqueId;
 
     buf->glHandle = NIL;
@@ -1032,6 +1017,8 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
 
     if (err && _AVX_BUF_CLASS_CONFIG.dtor(buf))
         AfxThrowError();
+
+    // Indirect Command Buffers (e.g., via glMultiDrawIndirect) are not reliably shareable because they are attached to execution context-specific stuff.
 
     return err;
 }

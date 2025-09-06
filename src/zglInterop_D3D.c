@@ -318,7 +318,7 @@ ZGL afxError checkForResizeDxgi(zglDpu* dpu, afxSurface dout);
 _ZGL afxError setObjectsLockedDxgi(zglDpu* dpu, afxSurface dout, afxBool locked)
 {
     afxError err = AFX_ERR_NONE;
-    afxDrawDevice ddev = AfxGetProvider(dout);
+    afxDrawDevice ddev = AvxGetSurfaceHost(dout);
 
     if (dout->dxgi.mRenderbufferBufferHandle == NIL)
     {
@@ -405,7 +405,7 @@ _ZGL afxError postSubBufferDxgi(zglDpu* dpu, afxSurface dout, afxRect const* rc)
 _ZGL afxError bindTexImageDxgi(zglDpu* dpu, afxSurface dout, avxRaster texture, GLint buffer)
 {
     afxError err;
-    afxDrawDevice ddev = AfxGetProvider(dout);
+    afxDrawDevice ddev = AvxGetSurfaceHost(dout);
 
     AFX_ASSERT(dout->dxgi.mTextureHandle == NIL);
     GLuint textureID = texture->glHandle;
@@ -506,7 +506,7 @@ _ZGL afxError createSwapchainDxgi(zglDpu* dpu, afxSurface dout)
     afxError err = NIL;
     glVmt const* gl = dpu->gl;
 
-    afxDrawDevice ddev = AfxGetProvider(dout);
+    afxDrawDevice ddev = AvxGetSurfaceHost(dout);
 
     if (setObjectsLockedDxgi(dpu, dout, FALSE)) AfxThrowError();
     else

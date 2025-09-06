@@ -495,25 +495,25 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
                     static afxDrawPortInfo const portCaps[] =
                     {
                         {
-                            .capabilities = afxDrawCaps_DRAW | afxDrawCaps_COMPUTE | afxDrawCaps_TRANSFER | afxDrawCaps_BLIT | afxDrawCaps_SAMPLE | afxDrawCaps_VIDEO,
+                            .capabilities = afxDrawFn_DRAW | afxDrawFn_COMPUTE | afxDrawFn_TRANSFER | afxDrawFn_BLIT | afxDrawFn_SAMPLE | afxDrawFn_VIDEO,
                             .minQueCnt = 4,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawCaps_COMPUTE | afxDrawCaps_TRANSFER,
+                            .capabilities = afxDrawFn_COMPUTE | afxDrawFn_TRANSFER,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawCaps_TRANSFER,
+                            .capabilities = afxDrawFn_TRANSFER,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawCaps_PRESENT,
+                            .capabilities = afxDrawFn_PRESENT,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
@@ -554,102 +554,6 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
     return err;
 }
 
-BOOL GetMonitorNameFromHMONITOR(HMONITOR hMonitor, char* outName, size_t outNameSize);
-
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-    afxModule icd = (afxModule)dwData;
-
-    MONITORINFOEXA mon = { 0 };
-    mon.cbSize = sizeof(mon);
-
-    GetMonitorInfoA(hMonitor, &mon);
-    // Compare the HDCs to find the corresponding monitor
-    //if (hdcMonitor == hdcScreen)
-    {
-        // This is the monitor associated with the given HDC
-        // You can perform additional actions here.
-    }
-
-    DEVMODEA ddm = { 0 };
-    ddm.dmSize = sizeof(ddm);
-
-    EnumDisplaySettingsExA(mon.szDevice, ENUM_REGISTRY_SETTINGS, &ddm, NIL);
-
-    afxDisplay dpy;
-    avxDisplayInfo dpi = { 0 };
-
-    dpi.dimWh[0] = ddm.dmPelsWidth;
-    dpi.dimWh[1] = ddm.dmPelsHeight;
-    dpi.resWh[0] = ddm.dmPelsWidth;
-    dpi.resWh[1] = ddm.dmPelsHeight;
-    dpi.dev.type = afxDeviceType_DISPLAY;
-    AfxStrcpy(dpi.name, mon.szDevice);
-
-    dpi.workArea = (afxRect) { .x = mon.rcWork.left, .y = mon.rcWork.top, .w = mon.rcWork.right, .h = mon.rcWork.bottom };
-    dpi.fullArea = (afxRect) { .x = mon.rcMonitor.left, .y = mon.rcMonitor.top, .w = mon.rcMonitor.right, .h = mon.rcMonitor.bottom };
-
-    afxString s;
-    AfxMakeString(&s, ARRAY_SIZE(dpi.label), dpi.label, 0);
-    AfxFormatString(&s, "%s <%s>", "OEM", mon.szDevice);
-    AfxMakeString(&dpi.dev.urn, 0, s.start, s.len);
-    
-    GetMonitorNameFromHMONITOR(hMonitor, dpi.label, 128);
-
-    _AvxRegisterDisplays(icd, 1, &dpi, &dpy);
-
-    //dpy->ddinfo = dd;
-    //dpy->ddminfo = dd2;
-
-    HDC hDc = hdcMonitor;
-
-    // Width, in pixels, of the screen; or for printers, the width, in pixels, of the printable area of the page.
-    dpy->m.resWh[0] = GetDeviceCaps(hDc, HORZRES);
-    // Height, in raster lines, of the screen; or for printers, the height, in pixels, of the printable area of the page.
-    dpy->m.resWh[1] = GetDeviceCaps(hDc, VERTRES);
-
-    // Width, in millimeters, of the physical screen.
-    dpy->m.dimWh[0] = GetDeviceCaps(hDc, HORZSIZE);
-    // Height, in millimeters, of the physical screen.
-    dpy->m.dimWh[1] = GetDeviceCaps(hDc, VERTSIZE);
-
-    // Number of adjacent color bits for each pixel.
-    // NOTE: When nIndex is BITSPIXEL and the device has 15bpp or 16bpp, the return value is 16.
-    dpy->m.bpp = GetDeviceCaps(hDc, BITSPIXEL);
-
-    // Number of color planes.
-    dpy->m.planeCnt = GetDeviceCaps(hDc, PLANES);
-
-    // Number of entries in the device's color table, if the device has a color depth of no more than 8 bits per pixel. For devices with greater color depths, -1 is returned.
-    dpy->m.paletteSiz = GetDeviceCaps(hDc, NUMCOLORS);
-
-    // Flag that indicates the clipping capabilities of the device. If the device can clip to a rectangle, it is 1. Otherwise, it is 0.
-    dpy->m.clipCapable = GetDeviceCaps(hDc, CLIPCAPS);
-
-    // For display devices: the current vertical refresh rate of the device, in cycles per second (Hz).
-    // A vertical refresh rate value of 0 or 1 represents the display hardware's default refresh rate. 
-    // This default rate is typically set by switches on a display card or computer motherboard, or by a configuration program that does not use display functions such as ChangeDisplaySettings.
-    dpy->m.freq = GetDeviceCaps(hDc, VREFRESH);
-
-    // Value that indicates the raster capabilities of the device, as shown in the following table.
-    /*
-        RC_BANDING	Requires banding support.
-        RC_BITBLT	Capable of transferring bitmaps.
-        RC_BITMAP64	Capable of supporting bitmaps larger than 64 KB.
-        RC_DI_BITMAP	Capable of supporting the SetDIBits and GetDIBits functions.
-        RC_DIBTODEV	Capable of supporting the SetDIBitsToDevice function.
-        RC_FLOODFILL	Capable of performing flood fills.
-        RC_PALETTE	Specifies a palette-based device.
-        RC_SCALING	Capable of scaling.
-        RC_STRETCHBLT	Capable of performing the StretchBlt function.
-        RC_STRETCHDIB	Capable of performing the StretchDIBits function.
-    */
-    //dpy->m.rasCaps = GetDeviceCaps(hDc, RASTERCAPS);
-
-
-    return TRUE;
-}
-
 _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 {
     afxError err = AFX_ERR_NONE;
@@ -665,15 +569,9 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     dsysClsCfg.ctor = (void*)_ZglDsysCtorCb;
     dsysClsCfg.dtor = (void*)_ZglDsysDtorCb;
 
-    afxClassConfig viddClsCfg = _AVX_VDU_CLASS_CONFIG;
-    viddClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDisplay));
-    viddClsCfg.ctor = (void*)_ZglViddCtorCb;
-    viddClsCfg.dtor = (void*)_ZglViddDtorCb;
-
     _avxDrawSystemImplementation impl = { 0 };
     impl.ddevCls = ddevClsCfg;
     impl.dsysCls = dsysClsCfg;
-    impl.viddCls = viddClsCfg;
 
     if (_AvxImplementDrawSystem(icd, &impl))
     {
@@ -856,12 +754,12 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawCaps_DRAW | 
-                        afxDrawCaps_COMPUTE | 
-                        afxDrawCaps_TRANSFER | 
-                        afxDrawCaps_BLIT | 
-                        afxDrawCaps_SAMPLE | 
-                        afxDrawCaps_PRESENT,
+        .capabilities = afxDrawFn_DRAW | 
+                        afxDrawFn_COMPUTE | 
+                        afxDrawFn_TRANSFER | 
+                        afxDrawFn_BLIT | 
+                        afxDrawFn_SAMPLE | 
+                        afxDrawFn_PRESENT,
         .minQueCnt = 4,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -877,8 +775,8 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawCaps_COMPUTE | 
-                        afxDrawCaps_TRANSFER,
+        .capabilities = afxDrawFn_COMPUTE | 
+                        afxDrawFn_TRANSFER,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -894,7 +792,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawCaps_TRANSFER,
+        .capabilities = afxDrawFn_TRANSFER,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -910,7 +808,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawCaps_PRESENT | afxDrawCaps_BLIT | afxDrawCaps_TRANSFER | afxDrawCaps_VIDEO,
+        .capabilities = afxDrawFn_PRESENT | afxDrawFn_BLIT | afxDrawFn_TRANSFER | afxDrawFn_VIDEO,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU
@@ -921,7 +819,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     // add device's graphics port
     ddevInfos[ddevCnt] = gfxDdevInfo;
-    if (hasCompute) ddevInfos[ddevCnt].capabilities &= ~afxDrawCaps_COMPUTE;
+    if (hasCompute) ddevInfos[ddevCnt].capabilities &= ~afxDrawFn_COMPUTE;
     ++ddevCnt;
 
     // TODO: Find a better way of doing it.
@@ -976,33 +874,6 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     if (!err)
     {
-        // enumerates all display monitors (i.e., screens) that intersect with a given device context (DC) or a clipping rectangle.
-        // Optional: drawing context (NULL = entire desktop).
-        // Optional: restricts enumeration.
-        // Callback function for each monitor.
-        // User-defined data for callback.
-        EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)icd);
-
-        avxDisplayInfo viddInfos[]=
-        {
-            {
-                .dev.urn = AFX_STRING("dwm"),
-                .dev.type = afxDeviceType_DISPLAY,
-                .dev.ioctl = (void*)_ZglViddIoctrlCb,
-            },
-            {
-                .dev.urn = AFX_STRING("dwmglw"),
-                .dev.type = afxDeviceType_DISPLAY,
-                .dev.ioctl = (void*)_ZglViddIoctrlCb,
-            },
-            {
-                .dev.urn = AFX_STRING("dwmglw2"),
-                .dev.type = afxDeviceType_DISPLAY,
-                .dev.ioctl = (void*)_ZglViddIoctrlCb,
-            }
-        };
-        afxDisplay vidds[ARRAY_SIZE(viddInfos)];
-        //_AvxRegisterDisplays(icd, ARRAY_SIZE(viddInfos), viddInfos, vidds);
     }
     return err;
 }

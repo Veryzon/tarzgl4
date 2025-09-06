@@ -20,6 +20,162 @@
 #define _AUX_UX_C
 #include "afx/src/ux/impl/auxImplementation.h"
 
+_ZGLINL afxError _ZglDsysDeallocateRastersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxRaster rasters[])
+{
+    afxError err = 0;
+
+    for (afxUnit i = 0; i < cnt; i++)
+    {
+        avxRaster ras = rasters[i];
+        _avxRasStorage* bufs = &ras->m.storage[0];
+
+        if (ras->m.flags & avxRasterFlag_FOREIGN)
+        {
+            bufs->host.bytemap = NIL;
+            bufs->size = 0;
+        }
+        else
+        {
+#if 0
+            if (bufs->host.bytemap)
+            {
+                if (AfxDeallocate((void**)&bufs->host.bytemap, AfxHere()))
+                {
+                    AfxThrowError();
+                }
+            }
+            bufs->size = 0;
+#endif
+        }
+    }
+    return err;
+}
+
+_ZGLINL afxError _ZglDsysAllocateRastersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxRasterInfo const infos[], avxRaster rasters[])
+{
+    afxError err = 0;
+
+    for (afxUnit i = 0; i < cnt; i++)
+    {
+        avxRasterInfo const* info = &infos[i];
+        avxRaster ras = rasters[i];
+        _avxRasStorage* bufs = &ras->m.storage[0];
+
+        if (ras->m.flags & avxRasterFlag_FOREIGN)
+        {
+            avxExorasterInfo const* info2 = (void*)info;
+            //bufs->offset = info->from;
+            AFX_ASSERT((!info2->resrvdS) || (info2->resrvdS && ras->m.reqSiz));
+            bufs->host.bytemap = (afxByte*)info2->resrvdA;
+            bufs->host.external = TRUE;
+            bufs->size = info2->resrvdS;
+        }
+        else
+        {
+#if 0
+            if (AfxAllocate(ras->m.reqSiz, ras->m.reqAlign, AfxHere(), (void**)&bufs->host.bytemap))
+            {
+                AfxThrowError();
+            }
+            bufs->host.external = FALSE;
+            bufs->size = ras->reqSiz;
+#endif
+        }
+    }
+    return err;
+}
+
+_ZGLINL afxError _ZglDsysDeallocateBuffersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxBuffer buffers[])
+{
+    afxError err = 0;
+
+    for (afxUnit i = 0; i < cnt; i++)
+    {
+        avxBuffer buf = buffers[i];
+        _avxBufStorage* bufs = &buf->m.storage[0];
+
+        if (buf->m.flags & avxBufferFlag_F)
+        {
+            bufs->host.bytemap = NIL;
+            bufs->size = 0;
+        }
+        else
+        {
+#if 0
+            if (bufs->host.bytemap)
+            {
+                if (AfxDeallocate((void**)&bufs->host.bytemap, AfxHere()))
+                {
+                    AfxThrowError();
+                }
+            }
+            bufs->size = 0;
+#endif
+        }
+    }
+    return err;
+}
+
+_ZGLINL afxError _ZglDsysAllocateBuffersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxBufferInfo const infos[], avxBuffer buffers[])
+{
+    afxError err = 0;
+
+    for (afxUnit i = 0; i < cnt; i++)
+    {
+        avxBufferInfo const* info = &infos[i];
+        avxBuffer buf = buffers[i];
+        _avxBufStorage* bufs = &buf->m.storage[0];
+
+        if (buf->m.flags & avxBufferFlag_F)
+        {
+            //bufs->offset = info->from;
+            AFX_ASSERT((!info->dataSiz) || (info->dataSiz && buf->m.reqSiz));
+            bufs->host.bytemap = info->data;
+            bufs->size = info->dataSiz;
+            bufs->host.external = TRUE;
+        }
+        else
+        {
+#if 0
+            if (AfxAllocate(buf->m.reqSiz, buf->m.reqAlign, AfxHere(), (void**)&bufs->host.bytemap))
+            {
+                AfxThrowError();
+            }
+            bufs->host.external = FALSE;
+            bufs->size = buf->m.reqSiz;
+#endif
+        }
+    }
+    return err;
+}
+
+_ZGL _avxDsysImpl const _ZGL_DSYS_IMPL =
+{
+    .fencCls = _AvxDsysGetFencClassCb_SW,
+    .dexuCls = _AvxDsysGetDexuClassCb_SW,
+    .doutCls = _AvxDsysGetDoutClassCb_SW,
+    .qrypCls = _AvxDsysGetQrypClassCb_SW,
+    .vtxdCls = _AvxDsysGetVinClassCb_SW,
+    .rasCls = _AvxDsysGetRasClassCb_SW,
+    .bufCls = _AvxDsysGetBufClassCb_SW,
+    .sampCls = _AvxDsysGetSampClassCb_SW,
+    .pipCls = _AvxDsysGetPipClassCb_SW,
+    .canvCls = _AvxDsysGetCanvClassCb_SW,
+    .shadCls = _AvxDsysGetShadClassCb_SW,
+    .ligaCls = _AvxDsysGetLigaClassCb_SW,
+
+    .txdCls = _AvxDsysGetTxdClassCb_SW,
+
+    .transferCb = _AvxDsysTransferCb_SW,
+    .cohereCb = _AvxDsysCohereMappedBuffersCb_SW,
+    .remapCb = _AvxDsysRemapBuffersCb_SW,
+
+    .allocRasCb = _ZglDsysAllocateRastersCb_SW,
+    .deallocRasCb = _ZglDsysDeallocateRastersCb_SW,
+    .allocBufCb = _ZglDsysAllocateBuffersCb_SW,
+    .deallocBufCb = _ZglDsysDeallocateBuffersCb_SW,
+};
+
 _ZGL afxError _ZglDsysDtorCb(afxDrawSystem dsys)
 {
     afxError err = AFX_ERR_NONE;
@@ -142,6 +298,11 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
     qrypClsCfg.ctor = (void*)_ZglQrypCtor;
     qrypClsCfg.dtor = (void*)_ZglQrypDtor;
 
+    afxClassConfig fencClsConf = _AVX_FENC_CLASS_CONFIG;
+    fencClsConf.fixedSiz = sizeof(AFX_OBJECT(avxFence));
+    fencClsConf.ctor = (void*)_ZglFencCtorCb;
+    fencClsConf.dtor = (void*)_ZglFencDtorCb;
+
     afxClassConfig doutClsCfg = _AVX_DOUT_CLASS_CONFIG;
     //doutClsCfg.fixedSiz = sizeof(AFX_OBJ(afxSurface));
     //doutClsCfg.ctor = (void*)_ZglDoutCtorCb;
@@ -168,6 +329,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
     cfg2.qrypClsCfg = &qrypClsCfg;
     cfg2.doutClsCfg = &doutClsCfg;
     cfg2.dexuClsCfg = &dexuClsCfg;
+    //cfg2.fencClsCfg = &fencClsConf;
 
     for (afxUnit i = 0; i < cfg->bridgeCnt; i++)
     {
@@ -178,18 +340,9 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
     if (_AVX_DSYS_CLASS_CONFIG.ctor(dsys, (void*[]) { icd, (void*)&cfg2, (void*)bridgeCfgs }, 0)) AfxThrowError();
     else
     {
+        dsys->m.pimpl = &_ZGL_DSYS_IMPL;
+
         afxChain *classes = &dsys->m.ctx.classes;
-#if 0
-        afxClassConfig semClsConf = _AfxSemStdImplementation;
-        semClsConf.fixedSiz = sizeof(AFX_OBJECT(afxSemaphore));
-        semClsConf.ctor = (void*)_ZglSemCtorCb;
-        semClsConf.dtor = (void*)_ZglSemDtorCb;
-        AfxMountClass(&dsys->m.ctx.semaphores, NIL, classes, &semClsConf);
-#endif
-        afxClassConfig fencClsConf = _AVX_FENC_CLASS_CONFIG;
-        fencClsConf.fixedSiz = sizeof(AFX_OBJECT(avxFence));
-        fencClsConf.ctor = (void*)_ZglFencCtorCb;
-        fencClsConf.dtor = (void*)_ZglFencDtorCb;
         AfxMountClass(&dsys->m.fencCls, NIL, classes, &fencClsConf);
 
 
@@ -203,6 +356,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         dsys->fencUniqueId = 0;
         dsys->qrypUniqueId = 0;
 
+#if 0
         afxUri uri;
         AfxMakeUri(&uri, 0, "//./z/video/sampleOutRgba.xsh.xml", 0);
         //AfxMakeUri(&uri, 0, "data/pipeline/rgbaToRgba.xsh.xml?yFlipped", 0);
@@ -214,7 +368,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
 
         //AfxAssertObjects(1, &dsys->presentRazr, afxFcc_RAZR);
 
-        avxSamplerInfo smpSpec = { 0 };
+        avxSamplerConfig smpSpec = { 0 };
         smpSpec.magnify = avxTexelFilter_NEAREST;
         smpSpec.minify = avxTexelFilter_NEAREST;
         smpSpec.mipFlt = avxTexelFilter_NEAREST;
@@ -261,7 +415,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
 #endif
 
 #if 0
-        avxPipelineBlueprint razrCfg = { 0 };
+        avxPipelineConfig razrCfg = { 0 };
         razrCfg.stageCnt = 2;
         razrCfg.cullMode = avxCullMode_BACK;
         razrCfg.fillMode = avxFillMode_FACE;
@@ -270,78 +424,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_VERTEX, AfxUri("//./z/video/uvOutTristripQuad.vsh"), NIL, NIL, NIL);
         AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_FRAGMENT, AfxUri("//./z/video/sampleOutRgba2d.fsh"), NIL, NIL, NIL);
 #endif
-
-        // DEVICE FONT STUFF
-#if 0
-        afxUri uri2;
-        AfxMakeUri(&uri2, "//./z/video/font-256.tga", 0);
-        AvxLoadRasters(dsys, avxRasterUsage_TEXTURE, NIL, 1, &uri2, &dsys->fntRas);
-
-        avxVertexFetch const vinStreams[] =
-        {
-            {
-                .instRate = 1,
-                .slotIdx = 0
-            }
-        };
-
-        avxVertexInput const vinAttrs[] =
-        {
-            {
-                .location = 0,
-                .streamIdx = 0,
-                .offset = 0,
-                .fmt = afxVertexFormat_V2D
-            },
-            {
-                .location = 1,
-                .streamIdx = 0,
-                .offset = 8,
-                .fmt = afxVertexFormat_V2D
-            },
-            {
-                .location = 2,
-                .streamIdx = 0,
-                .offset = 16,
-                .fmt = afxVertexFormat_V4B,
-                .normalized = TRUE
-            }
-        };
-
-        avxVertexInput vin = AfxDeclareVertexLayout(dsys, ARRAY_SIZE(vinStreams), vinStreams, ARRAY_SIZE(vinAttrs), vinAttrs);
-        AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
-
-        AfxMakeUri(&uri2, "//./z/video/font.xsh.xml?instanced", 0);
-        dsys->fntRazr = AvxLoadPipeline(dsys, vin, &uri2);
-        AfxAssertObjects(1, &dsys->fntRazr, afxFcc_RAZR);
-        AfxDisposeObjects(1, &dsys->fntRazr);
-
-        avxBufferInfo vboSpec = { 0 };
-        vboSpec.flags = avxBufferFlag_W;
-        vboSpec.usage = avxBufferUsage_VERTEX;
-        vboSpec.src = NIL;
-        vboSpec.bufCap = 2048;
-        AvxAcquireBuffers(dsys, 1, &vboSpec, &dsys->fntDataBuf);
-        AfxAssertObjects(1, &dsys->fntDataBuf, afxFcc_BUF);
-
-        avxSamplerInfo smpCnf = { 0 };
-        AfxDescribeDefaultSampler(&smpCnf);
-        smpCnf.minFilter = avxTexelFilter_LINEAR;
-        smpCnf.uvw[0] = avxTexelWrap_EDGE;
-        smpCnf.uvw[1] = avxTexelWrap_EDGE;
-        smpCnf.uvw[2] = avxTexelWrap_EDGE;
-        AvxDeclareSamplers(dsys, 1, &smpCnf, &dsys->fntSamp);
-        AfxAssertObjects(1, &dsys->fntSamp, afxFcc_SAMP);
-
-        avxBufferInfo bufSpec = { 0 };
-        bufSpec.siz = sizeof(akxViewConstants);
-        bufSpec.usage = avxBufferUsage_UNIFORM;
-        bufSpec.access = avxBufferFlag_W;
-        bufSpec.src = NIL;
-        AvxAcquireBuffers(dsys, 1, &bufSpec, &dsys->fntUnifBuf);
-        AfxAssertObjects(1, &dsys->fntUnifBuf, afxFcc_BUF);
 #endif
-        //AFX_ASSERT(dsys->m.vmt);
 
         if (!err)
         {

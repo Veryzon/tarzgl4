@@ -21,10 +21,9 @@
 
 // Most OpenGL objects are sharable, including Sync Objects and GLSL Objects. 
 // Container Objects are not sharable, nor are Query Objects.
-#define ZGL_MAX_PSO_HANDLES 32
-#define ZGL_MAX_FBO_HANDLES 32
-#define ZGL_MAX_VAO_HANDLES 32
+#define ZGL_MAX_DPUS 32
 #define ZGL_MAX_QO_HANDLES 32
+#define _ZGL_PSO_SET_POP 3
 
 AFX_OBJECT(avxPipeline)
 {
@@ -32,8 +31,11 @@ AFX_OBJECT(avxPipeline)
 
     afxUnit pipUniqueId;
     zglUpdateFlags  updFlags;
-    GLuint          glHandle[ZGL_MAX_PSO_HANDLES];
-    //zglVertexInput  vertexInput;
+    struct
+    {
+        GLuint          glHandle;
+        //zglVertexInput  vertexInput;
+    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SET_POP];
 };
 
 AFX_OBJECT(avxVertexInput)
@@ -42,8 +44,11 @@ AFX_OBJECT(avxVertexInput)
 
     afxUnit vdeclUniqueId;
     zglUpdateFlags  updFlags;
-    GLuint          glHandle[ZGL_MAX_VAO_HANDLES];
-    zglVertexInputState bindings;
+    struct
+    {
+        GLuint          glHandle;
+        zglVertexInputState bindings; // TODO: per DPU
+    } perDpu[ZGL_MAX_DPUS][_ZGL_VAO_SET_POP]; // the second set is to avoid contention in dynamic binding.
 };
 
 AFX_OBJECT(avxQueryPool)
@@ -53,13 +58,19 @@ AFX_OBJECT(avxQueryPool)
     afxUnit qrypUniqueId;
     zglUpdateFlags  updFlags;
     GLenum          glTarget;
-    GLuint         *glHandle; // ZGL_MAX_QO_HANDLES * cap
+    struct
+    {
+        GLuint         *glHandle; // ZGL_MAX_QO_HANDLES * cap
+    } perDpu[ZGL_MAX_DPUS];
 };
 
 AFX_OBJECT(avxLigature)
 {
     AFX_OBJECT(_avxLigature) m;
-    GLuint  texBufGlHandle[ZGL_MAX_VAO_HANDLES][8];
+    struct
+    {
+        GLuint  texBufGlHandle[8];
+    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SET_POP];
     afxUnit tboCnt;
 };
 
@@ -133,10 +144,13 @@ AFX_OBJECT(avxCanvas)
 {
     AFX_OBJECT(_avxCanvas) m;
 
-    afxUnit canvUniqueId;
-    zglUpdateFlags  updFlags;
-    afxUnit          glHandle[ZGL_MAX_FBO_HANDLES];
-    afxMask         storeBitmask;
+    afxUnit             canvUniqueId;
+    zglUpdateFlags      updFlags;
+    struct
+    {
+        afxUnit         glHandle;
+        afxMask         storeBitmask;
+    } perDpu[ZGL_MAX_DPUS][_ZGL_FBO_SET_POP];
 };
 
 ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);
