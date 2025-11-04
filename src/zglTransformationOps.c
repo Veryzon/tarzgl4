@@ -1,13 +1,13 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -30,7 +30,7 @@ _ZGL void _ZglFlushTsChanges(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
-
+    
     dpu->primTop = dpu->nextPrimTop;
 
     avxCullMode nextCullMode = dpu->nextCullMode;
@@ -442,3 +442,117 @@ _ZGL void DpuEndTransformFeedbackEXT(zglDpu* dpu, afxUnit firstCounterBuffer, af
     gl->EndTransformFeedback(); _ZglThrowErrorOccuried();
 }
 
+_ZGL void DpuDrawMeshTasksEXT(zglDpu* dpu, afxUnit w, afxUnit h, afxUnit d)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+         One or more work groups is launched by calling
+
+          void DrawMeshTasksEXT(uint num_groups_x,
+                                uint num_groups_y,
+                                uint num_groups_z);
+
+        If there is an active program object for the task shader stage,
+        work groups are processed by the active program for the task
+        shader stage. If there is no active program object for the task shader
+        stage, work groups are instead processed by the active
+        program for the mesh shader stage.  The active program for both shader
+        stages will be determined in the same manner as the active program for other
+        pipeline stages, as described in section 7.3. While the individual shader
+        invocations within a work group are executed as a unit, work groups are
+        executed completely independently and in unspecified order.
+    */
+
+    void (*DrawMeshTasksEXT)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) = NIL;
+    DrawMeshTasksEXT(w, h, d);
+}
+
+_ZGL void DpuDrawMeshTasksIndirectEXT(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit drawCnt, afxUnit stride)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        The command
+
+          void DrawMeshTasksIndirectEXT(intptr indirect);
+
+          typedef struct {
+            uint x;
+            uint y;
+	    uint z;
+          } DrawMeshTasksIndirectCommandEXT;
+
+        is equivalent to calling DrawMeshTasksEXT with the parameters sourced from
+        a DrawMeshTasksIndirectCommandEXT struct stored in the buffer currently
+        bound to the DRAW_INDIRECT_BUFFER binding at an offset, in basic machine
+        units, specified by <indirect>.  If the <x>, <y> and <z> read from the
+        indirect draw buffer exceed the limits specified in DrawMeshTasksEXT, then
+        the results of this command are undefined.
+
+        ..............
+
+        The command
+
+          void MultiDrawMeshTasksIndirectEXT(intptr indirect,
+                                             sizei drawcount,
+                                             sizei stride);
+
+        behaves identically to DrawMeshTasksIndirectEXT, except that <indirect> is
+        treated as an array of <drawcount> DrawMeshTasksIndirectCommandEXT
+        structures.    <indirect> contains the offset of the first element of the
+        array within the buffer currently bound to the DRAW_INDIRECT buffer
+        binding. <stride> specifies the distance, in basic machine units, between
+        the elements of the array. If <stride> is zero, the array elements are
+        treated as tightly packed. <stride> must be a multiple of four, otherwise
+        an INVALID_VALUE error is generated.
+    */
+
+    void (*DrawMeshTasksIndirectEXT)(GLintptr indirect) = NIL;
+    void (*MultiDrawMeshTasksIndirectEXT)(GLintptr indirect, GLsizei drawcount, GLsizei stride) = NIL;
+
+    DpuBindAndSyncBuf(dpu, /*GL_DRAW_INDIRECT*/GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
+
+    if (1 >= drawCnt)
+    {
+        DrawMeshTasksIndirectEXT(offset);
+    }
+    else
+    {
+        MultiDrawMeshTasksIndirectEXT(offset, drawCnt, stride);
+    }
+}
+
+_ZGL void DpuDrawMeshTasksIndirectCountEXT(zglDpu* dpu, avxBuffer buf, afxSize offset, avxBuffer cntBuf, afxSize cntBufOffset, afxUnit maxDrawCnt, afxUnit stride)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    /*
+        The command
+
+          void MultiDrawMeshTasksIndirectCountEXT(intptr indirect,
+                                                  intptr drawcount,
+                                                  sizei maxdrawcount,
+                                                  sizei stride);
+
+        behaves similarly to MultiDrawMeshTasksIndirectEXT, except that <drawcount>
+        defines an offset (in bytes) into the buffer object bound to the
+        PARAMETER_BUFFER binding point at which a single <sizei> typed value
+        is stored, which contains the draw count. <maxdrawcount> specifies the
+        maximum number of draws that are expected to be stored in the buffer.
+        If the value stored at <drawcount> into the buffer is greater than
+        <maxdrawcount>, an implementation stop processing draws after
+        <maxdrawcount> parameter sets.
+    */
+
+    void (*MultiDrawMeshTasksIndirectCountEXT)(GLintptr indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride) = NIL;
+
+    DpuBindAndSyncBuf(dpu, /*GL_DRAW_INDIRECT*/GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
+    DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, cntBuf, TRUE);
+
+    MultiDrawMeshTasksIndirectCountEXT(offset, cntBufOffset, maxDrawCnt, stride);
+
+}

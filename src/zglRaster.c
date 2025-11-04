@@ -1,13 +1,13 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -499,6 +499,13 @@ _ZGL afxError _DpuUpdateRaster(zglDpu* dpu, avxRaster ras, afxByte const* src, a
     AFX_ASSERT(dpu->inDrawScope == FALSE); // This is a transfer operation.
 
     GLenum glTarget = ras->glTarget;
+
+    if (glTarget == GL_RENDERBUFFER)
+    {
+        AfxThrowError();
+        return err;
+    }
+
     GLenum glFmt = ras->glFmt;
     GLenum glType = ras->glType;
 

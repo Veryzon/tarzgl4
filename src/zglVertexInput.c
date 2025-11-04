@@ -1,13 +1,13 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -17,6 +17,8 @@
 #include "zglUtils.h"
 #include "zglCommands.h"
 #include "zglObjects.h"
+
+#define _ZGL_PURGE_VAO_ON_SWITCH 1
 
 /*
     We are creating per-context and per-frame duplicates of VAOs as a solid strategy to allow multithreading and 
@@ -40,6 +42,50 @@
     so we can modify them freely without affecting rendering still in flight.
 */
 
+_ZGL void _ZglUnbindVinResources(zglDpu* dpu)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    // Disabled because Intel was throwing INVALID_OP
+    return;
+
+    avxVertexInput activeVin = dpu->activeVin;
+    if (!activeVin) return;
+    AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &activeVin);
+
+    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+    zglVertexInputState* state = &activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings;
+    AFX_ASSERT(activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle);
+
+    for (afxUnit i = 0; i < activeVin->m.binCnt; i++)
+    {
+        avxVertexStream* vsi = &activeVin->m.bins[i];
+        afxUnit pin = vsi->pin;
+
+        if (state->sources[pin].buf)
+        {
+            // It is here just to try to rebind the VAO to see if it is the cause of INVALID_OP.
+            //gl->BindVertexArray(activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle); _ZglThrowErrorOccuried();
+
+            // Disabled because Intel was throwing INVALID_OP
+            //gl->BindVertexBuffer(pin, 0, 0, 0); _ZglThrowErrorOccuried();
+            AfxZero(&state->sources[pin], sizeof(state->sources[0]));
+        }
+    }
+
+    if (state->idxSrcBuf)
+    {
+        DpuBindAndSyncBuf(dpu, GL_ELEMENT_ARRAY_BUFFER, NIL, TRUE);
+        state->iboUniqueId = 0;
+        state->idxSrcGpuHandle = 0;
+        state->idxSrcBuf = NIL;
+        state->idxSrcOff = 0;
+        state->idxSrcRange = 0;
+        state->idxSrcSiz = 0;
+    }
+}
+
 _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
@@ -50,6 +96,10 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
     if (!vin)
     {
         afxUnit emptyVaoIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+
+#ifdef _ZGL_PURGE_VAO_ON_SWITCH
+        _ZglUnbindVinResources(dpu);
+#endif
         dpu->activeVin = NIL;
 
         if (dpu->activeVinGpuHandle != dpu->emptyVaos[emptyVaoIdx])
@@ -70,14 +120,16 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
     {
         if ((dpu->activeVin != vin) || (dpu->activeVinGpuHandle != glHandle))
         {
+#ifdef _ZGL_PURGE_VAO_ON_SWITCH
+            _ZglUnbindVinResources(dpu);
+#endif
             AFX_ASSERT(gl->IsVertexArray(glHandle));
             gl->BindVertexArray(glHandle); _ZglThrowErrorOccuried();
-            dpu->activeVinGpuHandle = glHandle;
-            dpu->activeVin = vin;
-            // force recheck to reapply bound buffers to new bound VAO.
-            dpu->nextVinBindings.sourcesUpdMask = 0xfffffff;
-            dpu->nextVinBindings.iboUpdReq = 1;
         }
+        dpu->activeVinGpuHandle = glHandle;
+        dpu->activeVin = vin;
+        // force recheck to reapply bound buffers to new bound VAO.
+        dpu->nextVinBindings.sourcesUpdMask = 0xfffffff;
     }
     else
     {
@@ -93,7 +145,6 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
         dpu->activeVin = vin;
         // force recheck to reapply bound buffers to new bound VAO.
         dpu->nextVinBindings.sourcesUpdMask = 0xfffffff;
-        dpu->nextVinBindings.iboUpdReq = 1;
 
         if (vin->m.tag.len)
         {
@@ -105,11 +156,12 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
         for (afxUnit i = 0; i < streamCnt; i++)
         {
             avxVertexStream const* stream = &bins[i];
-            AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->pin, 1);
+            afxUnit pin = stream->pin;
+            AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, pin, 1);
             //AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_STRIDE, 0, stream->stride);
             //gl->BindVertexBuffer(stream->slotIdx, 0, 0, stream->stride); _ZglThrowErrorOccuried();
 
-            gl->VertexBindingDivisor(stream->pin, stream->instRate); _ZglThrowErrorOccuried();
+            gl->VertexBindingDivisor(pin, stream->instRate); _ZglThrowErrorOccuried();
 
             afxUnit totalAttrCnt = vin->m.totalAttrCnt;
             afxUnit attrCnt = stream->attrCnt;
@@ -121,15 +173,15 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
                 avxVertexAttr const* attr = &attrs[attrIdx];
                 AFX_ASSERT_RANGE(avxFormat_TOTAL, attr->fmt, 1);
                 AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIBS, attr->location, 1);
-                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->pin, 1);
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, pin, 1);
                 AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET, attr->offset, 1);
 
 
                 afxUnit location = attr->location;
                 AFX_ASSERT(16 > location);  // max vertex attrib
                 gl->EnableVertexAttribArray(location); _ZglThrowErrorOccuried();
-                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, stream->pin, 1);
-                gl->VertexAttribBinding(location, stream->pin); _ZglThrowErrorOccuried();
+                AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, pin, 1);
+                gl->VertexAttribBinding(location, pin); _ZglThrowErrorOccuried();
 
 #if 0
                 if (stream->instRate)
@@ -251,19 +303,19 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
         for (afxUnit i = 0; i < vin->m.binCnt; i++)
         {
             avxVertexStream const* stream = &vin->m.bins[i];
-            afxUnit streamIdx = stream->pin;
-            AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, streamIdx, 1);
+            afxUnit pin = stream->pin;
+            AFX_ASSERT_RANGE(ZGL_MAX_VERTEX_ATTRIB_BINDINGS, pin, 1);
 
 #ifndef FORCE_VBO_REBIND
             //if (!(sourcesUpdMask & AFX_BITMASK(streamIdx))) // skip if has not updates
                 //continue;
 #endif
 
-            avxBuffer nextBuf = nextBindings->sources[streamIdx].buf;
+            avxBuffer nextBuf = nextBindings->sources[pin].buf;
 
             if (!nextBuf)
             {
-                if (activeBindings->sources[streamIdx].buf)
+                if (activeBindings->sources[pin].buf)
                 {
                     /*
                         According to the OpenGL specification, if buffer is zero (i.e., unbinding), 
@@ -273,14 +325,14 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
                     */
 
                     AFX_ASSERT(gl->BindVertexBuffer);
-                    gl->BindVertexBuffer(streamIdx, 0, 0, AFX_OR(vin->m.bins[streamIdx].minStride, 16)); _ZglThrowErrorOccuried();
+                    gl->BindVertexBuffer(pin, 0, 0, AFX_OR(vin->m.bins[pin].minStride, 16)); _ZglThrowErrorOccuried();
 
-                    activeBindings->sources[streamIdx].buf = 0;
-                    activeBindings->sources[streamIdx].offset = 0;
-                    activeBindings->sources[streamIdx].range = 0;
-                    activeBindings->sources[streamIdx].stride = 0;
-                    activeBindings->sources[streamIdx].bufGlHandle = 0;
-                    activeBindings->sources[streamIdx].bufUniqueId = 0;
+                    activeBindings->sources[pin].buf = 0;
+                    activeBindings->sources[pin].offset = 0;
+                    activeBindings->sources[pin].range = 0;
+                    activeBindings->sources[pin].stride = 0;
+                    activeBindings->sources[pin].bufGlHandle = 0;
+                    activeBindings->sources[pin].bufUniqueId = 0;
                 }
             }
             else
@@ -288,9 +340,9 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
                 AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &nextBuf);
                 AFX_ASSERT(AvxGetBufferUsage(nextBuf, avxBufferUsage_VERTEX) == avxBufferUsage_VERTEX);
 
-                afxUnit nextOff = nextBindings->sources[streamIdx].offset;
-                afxUnit nextRange = nextBindings->sources[streamIdx].range;
-                afxUnit nextStride = nextBindings->sources[streamIdx].stride;
+                afxUnit nextOff = nextBindings->sources[pin].offset;
+                afxUnit nextRange = nextBindings->sources[pin].range;
+                afxUnit nextStride = nextBindings->sources[pin].stride;
                 afxBool forceRebind = FALSE;
 
                 if (!nextBuf->glHandle)
@@ -303,20 +355,20 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
 
 #ifndef FORCE_VBO_REBIND
                 if ((forceRebind) ||
-                    (activeBindings->sources[streamIdx].bufUniqueId != nextBuf->bufUniqueId) || // if it has not a GL handle yet or it is different.
-                    (activeBindings->sources[streamIdx].bufGlHandle != glHandle) ||
-                    (activeBindings->sources[streamIdx].buf != nextBuf) ||
-                    (activeBindings->sources[streamIdx].offset != nextOff) ||
-                    //(activeBindings->sources[streamIdx].range != nextRange) ||
-                    (activeBindings->sources[streamIdx].stride != nextStride))
+                    (activeBindings->sources[pin].bufUniqueId != nextBuf->bufUniqueId) || // if it has not a GL handle yet or it is different.
+                    (activeBindings->sources[pin].bufGlHandle != glHandle) ||
+                    (activeBindings->sources[pin].buf != nextBuf) ||
+                    (activeBindings->sources[pin].offset != nextOff) ||
+                    //(activeBindings->sources[pin].range != nextRange) ||
+                    (activeBindings->sources[pin].stride != nextStride))
 #endif
                 {
-                    activeBindings->sources[streamIdx].buf = nextBuf;
-                    activeBindings->sources[streamIdx].offset = nextOff;
-                    activeBindings->sources[streamIdx].range = nextRange;
-                    activeBindings->sources[streamIdx].stride = nextStride;
-                    activeBindings->sources[streamIdx].bufUniqueId = nextBuf->bufUniqueId;
-                    activeBindings->sources[streamIdx].bufGlHandle = glHandle;
+                    activeBindings->sources[pin].buf = nextBuf;
+                    activeBindings->sources[pin].offset = nextOff;
+                    activeBindings->sources[pin].range = nextRange;
+                    activeBindings->sources[pin].stride = nextStride;
+                    activeBindings->sources[pin].bufUniqueId = nextBuf->bufUniqueId;
+                    activeBindings->sources[pin].bufGlHandle = glHandle;
                     AFX_ASSERT(nextRange);
                     AFX_ASSERT(nextStride);
 
@@ -327,7 +379,7 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
                     */
 
                     AFX_ASSERT(gl->BindVertexBuffer);
-                    gl->BindVertexBuffer(streamIdx, nextBuf->glHandle, nextOff, nextStride); _ZglThrowErrorOccuried();
+                    gl->BindVertexBuffer(pin, nextBuf->glHandle, nextOff, nextStride); _ZglThrowErrorOccuried();
                     int a = 1;
                 }
             }

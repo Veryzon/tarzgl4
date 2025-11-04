@@ -1,13 +1,13 @@
 ﻿/*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -18,7 +18,7 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 #define _AUX_UX_C
-#include "afx/src/ux/impl/auxImplementation.h"
+#include "../qwadro_afx/src/ux/impl/auxImplementation.h"
 
 _ZGLINL afxError _ZglDsysDeallocateRastersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxRaster rasters[])
 {
@@ -284,7 +284,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
     vtxdClsCfg.dtor = (void*)_ZglVinDtor;
 
     afxClassConfig shdClsCfg = _AVX_SHD_CLASS_CONFIG;
-    shdClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxShader));
+    shdClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxCodebase));
     shdClsCfg.ctor = (void*)_ZglShdCtor;
     shdClsCfg.dtor = (void*)_ZglShdDtor;
 
@@ -376,7 +376,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         smpSpec.uvw[1] = avxTexelWrap_REPEAT; // EDGE fucks this shit
         smpSpec.uvw[2] = avxTexelWrap_REPEAT; // EDGE fucks this shit
 
-        AvxDeclareSamplers(dsys, 1, &smpSpec, &dsys->presentSmp);
+        AvxAcquireSamplers(dsys, 1, &smpSpec, &dsys->presentSmp);
         AFX_ASSERT_OBJECTS(afxFcc_SAMP, 1, &dsys->presentSmp);
 #if 0
         afxString tmpStr;
@@ -420,7 +420,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         razrCfg.cullMode = avxCullMode_BACK;
         razrCfg.fillMode = avxFillMode_FACE;
         razrCfg.primTop = avxTopology_TRI_STRIP;
-        AvxAssemblePipelines(dsys, 1, &razrCfg, &dsys->presentRazr);
+        AvxAssembleGfxPipelines(dsys, 1, &razrCfg, &dsys->presentRazr);
         AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_VERTEX, AfxUri("//./z/video/uvOutTristripQuad.vsh"), NIL, NIL, NIL);
         AvxUplinkPipelineFunction(dsys->presentRazr, avxShaderType_FRAGMENT, AfxUri("//./z/video/sampleOutRgba2d.fsh"), NIL, NIL, NIL);
 #endif

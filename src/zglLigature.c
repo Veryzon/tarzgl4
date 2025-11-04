@@ -1,19 +1,61 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
  *                             <https://sigmaco.org/qwadro/>
  */
 
+/*
+    A pipeline layout defines:
+     - What descriptor sets (in Vulkan) or root parameters (in D3D12) are bound,
+     - What types of resources (uniform buffers, textures, samplers, etc.) are expected,
+     - At what binding points they are used.
+    
+    It's essentially the contract between your application and the GPU pipeline for how shaders will access external resources.
+
+    If you switch from one pipeline to another that has a different pipeline layout, 
+    all resources bound via the previous layout are invalidated (unbound). That's because:
+     - The bindings might refer to different types or different slots,
+     - The shader expectations change (for example, expecting a texture in binding 1 instead of a buffer),
+     - The GPU driver needs to avoid undefined behavior.
+     
+    So, to be safe, the API unbinds everything when a pipeline layout changes. 
+    This forces the application to rebind the correct resources compatible with the new layout.
+
+    Two pipeline layouts are considered incompatible if they differ in any of these:
+     - If layout A uses 2 descriptor sets and layout B uses 3; they are incompatible.
+     - If the same binding index (for example, binding = 0) refers to a different type of resource:
+        Layout A                    Layout B
+        binding 0: Uniform buffer   binding 0: Sampler
+        They are incompatible.
+     - If a binding is visible to the vertex shader in one layout and to the fragment shader in another, it's a mismatch.
+     - Layouts that define different push constant ranges are incompatible.
+     - Even if a binding number is the same, using a combined image sampler vs a separate image and sampler is incompatible.
+     - If one layout uses a dynamic uniform buffer and the other uses a static one at the same binding, they1re incompatible.
+     
+     If you want to switch pipelines without re-binding everything, you must ensure:
+      - Pipeline layouts are identical or compatible subsets,
+      - Descriptor sets are interchangeable,
+      - All shaders follow the same binding expectations.
+      
+    Vulkan (and D3D12) allow you to re-use layouts across pipelines; but if you change them, you pay the rebind cost.
+
+    When two layouts are different, all bound resources are unbound because the GPU must prevent incorrect or undefined behavior due to mismatched resource expectations.
+
+    Two pipeline layouts are incompatible when:
+     - They define different descriptor sets or bindings,
+     - Use different types of descriptors,
+     - Or define different visibility or push constants
+*/
 
 #include "zglUtils.h"
 #include "zglCommands.h"
@@ -24,8 +66,8 @@
 _ZGL void DpuBindBuffers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, avxBufferedMap const maps[])
 {
     afxError err = AFX_ERR_NONE;
-    AFX_ASSERT_RANGE(_ZGL_MAX_ENTRY_PER_LEGO, first, cnt);
-    AFX_ASSERT_RANGE(_ZGL_MAX_LEGO_PER_BIND, set, 1);
+    AFX_ASSERT_RANGE(_ZGL_MAX_BIND_PER_SET, first, cnt);
+    AFX_ASSERT_RANGE(_ZGL_MAX_SET_PER_LIGA, set, 1);
 
     // deferred because it requires the pipeline ligature info.
 
@@ -50,8 +92,8 @@ _ZGL void DpuBindBuffers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, a
 _ZGL void DpuBindRasters(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, avxRaster const rasters[])
 {
     afxError err = AFX_ERR_NONE;
-    AFX_ASSERT_RANGE(_ZGL_MAX_ENTRY_PER_LEGO, first, cnt);
-    AFX_ASSERT_RANGE(_ZGL_MAX_LEGO_PER_BIND, set, 1);
+    AFX_ASSERT_RANGE(_ZGL_MAX_BIND_PER_SET, first, cnt);
+    AFX_ASSERT_RANGE(_ZGL_MAX_SET_PER_LIGA, set, 1);
 
     // deferred because it requires the pipeline ligature info.
 
@@ -68,8 +110,8 @@ _ZGL void DpuBindRasters(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, a
 _ZGL void DpuBindSamplers(zglDpu* dpu, afxUnit set, afxUnit first, afxUnit cnt, avxSampler const samplers[])
 {
     afxError err = AFX_ERR_NONE;
-    AFX_ASSERT_RANGE(_ZGL_MAX_ENTRY_PER_LEGO, first, cnt);
-    AFX_ASSERT_RANGE(_ZGL_MAX_LEGO_PER_BIND, set, 1);
+    AFX_ASSERT_RANGE(_ZGL_MAX_BIND_PER_SET, first, cnt);
+    AFX_ASSERT_RANGE(_ZGL_MAX_SET_PER_LIGA, set, 1);
 
     // deferred because it requires the pipeline ligature info.
 
@@ -87,7 +129,7 @@ _ZGL void DpuUnbindSamplers(zglDpu* dpu)
 {
     afxError err = AFX_ERR_NONE;
     
-    // Samplers are bound to GL program. 
+    // In some buggy drivers, it seem that samplers are bound to GL program. 
     // So we must unbind them to provoke rebinding on next program binding.
 
     avxLigature liga;
@@ -213,8 +255,8 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
             }
             else
             {
-                gl->BindBuffer(GL_COPY_WRITE_BUFFER, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
-                gl->FlushMappedBufferRange(GL_COPY_WRITE_BUFFER, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
+                gl->BindBuffer(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
+                gl->FlushMappedBufferRange(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
             }
             dpu->pushSets[pushSetIdx].shouldPushConstBase = 0;
             dpu->pushSets[pushSetIdx].shouldPushConstRange = 0;
@@ -247,10 +289,12 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                 if (!(updMask & AFX_BITMASK(entry->binding))) // skip if not changed
                     continue;
 #endif
+                // 1 11 21 31 41 51;
+                // 0 10 20 30 40 50;
 
                 AFX_ASSERT(entry->type);
                 afxUnit binding = entry->binding;
-                afxUnit glUnit = /*(set * _ZGL_MAX_ENTRY_PER_LEGO) +*/ binding;
+                afxUnit glUnit = /*(set * _ZGL_MAX_BIND_PER_SET) +*/ binding;
                 afxBool reqUpd = FALSE, reqUpd2 = FALSE;
                 GLuint glHandle = 0, glHandle2 = 0;
                 afxSize bufSiz = 0;
@@ -317,7 +361,7 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                             DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE);
                             bufSiz = AvxGetBufferCapacity(buf, 0);
 
-                            if (offset || range)
+                            if (offset || (range && (range < bufSiz)))
                             {
                                 AFX_ASSERT(range);
                                 AFX_ASSERT_RANGE(bufSiz, offset, range);
@@ -519,20 +563,20 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                             if (entry->type == avxShaderParam_TSBO)
                             {
                                 AFX_ASSERT(gl->BindImageTexture);
-                                gl->BindImageTexture(glUnit, NIL, 0, FALSE, 0, GL_READ_WRITE, GL_NONE); _ZglThrowErrorOccuried();
+                                gl->BindImageTexture(glUnit, NIL, 0, FALSE, 0, GL_READ_WRITE, GL_RGBA32F); _ZglThrowErrorOccuried();
                             }
                             else
                             {
                                 if (gl->BindTextureUnit)
                                 {
                                     gl->BindTextureUnit(glUnit, 0); _ZglThrowErrorOccuried();
-                                    gl->TextureBuffer(glFixedTboHandle, NIL, NIL); _ZglThrowErrorOccuried();
+                                    gl->TextureBuffer(glFixedTboHandle, GL_RGBA32F, NIL); _ZglThrowErrorOccuried();
                                 }
                                 else
                                 {
                                     gl->ActiveTexture(GL_TEXTURE0 + glUnit); _ZglThrowErrorOccuried();
                                     gl->BindTexture(glTarget, glFixedTboHandle); _ZglThrowErrorOccuried();
-                                    gl->TexBuffer(glTarget, NIL, NIL); _ZglThrowErrorOccuried();
+                                    gl->TexBuffer(glTarget, GL_RGBA32F, NIL); _ZglThrowErrorOccuried();
                                 }
                             }
                         }
@@ -555,7 +599,7 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                                 {
                                     DpuBindAndSyncBuf(dpu, glTarget, buf, FALSE);
 
-                                    if (offset || (range == buf->m.reqSiz))
+                                    if (offset || (range < buf->m.reqSiz))
                                     {
                                         if (gl->TextureBufferRange)
                                         {
@@ -631,7 +675,7 @@ _ZGL afxError _ZglDqueBindAndSyncLigaSub(afxDrawBridge dexu, afxUnit unit, avxLi
 
         avxPipelineRigData const *data = &liga->m.data[j];
 
-        afxUnit setId = (unit * _ZGL_MAX_ENTRY_PER_LEGO);
+        afxUnit setId = (unit * _ZGL_MAX_BIND_PER_SET);
         afxUnit binding = setId + entry->binding;
 
         switch (entry->type)
@@ -669,7 +713,7 @@ _ZGL afxError _ZglDqueBindAndSyncLigaSub(afxDrawBridge dexu, afxUnit unit, avxLi
             // https://stackoverflow.com/questions/44629165/bind-multiple-uniform-buffer-objects
 
             //loc = gl->GetUniformBlockIndex(dexu->state.pip->gpuHandle[dexu->queueIdx], entry->name.buf); _ZglThrowErrorOccuried();
-            //gl->UniformBlockBinding(dexu->state.pip->gpuHandle[dexu->queueIdx], loc, ((i * _ZGL_MAX_ENTRY_PER_LEGO) + entry->binding));
+            //gl->UniformBlockBinding(dexu->state.pip->gpuHandle[dexu->queueIdx], loc, ((i * _ZGL_MAX_BIND_PER_SET) + entry->binding));
             _ZglDqueBindAndSyncBuf(dexu, binding, data->buf, data->offset, data->range, GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
             //gl->BindBufferRange(GL_UNIFORM_BUFFER, binding, point->resource.data.buf->gpuHandle, point->resource.data.base, point->resource.data.range); _ZglThrowErrorOccuried();
 
@@ -704,7 +748,7 @@ _ZGL afxError _ZglDqueBindAndSyncLiga(afxDrawBridge dexu, afxUnit unit, avxLigat
     else
     {
         afxUnit shdCnt;
-        avxShader shd;
+        avxCodebase shd;
         shdCnt = dexu->state.shdCnt;
 
         for (afxUnit i = 0; i < shdCnt; i++)
@@ -767,7 +811,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
             //AFX_ASSERT(entry->visibility);
             //AFX_ASSERT(entry->cnt);
 
-            afxUnit glBinding = /*(set * _ZGL_MAX_ENTRY_PER_LEGO) +*/ entry->binding;
+            afxUnit glBinding = /*(set * _ZGL_MAX_BIND_PER_SET) +*/ entry->binding;
             afxUnit loc;
 
             AFX_ASSERT(entry->type);

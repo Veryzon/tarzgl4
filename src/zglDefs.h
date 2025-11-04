@@ -81,8 +81,8 @@
 #define _ZGL_FBO_SET_POP 3
 #define _ZGL_PSO_SET_POP 3
 #define _ZGL_MAX_SURF_PER_DOUT 3
-#define _ZGL_MAX_LEGO_PER_BIND AVX_MAX_LIGAMENT_SETS
-#define _ZGL_MAX_ENTRY_PER_LEGO AVX_MAX_LIGAMENTS
+#define _ZGL_MAX_SET_PER_LIGA AVX_MAX_LIGAMENT_SETS
+#define _ZGL_MAX_BIND_PER_SET AVX_MAX_LIGAMENTS
 #define _ZGL_MAX_STAGE_PER_PIP 8
 //#define _ZGL_MAX_VBO_PER_BIND 8
 
@@ -123,13 +123,13 @@
 //#define FORCE_VBO_REBIND TRUE
 //#define FORCE_IBO_REBIND TRUE
 // unbind GL buffers at end of each function; to avoid stalling.
-#define UNBIND_GL_BUF FALSE
+#define UNBIND_GL_BUF TRUE
  //#define COHERENT_PUSHABLES
 
 // unbind GL textures at end of each function; to avoid issues with layout transition.
 #define UNBIND_GL_TEX TRUE
 // allow avxRaster to be backed as renderbuffer when it is only drawable.
-#define RENDERBUFFER_ENABLED TRUE
+//#define RENDERBUFFER_ENABLED TRUE
 // generate a FBO at call site to do blit instead of using common shared FBOs.
 #define _BLIT_RASTER_WITH_GEN_FBOS TRUE
 // generate a FBO at call site to do resolve instead of using common shared FBOs.

@@ -1,13 +1,13 @@
 ﻿/*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -18,8 +18,23 @@
 #include "zglObjects.h"
 #include "zglUtils.h"
 
+#define _ZGL_UNBIND_ANY_VIN_AT_END 1
+#define _ZGL_UNBIND_ANY_PIP_AT_END 1
+#define _ZGL_UNBIND_ANY_INDIRECT_DRAW_BUF_AT_END 1
+#define _ZGL_UNBIND_ANY_INDIRECT_DISPATCH_BUF_AT_END 1
+#define _ZGL_UNBIND_INDIRECT_PARAM_BUF_AT_END 1
+
 #define USE_REAL_GL_FENCES 1
 //#define USE_SINGLE_GL_FENCES 1
+
+static const GLenum idxSizGl[] =
+{
+    0,
+    GL_UNSIGNED_BYTE,
+    GL_UNSIGNED_SHORT,
+    0,
+    GL_UNSIGNED_INT
+};
 
 _ZGL void DpuMarkDebugStep(zglDpu* dpu, avxColor const color, afxString const* label)
 {
@@ -293,6 +308,8 @@ _ZGL void DpuDraw(zglDpu* dpu, avxDrawIndirect const* data)
     afxUnit firstVtx = data->baseVtx;
     afxUnit instCnt = data->instCnt;
 
+    AFX_ASSERT(!dpu->boundDrawIndBuf);
+
 #if 0//FORCE_GL_GENERIC_FUNCS
     AFX_ASSERT(gl->DrawArraysInstancedBaseInstance);
     gl->DrawArraysInstancedBaseInstance(top, firstVtx, vtxCnt, instCnt, firstInst); _ZglThrowErrorOccuried();
@@ -348,32 +365,12 @@ _ZGL void DpuDrawIndexed(zglDpu* dpu, avxDrawIndexedIndirect const* data)
     _ZglFlushLigatureState(dpu);
     _ZglFlushVertexInputState(dpu);
 
-    //if (dpu->nextVtxInStreamUpdMask || dpu->nextVtxInAttribUpdMask || dpu->flushIbb)
-        //_ZglFlushVertexInputStateChanges(dpu, TRUE);
-
-    //AFX_ASSERT(!dpu->nextVinBindingsMask);
-    //AFX_ASSERT(!dpu->nextVtxInAttribUpdMask);
-    //AFX_ASSERT(!dpu->flushIbb);
-
+    avxVertexInput vin = dpu->activeVin;
     afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
-    AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcBuf);
-    //AFX_ASSERT(dpu->state.vertexBindingCnt);
-
-    afxUnit idxCnt = data->idxCnt;
-    AFX_ASSERT(idxCnt);
-    //AFX_ASSERT(cmd->instCnt);
-
-    static const GLenum idxSizGl[] =
-    {
-        0,
-        GL_UNSIGNED_BYTE,
-        GL_UNSIGNED_SHORT,
-        0,
-        GL_UNSIGNED_INT
-    };
-
-    afxSize idxSiz = dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
-    afxSize idxBaseOff = dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcOff;
+    AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcBuf);
+    afxSize idxBaseOff = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcOff;
+    afxSize idxSrcRange = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcRange;
+    afxSize idxSiz = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
 
     GLint vtxOff2 = data->vtxOffset;
     afxUnit32 firstIdx = data->baseIdx;
@@ -381,11 +378,15 @@ _ZGL void DpuDrawIndexed(zglDpu* dpu, avxDrawIndexedIndirect const* data)
     afxUnit32 firstInst = data->baseInst;
     afxSize dataOff = (idxBaseOff + (idxSiz * firstIdx));
 
-    AFX_ASSERT_RANGE(dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcRange, 0, idxSiz * idxCnt);
+    afxUnit idxCnt = data->idxCnt;
+    AFX_ASSERT(idxCnt);
+    AFX_ASSERT_RANGE(idxSrcRange, 0, idxSiz * idxCnt);
 
     GLenum top = AfxToGlTopology(dpu->primTop);
 
     glVmt const* gl = dpu->gl;
+
+    AFX_ASSERT(!dpu->boundDrawIndBuf);
 
 #if 0//FORCE_GL_GENERIC_FUNCS
     AFX_ASSERT(gl->DrawElementsInstancedBaseVertexBaseInstance);
@@ -453,6 +454,8 @@ _ZGL void DpuDrawIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit3
 
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
     DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
+    dpu->boundDrawIndBuf = buf;
+    dpu->boundDrawIndBufGpuHandle = buf->glHandle;
 
 #if 0//FORCE_GL_GENERIC_FUNCS
     AFX_ASSERT(gl->MultiDrawArraysIndirect);
@@ -468,6 +471,10 @@ _ZGL void DpuDrawIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit3
         gl->MultiDrawArraysIndirect(top, offPtr, drawCnt, stride); _ZglThrowErrorOccuried();
     }
 #endif
+
+    DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, NIL, TRUE);
+    dpu->boundDrawIndBuf = NIL;
+    dpu->boundDrawIndBufGpuHandle = 0;
 }
 
 _ZGL void DpuDrawIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, avxBuffer cntBuf, afxUnit32 cntBufOff, afxUnit32 maxDrawCnt, afxUnit32 stride)
@@ -493,6 +500,10 @@ _ZGL void DpuDrawIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, avx
     DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &cntBuf);
     DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, cntBuf, TRUE);
+    dpu->boundDrawIndBuf = buf;
+    dpu->boundDrawIndBufGpuHandle = buf->glHandle;
+    dpu->boundParamBuf = cntBuf;
+    dpu->boundParamBufGpuHandle = cntBuf->glHandle;
 
     /*
     The command void MultiDrawArraysIndirectCount( enum mode, const void *indirect, intptr drawcount, intptr maxdrawcount, sizei stride );
@@ -510,6 +521,13 @@ _ZGL void DpuDrawIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, avx
 
     AFX_ASSERT(gl->MultiDrawArraysIndirectCount);
     gl->MultiDrawArraysIndirectCount(top, offPtr, cntBufOff, maxDrawCnt, stride); _ZglThrowErrorOccuried();
+
+    DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, NIL, TRUE);
+    DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, NIL, TRUE);
+    dpu->boundDrawIndBuf = NIL;
+    dpu->boundDrawIndBufGpuHandle = 0;
+    dpu->boundParamBuf = NIL;
+    dpu->boundParamBufGpuHandle = 0;
 }
 
 _ZGL void DpuDrawIndexedIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, afxUnit32 drawCnt, afxUnit32 stride)
@@ -528,21 +546,16 @@ _ZGL void DpuDrawIndexedIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, a
 
     glVmt const* gl = dpu->gl;
 
-    static const GLenum idxSizGl[] =
-    {
-        0,
-        GL_UNSIGNED_BYTE,
-        GL_UNSIGNED_SHORT,
-        0,
-        GL_UNSIGNED_INT
-    };
+    avxVertexInput vin = dpu->activeVin;
     afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
-    afxSize idxSiz = dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
+    afxSize idxSiz = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
     GLenum top = AfxToGlTopology(dpu->primTop);
     void* offPtr = (void*)offset;
 
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
     DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
+    dpu->boundDrawIndBuf = buf;
+    dpu->boundDrawIndBufGpuHandle = buf->glHandle;
 
 #if 0//FORCE_GL_GENERIC_FUNCS
     AFX_ASSERT(gl->MultiDrawElementsIndirect);
@@ -558,6 +571,10 @@ _ZGL void DpuDrawIndexedIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, a
         gl->MultiDrawElementsIndirect(top, idxSizGl[idxSiz], offPtr, drawCnt, stride); _ZglThrowErrorOccuried();
     }
 #endif
+
+    DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, NIL, TRUE);
+    dpu->boundDrawIndBuf = NIL;
+    dpu->boundDrawIndBufGpuHandle = 0;
 }
 
 _ZGL void DpuDrawIndexedIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offset, avxBuffer cntBuf, afxUnit32 cntBufOff, afxUnit32 maxDrawCnt, afxUnit32 stride)
@@ -576,17 +593,9 @@ _ZGL void DpuDrawIndexedIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offs
 
     glVmt const* gl = dpu->gl;
 
-    static const GLenum idxSizGl[] =
-    {
-        0,
-        GL_UNSIGNED_BYTE,
-        GL_UNSIGNED_SHORT,
-        0,
-        GL_UNSIGNED_INT
-    };
-
+    avxVertexInput vin = dpu->activeVin;
     afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
-    afxSize idxSiz = dpu->activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
+    afxSize idxSiz = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings.idxSrcSiz;
     GLenum top = AfxToGlTopology(dpu->primTop);
     void* offPtr = (void*)offset;
 
@@ -594,6 +603,10 @@ _ZGL void DpuDrawIndexedIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offs
     DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, buf, TRUE);
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &cntBuf);
     DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, cntBuf, TRUE);
+    dpu->boundDrawIndBuf = buf;
+    dpu->boundDrawIndBufGpuHandle = buf->glHandle;
+    dpu->boundParamBuf = cntBuf;
+    dpu->boundParamBufGpuHandle = cntBuf->glHandle;
 
     /*
     The command void MultiDrawElementsIndirectCount( enum mode, enum type, const void *indirect, intptr drawcount, sizei maxdrawcount, sizei stride );
@@ -614,6 +627,14 @@ _ZGL void DpuDrawIndexedIndirectCount(zglDpu* dpu, avxBuffer buf, afxUnit32 offs
 
     AFX_ASSERT(gl->MultiDrawElementsIndirectCount);
     gl->MultiDrawElementsIndirectCount(top, idxSizGl[idxSiz], offPtr, cntBufOff, maxDrawCnt, stride); _ZglThrowErrorOccuried();
+
+
+    DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, NIL, TRUE);
+    DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, NIL, TRUE);
+    dpu->boundDrawIndBuf = NIL;
+    dpu->boundDrawIndBufGpuHandle = 0;
+    dpu->boundParamBuf = NIL;
+    dpu->boundParamBufGpuHandle = 0;
 }
 
 _ZGL void DpuDispatch(zglDpu* dpu, afxUnit grpCntX, afxUnit grpCntY, afxUnit grpCntZ)
@@ -656,9 +677,16 @@ _ZGL void DpuDispatchIndirect(zglDpu* dpu, avxBuffer buf, afxUnit32 offset)
 
     AFX_ASSERT_OBJECTS(afxFcc_BUF, 1, &buf);
     DpuBindAndSyncBuf(dpu, GL_DISPATCH_INDIRECT_BUFFER, buf, TRUE);
+    dpu->boundDispatchIndBuf = buf;
+    dpu->boundDispatchIndBufGpuHandle = buf->glHandle;
 
     AFX_ASSERT(gl->DispatchComputeIndirect);
     gl->DispatchComputeIndirect(offset); _ZglThrowErrorOccuried();
+
+    // Unbind
+    DpuBindAndSyncBuf(dpu, GL_DISPATCH_INDIRECT_BUFFER, NIL, TRUE);
+    dpu->boundDispatchIndBuf = NIL;
+    dpu->boundDispatchIndBufGpuHandle = 0;
 }
 
 #if 0
@@ -714,12 +742,24 @@ _ZGL afxError _DpuWork_Transfer(zglDpu* dpu, _avxIoReqPacket* subm)
             break;
         }
         case afxFcc_RAS: // raw to ras
+        {
             if (_DpuUpdateRaster(dpu, subm->Transfer.dst.ras, subm->Transfer.src.src, subm->Transfer.opCnt, subm->Transfer.rasOps))
                 AfxThrowError();
 
             avxRaster ras = subm->Transfer.dst.ras;
             AfxDisposeObjects(1, &ras);
             break;
+        }
+        case NIL:
+        {
+            for (afxUnit i = 0; i < subm->Transfer.opCnt; i++)
+            {
+                afxByte* dstAt = (afxByte*)(subm->Transfer.dst.dst) + subm->Transfer.bufOps[i].dstOffset;
+                afxByte const* srcAt = (afxByte const*)(subm->Transfer.src.src) + subm->Transfer.bufOps[i].srcOffset;
+                AfxStream2(subm->Transfer.bufOps[i].rowCnt, srcAt, subm->Transfer.bufOps[i].srcStride, dstAt, subm->Transfer.bufOps[i].dstStride);
+            }
+            break;
+        }
         default: AfxThrowError(); break;
         }
         break;
@@ -728,13 +768,15 @@ _ZGL afxError _DpuWork_Transfer(zglDpu* dpu, _avxIoReqPacket* subm)
     {
         switch (subm->Transfer.dstFcc)
         {
-        case NIL: // buf to raw
+        case afxFcc_BUF: // buf to buf
         {
-            if (DpuDumpBuffer(dpu, subm->Transfer.src.buf, subm->Transfer.dst.dst, subm->Transfer.opCnt, subm->Transfer.bufOps))
+            if (DpuCopyBuffer(dpu, subm->Transfer.src.buf, subm->Transfer.dst.dst, subm->Transfer.opCnt, subm->Transfer.bufCpyOps))
                 AfxThrowError();
 
-            avxBuffer buf = subm->Transfer.src.buf;
-            AfxDisposeObjects(1, &buf);
+            avxBuffer src = subm->Transfer.src.buf;
+            AfxDisposeObjects(1, &src);
+            avxBuffer dst = subm->Transfer.dst.buf;
+            AfxDisposeObjects(1, &dst);
             break;
         }
         case afxFcc_RAS:
@@ -745,6 +787,15 @@ _ZGL afxError _DpuWork_Transfer(zglDpu* dpu, _avxIoReqPacket* subm)
             avxBuffer buf = subm->Transfer.src.buf;
             avxRaster ras = subm->Transfer.dst.ras;
             AfxDisposeObjects(1, &ras);
+            AfxDisposeObjects(1, &buf);
+            break;
+        }
+        case NIL: // buf to raw
+        {
+            if (DpuDumpBuffer(dpu, subm->Transfer.src.buf, subm->Transfer.dst.dst, subm->Transfer.opCnt, subm->Transfer.bufOps))
+                AfxThrowError();
+
+            avxBuffer buf = subm->Transfer.src.buf;
             AfxDisposeObjects(1, &buf);
             break;
         }
@@ -787,17 +838,6 @@ _ZGL afxError _DpuWork_Transfer(zglDpu* dpu, _avxIoReqPacket* subm)
             AfxDisposeObjects(1, &buf);
             break;
         }
-        case afxFcc_IOB: // ras to iob
-        {
-            if (_DpuDownloadRaster(dpu, subm->Transfer.src.ras, subm->Transfer.dst.iob, subm->Transfer.opCnt, subm->Transfer.rasOps))
-                AfxThrowError();
-
-            afxStream iob = subm->Transfer.dst.iob;
-            avxRaster ras = subm->Transfer.src.ras;
-            AfxDisposeObjects(1, &ras);
-            AfxDisposeObjects(1, &iob);
-            break;
-        }
         case afxFcc_RAS:
         {
             if (DpuCopyRaster(dpu, subm->Transfer.src.ras, subm->Transfer.dst.ras, subm->Transfer.opCnt, subm->Transfer.rasCpyOps))
@@ -807,6 +847,17 @@ _ZGL afxError _DpuWork_Transfer(zglDpu* dpu, _avxIoReqPacket* subm)
             avxRaster src = subm->Transfer.src.ras;
             AfxDisposeObjects(1, &dst);
             AfxDisposeObjects(1, &src);
+            break;
+        }
+        case afxFcc_IOB: // ras to iob
+        {
+            if (_DpuDownloadRaster(dpu, subm->Transfer.src.ras, subm->Transfer.dst.iob, subm->Transfer.opCnt, subm->Transfer.rasOps))
+                AfxThrowError();
+
+            afxStream iob = subm->Transfer.dst.iob;
+            avxRaster ras = subm->Transfer.src.ras;
+            AfxDisposeObjects(1, &ras);
+            AfxDisposeObjects(1, &iob);
             break;
         }
         default: AfxThrowError(); break;
@@ -865,7 +916,7 @@ _ZGL afxError _DpuWork_Stamp(zglDpu* dpu, _avxIoReqPacket* subm)
         avxRange whd;
         avxCanvas canv;
         AvxGetSurfaceCanvas(dout, outBufIdx, &canv);
-        whd = AvxGetCanvasArea(canv, (avxOrigin) { 0 });
+        whd = AvxGetCanvasExtent(canv, (avxOrigin) { 0 });
 
         afxRect area = AFX_RECT(0, 0, whd.w, whd.h);
         avxDrawTarget const dt = { .loadOp = avxLoadOp_LOAD,.storeOp = avxStoreOp_STORE };
@@ -1079,6 +1130,9 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
     {
         dpu->pushSets[i].pushConstUbo = pushUbos[i];
         gl->BindBuffer(GL_UNIFORM_BUFFER, dpu->pushSets[i].pushConstUbo); _ZglThrowErrorOccuried();
+#ifdef _AFX_DEBUG
+        gl->ObjectLabel(GL_BUFFER, dpu->pushSets[i].pushConstUbo, 13, "pushConstUbo"); _ZglThrowErrorOccuried();
+#endif
 #ifdef COHERENT_PUSHABLES
         GLbitfield pushUboCreateFlags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_DYNAMIC_STORAGE_BIT;
         GLbitfield pushUboAccessFlags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
@@ -1097,7 +1151,7 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
     dpu->m.instanced = TRUE;
     dpu->m.running = TRUE;
     
-    GLuint64 maxSrvWaitTimeout;
+    GLint64 maxSrvWaitTimeout;
     gl->GetInteger64v(GL_MAX_SERVER_WAIT_TIMEOUT, &maxSrvWaitTimeout);
     dpu->maxSrvWaitTimeout = maxSrvWaitTimeout;
 
@@ -1107,7 +1161,7 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
     {
 #if !0
         AfxLockMutex(&dexu->m.schedCndMtx);
-        
+
         while (!dexu->m.schedCnt)
             AfxWaitCondition(&dexu->m.schedCnd, &dexu->m.schedCndMtx);
 
@@ -1143,7 +1197,60 @@ _ZGL afxInt ZGL_DPU_THR_PROC(afxDrawBridge dexu)
 
         gl->BindBufferBase(GL_UNIFORM_BUFFER, dpu->activePushUboReservedBindPoint, dpu->pushSets[dpu->dpuIterIdx % _ZGL_PUSH_SET_POP].pushConstUbo); _ZglThrowErrorOccuried();
 
-        dexu->m.procCb(dpu);
+        dexu->m.procCb(&dpu->m);
+
+#if 0
+        {
+            // At draw scope conclusion, it should not have a bound canvas. May be it was suspended rather than concluded.
+            AFX_ASSERT(!dpu->canv);
+
+#ifdef _ZGL_UNBIND_ANY_VIN_AT_END
+            // unbind any bound vin and potentially its bound buffers.
+            if (dpu->activeVin)
+            {
+                DpuBindVertexInput(dpu, NIL);
+                _ZglFlushVertexInputState(dpu);
+                AFX_ASSERT(!dpu->activeVin);
+            }
+#endif
+#ifdef _ZGL_UNBIND_ANY_PIP_AT_END
+            // unbind any bound pip
+            if (dpu->activePip)
+            {
+                DpuBindPipeline(dpu, NIL, NIL, NIL);
+                _DpuFlushPipelineState(dpu);
+                AFX_ASSERT(!dpu->activePip);
+            }
+#endif
+#ifdef _ZGL_UNBIND_ANY_INDIRECT_DRAW_BUF_AT_END
+            // unbind any indirect draw buffer
+            if (dpu->boundDrawIndBuf)
+            {
+                DpuBindAndSyncBuf(dpu, GL_DRAW_INDIRECT_BUFFER, NIL, TRUE);
+                dpu->boundDrawIndBuf = NIL;
+                dpu->boundDrawIndBufGpuHandle = 0;
+            }
+#endif
+#ifdef _ZGL_UNBIND_ANY_INDIRECT_DISPATCH_BUF_AT_END
+            // unbind any indirect dispatch buffer
+            if (dpu->boundDispatchIndBuf)
+            {
+                DpuBindAndSyncBuf(dpu, GL_DISPATCH_INDIRECT_BUFFER, NIL, TRUE);
+                dpu->boundDispatchIndBuf = NIL;
+                dpu->boundDispatchIndBufGpuHandle = 0;
+            }
+#endif
+#ifdef _ZGL_UNBIND_INDIRECT_PARAM_BUF_AT_END
+            // unbind any indirect draw/dispatch parameter buffer
+            if (dpu->boundParamBuf)
+            {
+                DpuBindAndSyncBuf(dpu, GL_PARAMETER_BUFFER, NIL, TRUE);
+                dpu->boundParamBuf = NIL;
+                dpu->boundParamBufGpuHandle = 0;
+            }
+#endif
+        }
+#endif
 
         _ZglProcessDeletionQueue(gl, &dexu->deletionQueue);
 

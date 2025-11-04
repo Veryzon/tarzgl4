@@ -1,13 +1,13 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -92,7 +92,7 @@ _ZGL void _DecodeCmdDrawIndirect(zglDpu* dpu, _avxCmd const* cmd)
 
 _ZGL void _DecodeCmdDrawIndirectCount(zglDpu* dpu, _avxCmd const* cmd)
 {
-    DpuDrawIndirectCount(dpu, cmd->DrawIndirectCount.buf, cmd->DrawIndirectCount.offset, cmd->DrawIndirectCount.cntBuf, cmd->DrawIndirectCount.cntBufOff, cmd->DrawIndirectCount.maxDrawCnt, cmd->DrawIndirectCount.stride);
+    DpuDrawIndirectCount(dpu, cmd->DrawIndirect2.buf, cmd->DrawIndirect2.offset, cmd->DrawIndirect2.cntBuf, cmd->DrawIndirect2.cntBufOff, cmd->DrawIndirect2.maxDrawCnt, cmd->DrawIndirect2.stride);
 }
 
 _ZGL void _DecodeCmdDrawIndexed(zglDpu* dpu, _avxCmd const* cmd)
@@ -107,7 +107,7 @@ _ZGL void _DecodeCmdDrawIndexedIndirect(zglDpu* dpu, _avxCmd const* cmd)
 
 _ZGL void _DecodeCmdDrawIndexedIndirectCount(zglDpu* dpu, _avxCmd const* cmd)
 {
-    DpuDrawIndexedIndirectCount(dpu, cmd->DrawIndexedIndirectCount.buf, cmd->DrawIndexedIndirectCount.offset, cmd->DrawIndexedIndirectCount.cntBuf, cmd->DrawIndexedIndirectCount.cntBufOff, cmd->DrawIndexedIndirectCount.maxDrawCnt, cmd->DrawIndexedIndirectCount.stride);
+    DpuDrawIndexedIndirectCount(dpu, cmd->DrawIndexedIndirect2.buf, cmd->DrawIndexedIndirect2.offset, cmd->DrawIndexedIndirect2.cntBuf, cmd->DrawIndexedIndirect2.cntBufOff, cmd->DrawIndexedIndirect2.maxDrawCnt, cmd->DrawIndexedIndirect2.stride);
 }
 
 _ZGL void _DecodeCmdDispatch(zglDpu* dpu, _avxCmd const* cmd)
@@ -244,7 +244,7 @@ _ZGL void _DecodeCmdCommenceDrawScope(zglDpu* dpu, _avxCmd const* cmd)
     DpuCommenceDrawScope(dpu, 
         cmd->CommenceDrawScope.flags,
         cmd->CommenceDrawScope.canv, 
-        &cmd->CommenceDrawScope.area, 
+        &cmd->CommenceDrawScope.bounds,
         cmd->CommenceDrawScope.targetCnt, 
         &cmd->CommenceDrawScope.targets[0], 
         /*cmd->CommenceDrawScope.hasD ? &cmd->CommenceDrawScope.depth : NIL, */&cmd->CommenceDrawScope.ds[0],
@@ -446,10 +446,10 @@ _ZGL _avxCmdLut const cmdDevmt =
 
     .Draw = (void*)_DecodeCmdDraw,
     .DrawIndirect = (void*)_DecodeCmdDrawIndirect,
-    .DrawIndirectCount = (void*)_DecodeCmdDrawIndirectCount,
+    .DrawIndirect2 = (void*)_DecodeCmdDrawIndirectCount,
     .DrawIndexed = (void*)_DecodeCmdDrawIndexed,
     .DrawIndexedIndirect = (void*)_DecodeCmdDrawIndexedIndirect,
-    .DrawIndexedIndirectCount = (void*)_DecodeCmdDrawIndexedIndirectCount,
+    .DrawIndexedIndirect2 = (void*)_DecodeCmdDrawIndexedIndirectCount,
     .Dispatch = (void*)_DecodeCmdDispatch,
     .DispatchIndirect = (void*)_DecodeCmdDispatchIndirect,
     .PushConstants = (void*)_DecodeCmdPushConstants,

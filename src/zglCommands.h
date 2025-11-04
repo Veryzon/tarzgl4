@@ -22,7 +22,8 @@
 // vkCmdBindDescriptorSets - Binds descriptor sets to a command buffer
 
 ZGL afxError _DpuBindAndSyncSamp(zglDpu* dpu, afxUnit glUnit, avxSampler samp);
-ZGL afxError _DpuSyncShd(zglDpu* dpu, avxShader shd, avxShaderType stage, glVmt const* gl);
+ZGL afxError _DpuSyncShd(zglDpu* dpu, avxCodebase shd, avxShaderType stage);
+ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt, _avxProgrammableStage stages[], afxUnit* glShaderCnt, GLuint glShaders[]);
 ZGL afxError _DpuSurfSync(zglDpu* dpu, _avxDrawBin surf, glVmt const* gl); // must be used before texUpdate
 ZGL afxError DpuBindAndSyncRas(zglDpu* dpu, afxUnit glUnit, avxRaster tex, afxBool keepBound);
 ZGL afxError _ZglTexSubImage(glVmt const* gl, GLenum glTarget, avxRasterRegion const* rgn, GLenum glFmt, GLenum glType, afxAddress const src);
@@ -31,7 +32,7 @@ ZGL afxError _ZglCompressedTexSubImage(glVmt const* gl, GLenum glTarget, avxRast
 
 ZGL void DpuBindVertexInput(zglDpu* dpu, avxVertexInput vin);
 ZGL afxError DpuBindPipeline(zglDpu* dpu, avxPipeline pip, avxVertexInput vin, afxFlags dynamics);
-ZGL afxError DpuBindShadersEXT(zglDpu* dpu, avxShaderType stage, avxShader shd);
+ZGL afxError DpuBindShadersEXT(zglDpu* dpu, avxShaderType stage, avxCodebase shd);
 ZGL afxError _DpuFlushPipelineState(zglDpu* dpu);
 ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature legt, GLuint glHandle);
 ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, afxBool keepBound);
@@ -41,7 +42,7 @@ ZGL afxError DpuBindAndSyncBuf(zglDpu* dpu, GLenum glTarget, avxBuffer buf, afxB
 ZGL afxError _DpuRemapBuf(zglDpu* dpu, avxBuffer buf, afxSize offset, afxUnit range, afxFlags flags, void** placeholder);
 ZGL afxError DpuDumpBuffer(zglDpu* dpu, avxBuffer buf, afxByte* dst, afxUnit opCnt, avxBufferIo const* ops);
 ZGL afxError DpuUpdateBuffer(zglDpu* dpu, avxBuffer buf, afxByte const* src, afxUnit opCnt, avxBufferIo const* ops);
-ZGL void DpuCopyBuffer(zglDpu* dpu, avxBuffer src, avxBuffer dst, afxUnit opCnt, avxBufferCopy const ops[]);
+ZGL afxError DpuCopyBuffer(zglDpu* dpu, avxBuffer src, avxBuffer dst, afxUnit opCnt, avxBufferCopy const ops[]);
 ZGL void DpuFillBuffer(zglDpu* dpu, avxBuffer buf, afxUnit offset, afxUnit range, afxUnit data);
 ZGL afxError _DpuDownloadBuffer(zglDpu* dpu, avxBuffer buf, afxStream out, afxUnit opCnt, avxBufferIo const* ops);
 ZGL afxError _DpuUploadBuffer(zglDpu* dpu, avxBuffer buf, afxStream in, afxUnit opCnt, avxBufferIo const* ops);
@@ -77,7 +78,7 @@ ZGL void _ZglFlushRsChanges(zglDpu* dpu);
 ZGL void _ZglFlushLigatureState(zglDpu* dpu);
 ZGL void _ZglFlushVertexInputState(zglDpu* dpu);
 
-ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas canv, afxLayeredRect const* area, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo);
+ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas canv, afxLayeredRect const* bounds, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo);
 ZGL afxError _ZglDpuClearCanvas(zglDpu* dpu, afxUnit bufCnt, afxUnit const bins[], avxClearValue const values[], afxUnit areaCnt, afxLayeredRect const areas[]);
 ZGL void DpuConcludeDrawScope(zglDpu* dpu);
 ZGL void DpuNextPass(zglDpu* dpu);
