@@ -1,13 +1,13 @@
 ﻿/*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -495,25 +495,25 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
                     static afxDrawPortInfo const portCaps[] =
                     {
                         {
-                            .capabilities = afxDrawFn_DRAW | afxDrawFn_COMPUTE | afxDrawFn_TRANSFER | afxDrawFn_BLIT | afxDrawFn_SAMPLE | afxDrawFn_VIDEO,
+                            .capabilities = avxAptitude_GFX | avxAptitude_PCX | avxAptitude_DMA | avxAptitude_BLIT | avxAptitude_SAMPLE | avxAptitude_VCX,
                             .minQueCnt = 4,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawFn_COMPUTE | afxDrawFn_TRANSFER,
+                            .capabilities = avxAptitude_PCX | avxAptitude_DMA,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawFn_TRANSFER,
+                            .capabilities = avxAptitude_DMA,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
                         },
                         {
-                            .capabilities = afxDrawFn_PRESENT,
+                            .capabilities = avxAptitude_PRESENT,
                             .minQueCnt = 2,
                             .maxQueCnt = 16,
                             .acceleration = afxAcceleration_DPU
@@ -754,12 +754,10 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawFn_DRAW | 
-                        afxDrawFn_COMPUTE | 
-                        afxDrawFn_TRANSFER | 
-                        afxDrawFn_BLIT | 
-                        afxDrawFn_SAMPLE | 
-                        afxDrawFn_PRESENT,
+        .capabilities = avxAptitude_GFX | 
+                        avxAptitude_PCX | 
+                        avxAptitude_DMA | 
+                        avxAptitude_PRESENT,
         .minQueCnt = 4,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -775,8 +773,8 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawFn_COMPUTE | 
-                        afxDrawFn_TRANSFER,
+        .capabilities = avxAptitude_PCX | 
+                        avxAptitude_DMA,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -792,7 +790,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawFn_TRANSFER,
+        .capabilities = avxAptitude_DMA,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
@@ -808,7 +806,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
         //.portCnt = 4,
 
-        .capabilities = afxDrawFn_PRESENT | afxDrawFn_BLIT | afxDrawFn_TRANSFER | afxDrawFn_VIDEO,
+        .capabilities = avxAptitude_PRESENT | avxAptitude_DMA | avxAptitude_VCX,
         .minQueCnt = 2,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU
@@ -819,7 +817,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     // add device's graphics port
     ddevInfos[ddevCnt] = gfxDdevInfo;
-    if (hasCompute) ddevInfos[ddevCnt].capabilities &= ~afxDrawFn_COMPUTE;
+    if (hasCompute) ddevInfos[ddevCnt].capabilities &= ~avxAptitude_PCX;
     ++ddevCnt;
 
     // TODO: Find a better way of doing it.

@@ -1,13 +1,13 @@
 ﻿/*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -1457,7 +1457,7 @@ _ZGL afxError TestCoreSymbols(HMODULE opengl32, glVmt const* vmt)
 {
     afxError err = NIL;
     afxUnit symCnt = (sizeof(*vmt) / sizeof(vmt->ptr));
-    void**pa = &vmt->ptr;
+    void*const*pa = &vmt->ptr;
 
     for (afxUnit i = 0; i < symCnt; i++)
     {
@@ -1493,7 +1493,7 @@ _ZGL afxError wglLoadCoreSymbols(HMODULE opengl32, glVmt* gl)
 {
     afxError err = AFX_ERR_NONE;
     afxUnit symCnt = (sizeof(*gl) / sizeof(gl->ptr));
-    wglLoadSymbolsSIG(opengl32, 0, symCnt, gl, 1);
+    wglLoadSymbolsSIG(opengl32, 0, symCnt, &gl->ptr, 1);
     TestCoreSymbols(opengl32, gl);
 }
 
@@ -2483,7 +2483,7 @@ _ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int ve
     {
         ctxAttrPairs[3][1] |= WGL_CONTEXT_DEBUG_BIT_ARB;
     }
-    else
+    else if (_WGL_ARB_create_context_no_error)
     {
         /*
             GL_KHR_no_error Extension:
@@ -3053,7 +3053,7 @@ BOOL WINAPI DllMain(
             vgiWndClss.lpfnWndProc = _ZglTmpWndPrcCbW32;
             vgiWndClss.cbClsExtra = 0;
             vgiWndClss.cbWndExtra = 0;
-            vgiWndClss.hInstance = GetModuleHandleA(NULL);
+            vgiWndClss.hInstance = hinstDLL;// GetModuleHandleA(NULL);
             vgiWndClss.hIcon = LoadIconA(NULL, IDI_SHIELD);
             vgiWndClss.hCursor = LoadCursorA(NULL, IDC_ARROW);
             vgiWndClss.hbrBackground = NULL;

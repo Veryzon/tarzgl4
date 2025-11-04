@@ -207,12 +207,24 @@ AFX_DEFINE_STRUCT(zglDpu)
             afxUnit         smpUniqId;
             afxUnit         rasUniqId;
         };
-    }                       activeLs[_ZGL_MAX_LEGO_PER_BIND][_ZGL_MAX_ENTRY_PER_LEGO],
-                            nextLs[_ZGL_MAX_LEGO_PER_BIND][_ZGL_MAX_ENTRY_PER_LEGO];
-    afxMask                 nextLsUpdMask[_ZGL_MAX_LEGO_PER_BIND];
+    }                       activeLs[_ZGL_MAX_SET_PER_LIGA][_ZGL_MAX_BIND_PER_SET],
+                            nextLs[_ZGL_MAX_SET_PER_LIGA][_ZGL_MAX_BIND_PER_SET];
+    afxMask                 nextLsUpdMask[_ZGL_MAX_SET_PER_LIGA];
+    // used to unbind
+    afxMask                 activetLsMask[_ZGL_MAX_SET_PER_LIGA];
+    afxUnit                 activeLsCnt;
+    afxMask                 activeLsPoint[_ZGL_MAX_SET_PER_LIGA][_ZGL_MAX_BIND_PER_SET];
+    afxUnit                 activeLsPointCnt[_ZGL_MAX_SET_PER_LIGA];
 
     // submission stuff
     afxBool         submissionSuspended;
+
+    avxBuffer   boundDispatchIndBuf;
+    GLuint      boundDispatchIndBufGpuHandle;
+    avxBuffer   boundDrawIndBuf;
+    GLuint      boundDrawIndBufGpuHandle;
+    avxBuffer   boundParamBuf;
+    GLuint      boundParamBufGpuHandle;
 
     afxUnit          texPackUnitIdx;
     afxUnit          texUnpackUnitIdx;

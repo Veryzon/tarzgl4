@@ -1,3 +1,19 @@
+/*
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
+ *
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
+ *
+ *                                   Public Test Build
+ *                               (c) 2017 SIGMA FEDERATION
+ *                             <https://sigmaco.org/qwadro/>
+ */
+
 /**
  * SPDX-License-Identifier: (WTFPL OR CC0-1.0) AND Apache-2.0
  */
@@ -577,7 +593,7 @@ int gladLoadWGL(HDC hdc, GLADloadfunc load) {
     return gladLoadWGLUserPtr(hdc, /*glad_*/wgl_get_proc_from_userptr, GLAD_GNUC_EXTENSION (void*) load);
 }
 
-#include "../src/zglInterop_WGL.h"
+#include "../../src/zglInterop_WGL.h"
 
 int(WINAPI*wglChoosePixelFormatWIN)(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);  // "wglChoosePixelFormat" funciona com Intel mas não com AMD.
 int(WINAPI*wglDescribePixelFormatWIN)(HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
@@ -711,6 +727,7 @@ _ZGL afxError wglLoadModule(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMin
         afxString ver;
         afxUnit vMajor, vMinor, vPatch;
         PFNGLGETSTRINGPROC _glGetString = (void*)wglGetProcAddressWIN("glGetString");
+        AFX_ASSERT(_glGetString);
         AfxMakeString(&ver, 0, (afxChar const*)_glGetString(GL_VERSION), 0);
         AfxScanString(&ver, "%u.%u.%u", &vMajor, &vMinor, &vPatch);
 

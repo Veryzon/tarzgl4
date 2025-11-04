@@ -1,13 +1,13 @@
 /*
- *             :::::::::::     :::     :::::::::   ::::::::      :::
- *                 :+:       :+: :+:   :+:    :+: :+:    :+:   :+: :+:
- *                 +:+      +:+   +:+  +:+    +:+ +:+         +:+   +:+
- *                 +#+     +#++:++#++: +#++:++#:  :#:        +#++:++#++:
- *                 +#+     +#+     +#+ +#+    +#+ +#+   +#+# +#+     +#+
- *                 #+#     #+#     #+# #+#    #+# #+#    #+# #+#     #+#
- *                 ###     ###     ### ###    ###  ########  ###     ###
+ *           ::::::::    :::::::::::    ::::::::    ::::     ::::       :::
+ *          :+:    :+:       :+:       :+:    :+:   +:+:+: :+:+:+     :+: :+:
+ *          +:+              +:+       +:+          +:+ +:+:+ +:+    +:+   +:+
+ *          +#++:++#++       +#+       :#:          +#+  +:+  +#+   +#++:++#++:
+ *                 +#+       +#+       +#+   +#+#   +#+       +#+   +#+     +#+
+ *          #+#    #+#       #+#       #+#    #+#   #+#       #+#   #+#     #+#
+ *           ########    ###########    ########    ###       ###   ###     ###
  *
- *                  Q W A D R O   E X E C U T I O N   E C O S Y S T E M
+ *                     S I G M A   T E C H N O L O G Y   G R O U P
  *
  *                                   Public Test Build
  *                               (c) 2017 SIGMA FEDERATION
@@ -19,8 +19,8 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 
-//#define _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE TRUE
-//#define _FLUSH_ON_DRAW_SCOPE_CONCLUSION TRUE
+//#define _BIND_FBO_FOR_READ_CONCURRENTLY_ON_DRAW_SCOPE TRUE
+#define _FLUSH_ON_DRAW_SCOPE_CONCLUSION TRUE
 #define _CLEAR_CANVAS_WITH_GEN_FBOS TRUE
 
 _ZGL afxError _ZglBindFboAttachment(glVmt const* gl, GLenum glTarget, GLuint fbo, GLenum glAttachment, GLenum texTarget, GLuint texHandle, GLint level, GLuint z, afxBool multilayered)
@@ -322,6 +322,18 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
                     _ZglBindFboAttachment(dpu->gl, glTarget, NIL, glAttachment, glTexTarget, glTexHandle, ras->m.baseMip, ras->m.baseLayer, (canv->m.whdMin.d > 1));
                 }
             }
+
+            if (canv->m.colorCnt == 0)
+            {
+                /*
+                    A framebuffer object however is not complete without a color buffer so we need to explicitly tell 
+                    OpenGL we're not going to render any color data. We do this by setting both the read and draw buffer 
+                    to GL_NONE with glDrawBuffer and glReadbuffer.
+                */
+                // No attachments at all
+                gl->DrawBuffer(GL_NONE);
+                gl->ReadBuffer(GL_NONE);
+            }
         }
 
         switch (gl->CheckFramebufferStatus(glTarget))
@@ -376,91 +388,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
     return err;
 }
 
-
-_ZGL void DpuNextPass(zglDpu* dpu)
-{
-    afxError err = AFX_ERR_NONE;
-    glVmt const* gl = dpu->gl;
-
-    AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
-    gl->Flush(); _ZglThrowErrorOccuried();
-}
-
-_ZGL void DpuConcludeDrawScope(zglDpu* dpu)
-{
-    afxError err = AFX_ERR_NONE;
-    glVmt const* gl = dpu->gl;
-
-    AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
-    dpu->inDrawScope = FALSE;
-
-    afxUnit invalidCnt = dpu->invalidDrawBufCnt;
-    afxBool clipped = dpu->drawAreaClipped;
-
-#if 0
-    if (invalidCnt)
-    {
-        if (clipped)
-        {
-            gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, dpu->drawArea.x, dpu->drawArea.y, dpu->drawArea.w, dpu->drawArea.h); _ZglThrowErrorOccuried();
-        }
-        else
-        {
-            gl->InvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs); _ZglThrowErrorOccuried();
-        }
-    }
-#endif
-
-    // https://graphics1600.rssing.com/chan-25333833/all_p4.html
-    // Switch to zero to immediately trigger any pending buffer operation.
-
-    afxBool toSuspend = (dpu->drawScopeFlags & avxDrawScopeFlag_SUSPEND);
-
-    if (!toSuspend)
-    {
-#if _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE
-        _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, 0, TRUE);
-#endif
-        _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, 0, TRUE);
-
-        if (dpu->mustCloseDrawScopeDgbGrp)
-        {
-            gl->PopDebugGroup(); _ZglThrowErrorOccuried();
-        }
-
-#if _FLUSH_ON_DRAW_SCOPE_CONCLUSION
-        gl->Flush(); _ZglThrowErrorOccuried(); // flush was presenting/swapping without wglSwapBuffers.
-#endif
-    }
-    avxCanvas canv = dpu->canv;
-
-    if (canv)
-    {
-        afxUnit surCnt;
-        surCnt = AvxQueryCanvasBins(canv, NIL, NIL, NIL);
-#if 0
-        if (surCnt)
-        {
-            AFX_ASSERT(_ZGL_MAX_SURF_PER_CANV >= surCnt);
-            avxRaster surfaces[_ZGL_MAX_SURF_PER_CANV];
-            AvxGetDrawBuffers(canv, 0, surCnt, surfaces);
-
-            for (afxUnit i = 0; i < surCnt; i++)
-            {
-                avxRaster ras = surfaces[i];
-
-                if (ras)
-                {
-                    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
-                    ras->updFlags |= ZGL_UPD_FLAG_HOST_FLUSH;
-                }
-            }
-        }
-#endif
-    }
-}
-
-_ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas canv, afxLayeredRect const* area, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo)
+_ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas canv, afxLayeredRect const* bounds, afxUnit cCnt, avxDrawTarget const* c, avxDrawTarget const* d, avxDrawTarget const* s, afxString const* dbgTag, afxBool defFbo)
 {
     afxError err = AFX_ERR_NONE;
     glVmt const* gl = dpu->gl;
@@ -589,9 +517,9 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
         return;
     }
 
-    afxRect areaMax;
-    AvxGetCanvasArea(canv, AVX_ORIGIN_ZERO, &areaMax);
-    avxRange canvWhd = { areaMax.w, areaMax.h, 1 };
+    afxLayeredRect areaMax;
+    AvxGetCanvasExtent(canv, NIL, &areaMax);
+    avxRange canvWhd = { areaMax.area.w, areaMax.area.h, areaMax.layerCnt };
 
     afxUnit maxColSurCnt;
     afxUnit dsSurIdx[2] = { AFX_INVALID_INDEX, AFX_INVALID_INDEX };
@@ -714,7 +642,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
 
     afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SET_POP;
 
-#if _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE
+#if _BIND_FBO_FOR_READ_CONCURRENTLY_ON_DRAW_SCOPE
     _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, canv, TRUE);
 #endif
     _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, canv, TRUE);
@@ -724,12 +652,12 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
 
     afxBool resuming = (flags & avxDrawScopeFlag_RESUME);
 
-    afxBool clipped = ((area->area.x && (area->area.x > 0)) ||
-        (area->area.y && (area->area.y > 0)) ||
-        (area->area.w && (area->area.w < canvWhd.w)) ||
-        (area->area.h && (area->area.h < canvWhd.h)));
+    afxBool clipped = ((bounds->area.x && (bounds->area.x > 0)) ||
+        (bounds->area.y && (bounds->area.y > 0)) ||
+        (bounds->area.w && (bounds->area.w < canvWhd.w)) ||
+        (bounds->area.h && (bounds->area.h < canvWhd.h)));
     dpu->drawAreaClipped = clipped;
-    dpu->drawArea = *area;
+    dpu->drawArea = *bounds;
 
     dpu->drawScopeFlags = flags;
 
@@ -739,7 +667,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
         {
             if (clipped)
             {
-                gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, area->area.x, area->area.y, area->area.w, area->area.h); _ZglThrowErrorOccuried();
+                gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, bounds->area.x, bounds->area.y, bounds->area.w, bounds->area.h); _ZglThrowErrorOccuried();
             }
             else
             {
@@ -764,19 +692,19 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
 
     // TODO: Sanitize area to canvas' bounds.
     GLint scissor[4];
-    scissor[0] = area->area.x;
-    scissor[1] = area->area.y;
-    scissor[2] = area->area.w;
-    scissor[3] = area->area.h;
-    AFX_ASSERT(area->area.w);
-    AFX_ASSERT(area->area.h);
+    scissor[0] = bounds->area.x;
+    scissor[1] = bounds->area.y;
+    scissor[2] = bounds->area.w;
+    scissor[3] = bounds->area.h;
+    AFX_ASSERT(bounds->area.w);
+    AFX_ASSERT(bounds->area.h);
     AFX_ASSERT(gl->ScissorArrayv);
     gl->ScissorArrayv(0, 1, scissor);
 
     // We must store the scissor rects to avoid DPU to further apply invalid rects.
     for (afxUnit iter = 0; iter < ZGL_MAX_VIEWPORTS; iter++)
     {
-        dpu->nextScisRects[iter] = area->area;
+        dpu->nextScisRects[iter] = bounds->area;
         dpu->nextScisUpdMask |= AFX_BITMASK(iter);
     }
 
@@ -817,6 +745,95 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
             }
         }
     }
+}
+
+_ZGL void DpuConcludeDrawScope(zglDpu* dpu)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
+    dpu->inDrawScope = FALSE;
+
+    afxUnit invalidCnt = dpu->invalidDrawBufCnt;
+    afxBool clipped = dpu->drawAreaClipped;
+
+#if 0
+    if (invalidCnt)
+    {
+        if (clipped)
+        {
+            gl->InvalidateSubFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs, dpu->drawArea.x, dpu->drawArea.y, dpu->drawArea.w, dpu->drawArea.h); _ZglThrowErrorOccuried();
+        }
+        else
+        {
+            gl->InvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, invalidCnt, dpu->invalidDrawBufs); _ZglThrowErrorOccuried();
+        }
+    }
+#endif
+
+    // https://graphics1600.rssing.com/chan-25333833/all_p4.html
+    // Switch to zero to immediately trigger any pending buffer operation.
+
+    afxBool toSuspend = (dpu->drawScopeFlags & avxDrawScopeFlag_SUSPEND);
+
+    if (!toSuspend)
+    {
+#if _BIND_FBO_FOR_READY_CONCURRENTLY_ON_DRAW_SCOPE
+        _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, 0, TRUE);
+#endif
+        _DpuBindAndSyncCanv(dpu, GL_DRAW_FRAMEBUFFER, 0, TRUE);
+
+        if (dpu->mustCloseDrawScopeDgbGrp)
+        {
+            gl->PopDebugGroup(); _ZglThrowErrorOccuried();
+        }
+
+#if _FLUSH_ON_DRAW_SCOPE_CONCLUSION
+        gl->Flush(); _ZglThrowErrorOccuried(); // flush was presenting/swapping without wglSwapBuffers.
+#endif
+    }
+    else
+    {
+        // When suspending a scope, we don't unbind the FBO to allow it to prepare discards and resolves at once right into the next FBO.
+
+    }
+
+    avxCanvas canv = dpu->canv;
+
+    if (canv)
+    {
+        afxUnit surCnt;
+        surCnt = AvxQueryCanvasBins(canv, NIL, NIL, NIL);
+#if 0
+        if (surCnt)
+        {
+            AFX_ASSERT(_ZGL_MAX_SURF_PER_CANV >= surCnt);
+            avxRaster surfaces[_ZGL_MAX_SURF_PER_CANV];
+            AvxGetDrawBuffers(canv, 0, surCnt, surfaces);
+
+            for (afxUnit i = 0; i < surCnt; i++)
+            {
+                avxRaster ras = surfaces[i];
+
+                if (ras)
+                {
+                    AFX_ASSERT_OBJECTS(afxFcc_RAS, 1, &ras);
+                    ras->updFlags |= ZGL_UPD_FLAG_HOST_FLUSH;
+                }
+            }
+        }
+#endif
+    }
+}
+
+_ZGL void DpuNextPass(zglDpu* dpu)
+{
+    afxError err = AFX_ERR_NONE;
+    glVmt const* gl = dpu->gl;
+
+    AFX_ASSERT(dpu->inDrawScope != FALSE); // This is a transfer operation.
+    gl->Flush(); _ZglThrowErrorOccuried();
 }
 
 _ZGL afxError _ZglDpuClearCanvas(zglDpu* dpu, afxUnit bufCnt, afxUnit const bins[], avxClearValue const values[], afxUnit areaCnt, afxLayeredRect const areas[])
