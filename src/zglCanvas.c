@@ -175,7 +175,7 @@ _ZGL afxError _DpuBindAndSyncCanv(zglDpu* dpu, GLenum glTarget, avxCanvas canv, 
         return err;
     }
 
-    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SET_POP;
+    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SWAPS;
 
     AFX_ASSERT_OBJECTS(afxFcc_CANV, 1, &canv);
     GLuint glHandle = canv->perDpu[dpu->m.exuIdx][fboHandleIdx].glHandle;
@@ -641,7 +641,7 @@ _ZGL void DpuCommenceDrawScope(zglDpu* dpu, avxDrawScopeFlags flags, avxCanvas c
 
     // TODO iterate for each canvas surface against arguments
 
-    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SET_POP;
+    afxUnit fboHandleIdx = dpu->dpuIterIdx % _ZGL_FBO_SWAPS;
 
 #if _BIND_FBO_FOR_READ_CONCURRENTLY_ON_DRAW_SCOPE
     _DpuBindAndSyncCanv(dpu, GL_READ_FRAMEBUFFER, canv, TRUE);
@@ -1102,7 +1102,7 @@ _ZGL afxError _ZglCanvDtor(avxCanvas canv)
 
     for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        for (afxUnit j = 0; j < _ZGL_FBO_SET_POP; j++)
+        for (afxUnit j = 0; j < _ZGL_FBO_SWAPS; j++)
         {
             if (canv->perDpu[i][j].glHandle)
             {
@@ -1112,7 +1112,7 @@ _ZGL afxError _ZglCanvDtor(avxCanvas canv)
         }
     }
 
-    if (_AVX_CANV_CLASS_CONFIG.dtor(canv))
+    if (_AVX_CLASS_CONFIG_CANV.dtor(canv))
         AfxThrowError();
 
     return err;
@@ -1122,7 +1122,7 @@ _ZGL afxError _ZglCanvCtor(avxCanvas canv, void** args, afxUnit invokeNo)
 {
     afxError err = { 0 };
 
-    if (_AVX_CANV_CLASS_CONFIG.ctor(canv, args, invokeNo)) AfxThrowError();
+    if (_AVX_CLASS_CONFIG_CANV.ctor(canv, args, invokeNo)) AfxThrowError();
     else
     {
         //canv->m.readjust = _ZglReadjustCanvasCb;

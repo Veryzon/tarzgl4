@@ -392,24 +392,24 @@ _ZGL void _DecodeCmdSetCurtains(zglDpu* dpu, _avxCmd const* cmd)
     }
 }
 
-_ZGL void _DecodeCmdPushDebugScope(zglDpu* dpu, _avxCmd const* cmd)
+_ZGL void _DecodeCmdCommenceDebugScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = { 0 };
     glVmt const* gl = dpu->gl;    
-    DpuPushDebugScope(dpu, cmd->PushDebugScope.color, &cmd->PushDebugScope.label.s);
+    DpuCommenceDebugScope(dpu, cmd->CommenceDebugScope.color, &cmd->CommenceDebugScope.label.s);
 }
 
-_ZGL void _DecodeCmdMarkDebugStep(zglDpu* dpu, _avxCmd const* cmd)
+_ZGL void _DecodeCmdMarkDebugMilestone(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = { 0 };
     glVmt const* gl = dpu->gl;
-    DpuMarkDebugStep(dpu, cmd->MarkDebugStep.color, &cmd->MarkDebugStep.label.s);
+    DpuMarkDebugMilestone(dpu, cmd->MarkDebugMilestone.color, &cmd->MarkDebugMilestone.label.s);
 }
 
-_ZGL void _DecodeCmdPopDebugScope(zglDpu* dpu, _avxCmd const* cmd)
+_ZGL void _DecodeCmdConcludeDebugScope(zglDpu* dpu, _avxCmd const* cmd)
 {
     afxError err = { 0 };
-    DpuPopDebugScope(dpu);
+    DpuConcludeDebugScope(dpu);
 }
 
 _ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, _avxCmd const* cmd)
@@ -419,9 +419,8 @@ _ZGL void _DecodeCmdExecuteCommands(zglDpu* dpu, _avxCmd const* cmd)
     for (afxUnit i = 0; i < cmd->ExecuteCommands.cnt; i++)
     {
         afxDrawContext dctx = cmd->ExecuteCommands.contexts[i].dctx;
-        afxUnit batchId = cmd->ExecuteCommands.contexts[i].batchId;
         AFX_ASSERT_OBJECTS(afxFcc_DCTX, 1, &dctx);
-        _AvxDpuRollContext(&dpu->m, dctx, batchId);
+        _AvxDpuRollContext(&dpu->m, dctx);
     }
 }
 
@@ -433,9 +432,9 @@ _ZGL void _DecodeCmdPipelineBarrier(zglDpu* dpu, _avxCmd const* cmd)
 
 _ZGL _avxCmdLut const cmdDevmt =
 {
-    .PushDebugScope = (void*)_DecodeCmdPopDebugScope,
-    .PopDebugScope = (void*)_DecodeCmdPopDebugScope,
-    .MarkDebugStep = (void*)_DecodeCmdMarkDebugStep,
+    .CommenceDebugScope = (void*)_DecodeCmdConcludeDebugScope,
+    .ConcludeDebugScope = (void*)_DecodeCmdConcludeDebugScope,
+    .MarkDebugMilestone = (void*)_DecodeCmdMarkDebugMilestone,
 
     .BindPipeline = (void*)_DecodeCmdBindPipeline,
     .BindShadersEXT = (void*)_DecodeCmdBindShadersEXT,
@@ -498,3 +497,12 @@ _ZGL _avxCmdLut const cmdDevmt =
 
     .PipelineBarrier = (void*)_DecodeCmdPipelineBarrier
 };
+
+
+_ZGL afxError _DpuRollContext(avxDpu* dpu, afxDrawContext dctx)
+{
+    afxError err = { 0 };
+    AFX_ASSERT_OBJECTS(afxFcc_DCTX, 1, &dctx);
+
+    _AvxDpuRollContext(dpu, dctx);
+}

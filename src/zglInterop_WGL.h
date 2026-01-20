@@ -20,8 +20,8 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 //#define WIN32_LEAN_AND_MEAN 1
 
-#include "../qwadro_afx/src/draw/avxIcd.h"
-#include "qwadro/afxQwadro.h"
+#include "../qwadro_afx/targa/avxIcd.h"
+//#include "qwadro/afxQwadro.h"
 
 #ifndef AVX_DRV_SRC
 #   ifdef _DEBUG
@@ -975,8 +975,8 @@ typedef union wglVmt
 
 ZGL void APIENTRY _glDbgMsgCb(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
-ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures);
-ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, afxDrawLimits* pLimits);
+ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, avxFeatures* pFeatures);
+ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, avxLimits* pLimits);
 
 //ZGL wglVmt wgl;
 
@@ -985,7 +985,10 @@ ZGL afxError wglLoadCoreSymbols(HMODULE opengl32, glVmt* gl);
 
 ZGL PROC                wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName);
 _ZGL void __stdcall     wglLoadWsiSymbolsSIG(HMODULE opengl32, afxUnit* verMajor, afxUnit* verMinor, afxUnit* verPatch);
-ZGL afxBool             wglHasExtensionSIG(HDC hDc, afxChar const* ext);
+
+ZGL afxBool             wglHasWsiExtensionSIG(HDC hDc, afxChar const* ext);
+ZGL afxBool             glHasExtensionSIG(glVmt const* gl, afxChar const* ext);
+
 ZGL afxError __stdcall  wglLoadSymbolsSIG(HMODULE opengl32, afxUnit base, afxUnit cnt, void* vmt[], afxBool echo);
 
 ZGL BOOL __stdcall      wglChooseBestPixelFormatSIG(HDC hDC, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats, afxBool* byWgl);

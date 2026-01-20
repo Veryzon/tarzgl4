@@ -28,7 +28,7 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
     afxError err = { 0 };
     glVmt const* gl = dpu->gl;
 
-    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SWAPS;
     avxPipeline pip = dpu->nextPip;
     
     if (pip != dpu->activePip)
@@ -60,14 +60,17 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
             {
                 //afxArray code;
                 afxChar errStr[1024];
-                afxUnit tmpShdGlHandleCnt = 0;
-                GLuint tmpShdGlHandles[8];
+                //afxUnit tmpShdGlHandleCnt = 0;
+                //GLuint tmpShdGlHandles[8];
                 //AfxMakeArray(&code, sizeof(afxChar), 2048, NIL, 0);
 
                 avxCodebase codb = pip->m.codb;
                 AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &codb);
 
-                if (_DpuCreateShaders(dpu, codb, pip->m.stageCnt, pip->m.stages, &tmpShdGlHandleCnt, tmpShdGlHandles))
+                //if (_DpuCreateShaders(dpu, codb, pip->m.stageCnt, pip->m.stages, &tmpShdGlHandleCnt, tmpShdGlHandles))
+                    //AfxThrowError();
+
+                if (_DpuCreateShaders(dpu, codb, pip))
                     AfxThrowError();
 
                 if (!err)
@@ -90,9 +93,9 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
                             gl->ObjectLabel(GL_PROGRAM, glHandle, pip->m.tag.len, (GLchar const*)pip->m.tag.start); _ZglThrowErrorOccuried();
                         }
 
-                        for (afxUnit i = 0; i < tmpShdGlHandleCnt; i++)
+                        for (afxUnit i = 0; i < pip->m.stageCnt; i++)
                         {
-                            gl->AttachShader(glHandle, tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
+                            gl->AttachShader(glHandle, pip->stagesExt[i].glShaderHandle); _ZglThrowErrorOccuried();
                         }
 
                         gl->LinkProgram(glHandle); _ZglThrowErrorOccuried();
@@ -115,9 +118,9 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
                         if (_DpuBindAndResolveLiga(dpu, pip->m.liga, glHandle))
                             AfxThrowError();
 
-                        for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
+                        for (afxUnit i = pip->m.stageCnt; i-- > 0;)
                         {
-                            gl->DetachShader(glHandle, tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
+                            gl->DetachShader(glHandle, pip->stagesExt[i].glShaderHandle); _ZglThrowErrorOccuried();
                         }
 
                         if (err)
@@ -127,10 +130,10 @@ _ZGL afxError _DpuFlushPipelineState(zglDpu* dpu)
                         }
                     }
 
-                    for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
+                    for (afxUnit i = pip->m.stageCnt; i-- > 0;)
                     {
-                        gl->DeleteShader(tmpShdGlHandles[i]); _ZglThrowErrorOccuried();
-                        tmpShdGlHandles[i] = NIL;
+                        //gl->DeleteShader(pip->m.stages[i].glShaderHandle); _ZglThrowErrorOccuried();
+                        //pip->m.stages[i].glShaderHandle = NIL;
                     }
 
                     if (!err)
@@ -404,7 +407,7 @@ _ZGL afxError _ZglPipDtor(avxPipeline pip)
 
     for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        for (afxUnit j = 0; j < _ZGL_PSO_SET_POP; j++)
+        for (afxUnit j = 0; j < _ZGL_PSO_SWAPS; j++)
         {
             if (pip->perDpu[i][j].glHandle)
             {
@@ -414,7 +417,19 @@ _ZGL afxError _ZglPipDtor(avxPipeline pip)
         }
     }
 
-    if (_AVX_PIP_CLASS_CONFIG.dtor(pip))
+    afxObjectStash const stashes[] =
+    {
+        {
+            .cnt = pip->m.stageCnt,
+            .siz = sizeof(pip->stagesExt[0]),
+            .var = (void*)&pip->stagesExt
+        }
+    };
+
+    if (AfxDeallocateInstanceData(pip, ARRAY_SIZE(stashes), stashes))
+        AfxThrowError();
+
+    if (_AVX_CLASS_CONFIG_PIP.dtor(pip))
         AfxThrowError();
 
     return err;
@@ -425,21 +440,43 @@ _ZGL afxError _ZglPipCtor(avxPipeline pip, void** args, afxUnit invokeNo)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
 
-    if (_AVX_PIP_CLASS_CONFIG.ctor(pip, args, invokeNo)) AfxThrowError();
-    else
+    afxDrawSystem dsys = args[0];
+    avxPipelineConfig const *pipb = ((avxPipelineConfig const*)args[1]) + invokeNo;
+    //AfxAssertType(pipb, afxFcc_PIPB);
+
+    if (_AVX_CLASS_CONFIG_PIP.ctor(pip, args, invokeNo))
     {
-        afxDrawSystem dsys = args[0];
-        avxPipelineConfig const *pipb = ((avxPipelineConfig const*)args[1]) + invokeNo;
-        //AfxAssertType(pipb, afxFcc_PIPB);
-
-        AfxZero(pip->perDpu, sizeof(pip->perDpu));
-        pip->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
-
-        pip->pipUniqueId = ++dsys->pipUniqueId;
-
-        if (err && _AVX_PIP_CLASS_CONFIG.dtor(pip))
-            AfxThrowError();
+        AfxThrowError();
+        return err;
     }
+
+    afxObjectStash const stashes[] =
+    {
+        {
+            .cnt = pip->m.stageCnt,
+            .siz = sizeof(pip->stagesExt[0]),
+            .var = (void*)&pip->stagesExt
+        }
+    };
+
+    if (AfxAllocateInstanceData(pip, ARRAY_SIZE(stashes), stashes))
+    {
+        AfxThrowError();
+        _AVX_CLASS_CONFIG_PIP.dtor(pip);
+        return err;
+    }
+
+    for (afxUnit i = 0; i < pip->m.stageCnt; i++)
+        pip->stagesExt[i].glShaderHandle = NIL;
+
+    AfxZero(pip->perDpu, sizeof(pip->perDpu));
+    pip->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
+
+    pip->pipUniqueId = ++dsys->pipUniqueId;
+
+    if (err && _AVX_CLASS_CONFIG_PIP.dtor(pip))
+        AfxThrowError();
+
     AFX_ASSERT_OBJECTS(afxFcc_PIP, 1, &pip);
     return err;
 }

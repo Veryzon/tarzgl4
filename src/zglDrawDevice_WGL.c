@@ -165,7 +165,7 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                 //else
                 AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
                 {
-                    if (AfxLoadModule(&uri, NIL, &ddev->idd->oglDll)) AfxThrowError();
+                    if (AfxAcquireModule(&uri, NIL, &ddev->idd->oglDll)) AfxThrowError();
                     else
                     {
                         //ZglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
@@ -231,8 +231,8 @@ _ZGL afxResult _ZglDdevIoctrlCb(afxDrawDevice ddev, afxUnit reqCode, va_list va)
                                     wglDetectDeviceFeaturesSIGMA(&gl, tmpHdc, &ddev->features);
                                     wglDetectDeviceLimitsSIGMA(&gl, &ddev->limits);
 
-                                    ddev->idd->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
-                                    ddev->idd->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+                                    ddev->idd->hasDxInterop2 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
+                                    ddev->idd->hasDxInterop1 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
 
                                     if (ddev->idd->hasDxInterop1 || ddev->idd->hasDxInterop2)
                                     {
@@ -381,7 +381,7 @@ _ZGL afxError _ZglDdevDtorCb(afxDrawDevice ddev)
 
     AfxExhaustChainedClasses(&ddev->m.dev.classes);
 
-    if (_AVX_DDEV_CLASS_CONFIG.dtor(ddev))
+    if (_AVX_CLASS_CONFIG_DDEV.dtor(ddev))
         AfxThrowError();
 
     if (ddev->wglDll)
@@ -403,7 +403,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
     _avxDdevReg const* info = (_avxDdevReg const *)(args[1]) + invokeNo;
     AFX_ASSERT(info);
 
-    if (_AVX_DDEV_CLASS_CONFIG.ctor(ddev, (void*[]) { icd, (void*)info, args[2] }, 0))
+    if (_AVX_CLASS_CONFIG_DDEV.ctor(ddev, (void*[]) { icd, (void*)info, args[2] }, 0))
     {
         AfxThrowError();
         return err;
@@ -421,7 +421,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
     //else
     AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
     {
-        if (AfxLoadModule(&uri, NIL, &ddev->oglDll)) AfxThrowError();
+        if (AfxAcquireModule(&uri, NIL, &ddev->oglDll)) AfxThrowError();
         else
         {
             //ZglLoadOpenGlVmt(ddev->opengl32, 0, sizeof(wglNames) / sizeof(wglNames[0]), wglNames, ddev->p);
@@ -467,8 +467,8 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
 
                     //EnumDisplayMonitors(tmpHdc, NIL, );
 
-                    ddev->hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
-                    ddev->hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+                    ddev->hasDxInterop2 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
+                    ddev->hasDxInterop1 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
                     
                     // 16384 * 16384 * 4 / 1024 / 1024 = 1024MB
 
@@ -492,7 +492,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
                     }
 #endif
 
-                    static afxDrawPortInfo const portCaps[] =
+                    static avxDeviceInfo const portCaps[] =
                     {
                         {
                             .capabilities = avxAptitude_GFX | avxAptitude_PCX | avxAptitude_DMA | avxAptitude_BLIT | avxAptitude_SAMPLE | avxAptitude_VCX,
@@ -520,7 +520,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
                         }
                     };
 
-                    if (wglHasExtensionSIG(tmpHdc, "GL_ARB_clip_control"))
+                    if (wglHasWsiExtensionSIG(tmpHdc, "GL_ARB_clip_control"))
                     {
                         ddev->m.clipSpaceDepth = (avxClipSpaceDepth_NEG_ONE_TO_ONE | avxClipSpaceDepth_ZERO_TO_ONE);
                     }
@@ -531,7 +531,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
 
                     for (afxUnit i = 0; i < ddev->m.portCnt; i++)
                     {
-                        afxDrawPortInfo* caps = &ddev->m.ports[i].caps;
+                        avxDeviceInfo* caps = &ddev->m.ports[i].caps;
                         *caps = portCaps[i];
                     }
 
@@ -548,7 +548,7 @@ _ZGL afxError _ZglDdevCtorCb(afxDrawDevice ddev, void** args, afxUnit invokeNo)
         }
     }
 #endif
-    if (err && _AVX_DDEV_CLASS_CONFIG.dtor(ddev))
+    if (err && _AVX_CLASS_CONFIG_DDEV.dtor(ddev))
         AfxThrowError();
 
     return err;
@@ -559,21 +559,21 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_MDLE, 1, &icd);
 
-    afxClassConfig ddevClsCfg = _AVX_DDEV_CLASS_CONFIG;
+    afxClassConfig ddevClsCfg = _AVX_CLASS_CONFIG_DDEV;
     ddevClsCfg.fixedSiz = sizeof(AFX_OBJECT(afxDrawDevice));
     ddevClsCfg.ctor = (void*)_ZglDdevCtorCb;
     ddevClsCfg.dtor = (void*)_ZglDdevDtorCb;
 
-    afxClassConfig dsysClsCfg = _AVX_DSYS_CLASS_CONFIG;
+    afxClassConfig dsysClsCfg = _AVX_CLASS_CONFIG_DSYS;
     dsysClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawSystem));
     dsysClsCfg.ctor = (void*)_ZglDsysCtorCb;
     dsysClsCfg.dtor = (void*)_ZglDsysDtorCb;
 
-    _avxDsysImp impl = { 0 };
+    _avxImplementation impl = { 0 };
     impl.ddevCls = ddevClsCfg;
     impl.dsysCls = dsysClsCfg;
 
-    if (_AvxImplementDrawSystem(icd, &impl))
+    if (_AvxIcdImplement(icd, &impl))
     {
         AfxThrowError();
         return err;
@@ -583,10 +583,10 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     afxModule wglDll;
     //AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
     AfxMakeUri(&uri, 0, "opengl32.dll", 0);
-    if (AfxLoadModule(&uri, NIL, &wglDll))
+    if (AfxAcquireModule(&uri, NIL, &wglDll))
     {
         AfxMakeUri(&uri, 0, "//./c/opengl32.dll", 0);
-        if (AfxLoadModule(&uri, NIL, &wglDll))
+        if (AfxAcquireModule(&uri, NIL, &wglDll))
         {
             AfxThrowError();
             AfxReportError("Could not load WGL DLL.");
@@ -620,8 +620,12 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         AfxReportError("Could not create HW drawable surface.");
     }
 
+#if 0
 #if _AFX_DEBUG
     afxBool echoSymbols = TRUE;
+#else
+    afxBool echoSymbols = FALSE;
+#endif
 #else
     afxBool echoSymbols = FALSE;
 #endif
@@ -639,19 +643,24 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     }
     else
     {
-        AfxReportComment("wglMakeCurrentWIN");
+        //AfxReportComment("wglMakeCurrentWIN");
 
         if (!wglMakeCurrentWIN(tmpHdc, tmpHglrc))
         {
             AfxThrowError();
         }
 
-        AfxReportComment("Testing core symbols...");
+        //AfxReportComment("Testing core symbols...");
         TestCoreSymbols(oglDllIdd, &gl);
 #if !0
         afxBool echoExts = TRUE;
         if (echoExts)
         {
+            /*
+                As of OpenGL 3.0, glGetString(GL_EXTENSIONS) is deprecated, and the extension query must be done with 
+                glGetStringi(GL_EXTENSIONS, index) for modern OpenGL contexts.
+            */
+
             GLint n = 0;
             gl.GetIntegerv(GL_NUM_EXTENSIONS, &n);
             AfxReportMessage("GL: Listing #%03u supported extensions.", n);
@@ -665,25 +674,25 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 #endif
     }
 
-    static afxDrawLimits drawLimits;
-    static afxDrawFeatures drawFeatures =
+    static avxLimits drawLimits = { 0 };
+    static avxFeatures drawFeatures =
     {
-        .robustBufAccess = TRUE,
+        .robustness = TRUE,
         .fullDrawIdxUint32 = TRUE,
         .rasterCubeArray = TRUE,
         .independentBlend = TRUE,
         .primShader = TRUE,
         .dualSrcBlend = TRUE,
         .logicOp = TRUE,
-        .multiDrawIndirect = TRUE,
-        .drawIndirectFirstInst = TRUE,
+        .mdi = TRUE,
+        .baseInst = TRUE,
         .depthClamp = TRUE,
         .depthBiasClamp = TRUE,
         .fillModeNonSolid = TRUE,
-        .multiViewport = TRUE,
+        .viewports = TRUE,
         .dxt = TRUE,
-        .shaderClipDist = TRUE,
-        .shaderCullDist = TRUE,
+        .clipDist = TRUE,
+        .cullDist = TRUE,
         .alphaToOne = TRUE
     };
 
@@ -694,49 +703,49 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     //EnumDisplayMonitors(tmpHdc, NIL, );
 
-    afxBool hasDxInterop2 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
-    afxBool hasDxInterop1 = wglHasExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
+    afxBool hasDxInterop2 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop2");
+    afxBool hasDxInterop1 = wglHasWsiExtensionSIG(tmpHdc, "WGL_NV_DX_interop");
     if (hasDxInterop1 || hasDxInterop2)
     {
         //ddev->idd->useDxgiSwapchain = FALSE;
     }
 
     avxClipSpaceDepth clipSpaceDepth = avxClipSpaceDepth_NEG_ONE_TO_ONE;
-    if (wglHasExtensionSIG(tmpHdc, "GL_ARB_clip_control"))
+    if (glHasExtensionSIG(&gl, "GL_ARB_clip_control"))
         clipSpaceDepth = (avxClipSpaceDepth_NEG_ONE_TO_ONE | avxClipSpaceDepth_ZERO_TO_ONE);
 
-    afxBool hasCompute = wglHasExtensionSIG(tmpHdc, "GL_ARB_compute_shader");
+    afxBool hasCompute = glHasExtensionSIG(&gl, "GL_ARB_compute_shader");
 
-#if 0
+#if !0
     if (!err)
     {
         // required by avxVertexInput.
-        afxBool has_ARB_vertex_array_object = wglHasExtensionSIG(tmpHdc, "ARB_vertex_array_object");
+        afxBool has_ARB_vertex_array_object = glHasExtensionSIG(&gl, "GL_ARB_vertex_array_object");
         AFX_ASSERT(has_ARB_vertex_array_object);
         // required by avxVertexInput for attribute location.
         // required by avxVertexInput for setting the buffer binding point data. (glBindVertexBuffer, glVertexBindingDivisor)
-        afxBool has_ARB_vertex_attrib_binding = wglHasExtensionSIG(tmpHdc, "ARB_vertex_attrib_binding");
+        afxBool has_ARB_vertex_attrib_binding = glHasExtensionSIG(&gl, "GL_ARB_vertex_attrib_binding");
         AFX_ASSERT(has_ARB_vertex_attrib_binding);
 
         // required by avxBuffer.
-        afxBool has_ARB_buffer_storage = wglHasExtensionSIG(tmpHdc, "GL_ARB_buffer_storage");
+        afxBool has_ARB_buffer_storage = glHasExtensionSIG(&gl, "GL_ARB_buffer_storage");
         AFX_ASSERT(has_ARB_buffer_storage);
         // required by avxBuffer for avxBufferUsage_SSBO.
-        afxBool has_ARB_shader_storage_buffer_object = wglHasExtensionSIG(tmpHdc, "ARB_shader_storage_buffer_object");
+        afxBool has_ARB_shader_storage_buffer_object = glHasExtensionSIG(&gl, "GL_ARB_shader_storage_buffer_object");
         AFX_ASSERT(has_ARB_shader_storage_buffer_object);
         // required by avxBuffer (or avxLigature?) for avxBufferUsage_FETCH.
-        afxBool has_ARB_texture_buffer_range = wglHasExtensionSIG(tmpHdc, "GL_ARB_texture_buffer_range");
+        afxBool has_ARB_texture_buffer_range = glHasExtensionSIG(&gl, "GL_ARB_texture_buffer_range");
         AFX_ASSERT(has_ARB_texture_buffer_range);
         
         // required by avxRaster.
-        afxBool has_ARB_texture_storage = wglHasExtensionSIG(tmpHdc, "GL_ARB_texture_storage");
+        afxBool has_ARB_texture_storage = glHasExtensionSIG(&gl, "GL_ARB_texture_storage");
         AFX_ASSERT(has_ARB_texture_storage);
 
         // required by avxSampler.
-        afxBool has_ARB_sampler_objects = wglHasExtensionSIG(tmpHdc, "GL_ARB_sampler_objects");
+        afxBool has_ARB_sampler_objects = glHasExtensionSIG(&gl, "GL_ARB_sampler_objects");
         AFX_ASSERT(has_ARB_sampler_objects);
         // required by avxSampler for anisotropy.
-        afxBool has_ARB_texture_filter_anisotropic = wglHasExtensionSIG(tmpHdc, "ARB_texture_filter_anisotropic");
+        afxBool has_ARB_texture_filter_anisotropic = glHasExtensionSIG(&gl, "GL_ARB_texture_filter_anisotropic") | glHasExtensionSIG(&gl, "GL_EXT_texture_filter_anisotropic");
         AFX_ASSERT(has_ARB_texture_filter_anisotropic);
         
         err = 0;
@@ -745,7 +754,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     _avxDdevReg const gfxDdevInfo =
     {
-        .dev.urn = AFX_STRING("targa-hwr"),
+        .dev.urn = AFX_STRING("targa-gfx"),
         .dev.type = afxDeviceType_DRAW,
         .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -755,16 +764,15 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         //.portCnt = 4,
 
         .capabilities = avxAptitude_GFX | 
-                        avxAptitude_PCX | 
                         avxAptitude_DMA | 
                         avxAptitude_PRESENT,
         .minQueCnt = 4,
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
     };
-    _avxDdevReg const computeDdevInfo =
+    _avxDdevReg const pcxDdevInfo =
     {
-        .dev.urn = AFX_STRING("targa-hwc"),
+        .dev.urn = AFX_STRING("targa-pcx"),
         .dev.type = afxDeviceType_DRAW,
         .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -779,9 +787,9 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
     };
-    _avxDdevReg const transferDdevInfo =
+    _avxDdevReg const dmaDdevInfo =
     {
-        .dev.urn = AFX_STRING("targa-hwio"),
+        .dev.urn = AFX_STRING("targa-dma"),
         .dev.type = afxDeviceType_DRAW,
         .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -795,9 +803,9 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
         .maxQueCnt = 16,
         .acceleration = afxAcceleration_DPU | afxAcceleration_GPU
     };
-    _avxDdevReg const videoDdevInfo =
+    _avxDdevReg const vcxDdevInfo =
     {
-        .dev.urn = AFX_STRING("targa-wgl"),
+        .dev.urn = AFX_STRING("targa-vcx"),
         .dev.type = afxDeviceType_DRAW,
         .dev.ioctl = (void*)_ZglDdevIoctrlCb,
 
@@ -817,7 +825,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     // add device's graphics port
     ddevInfos[ddevCnt] = gfxDdevInfo;
-    if (hasCompute) ddevInfos[ddevCnt].capabilities &= ~avxAptitude_PCX;
+    //if (hasCompute) ddevInfos[ddevCnt].capabilities |= avxAptitude_PCX;
     ++ddevCnt;
 
     // TODO: Find a better way of doing it.
@@ -825,16 +833,16 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
     if (hasCompute)
     {
         // add device's compute port
-        ddevInfos[ddevCnt] = computeDdevInfo;
+        ddevInfos[ddevCnt] = pcxDdevInfo;
         ++ddevCnt;
     }
 
     // add devices' transfer port
-    ddevInfos[ddevCnt] = transferDdevInfo;
+    ddevInfos[ddevCnt] = dmaDdevInfo;
     ++ddevCnt;
 
     // add devices' present port
-    ddevInfos[ddevCnt] = videoDdevInfo;
+    ddevInfos[ddevCnt] = vcxDdevInfo;
     ++ddevCnt;
 
     for (afxUnit ddevIdx = 0; ddevIdx < ddevCnt; ddevIdx++)
@@ -846,7 +854,7 @@ _ZGL afxError afxIcdHook(afxModule icd, afxUri const* manifest)
 
     afxDrawDevice ddevices[ARRAY_SIZE(ddevInfos)] = { 0 };
 
-    if (_AvxRegisterDrawDevices(icd, ddevCnt, ddevInfos, ddevices))
+    if (_AvxIcdRegisterDevices(icd, ddevCnt, ddevInfos, ddevices))
     {
         AfxThrowError();
     }

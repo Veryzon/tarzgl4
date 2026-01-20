@@ -23,7 +23,7 @@
 // Container Objects are not sharable, nor are Query Objects.
 #define ZGL_MAX_DPUS 32
 #define ZGL_MAX_QO_HANDLES 32
-#define _ZGL_PSO_SET_POP 3
+#define _ZGL_PSO_SWAPS 3
 #define _ZGL_FENC_SET_POP 3
 
 AFX_OBJECT(avxPipeline)
@@ -36,7 +36,11 @@ AFX_OBJECT(avxPipeline)
     {
         GLuint          glHandle;
         //zglVertexInput  vertexInput;
-    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SET_POP];
+    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SWAPS];
+    struct
+    {
+        GLuint glShaderHandle;
+    }* stagesExt;
 };
 
 AFX_OBJECT(avxVertexInput)
@@ -49,7 +53,7 @@ AFX_OBJECT(avxVertexInput)
     {
         GLuint          glHandle;
         zglVertexInputState bindings; // TODO: per DPU
-    } perDpu[ZGL_MAX_DPUS][_ZGL_VAO_SET_POP]; // the second set is to avoid contention in dynamic binding.
+    } perDpu[ZGL_MAX_DPUS][_ZGL_VAO_SWAPS]; // the second set is to avoid contention in dynamic binding.
 };
 
 AFX_OBJECT(avxQueryPool)
@@ -71,7 +75,7 @@ AFX_OBJECT(avxLigature)
     struct
     {
         GLuint  texBufGlHandle[8];
-    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SET_POP];
+    } perDpu[ZGL_MAX_DPUS][_ZGL_PSO_SWAPS];
     afxUnit tboCnt;
 };
 
@@ -107,7 +111,9 @@ AFX_OBJECT(avxFence)
         GLsync      glHandle;
     };
     HANDLE          hEventW32;
+    afxUnit64       nextValueToSignal;
     afxLink         onSignalChain;
+    afxLink         onWaitChain;
 };
 
 AFX_OBJECT(afxSemaphore)
@@ -157,7 +163,7 @@ AFX_OBJECT(avxCanvas)
     {
         afxUnit         glHandle;
         afxMask         storeBitmask;
-    } perDpu[ZGL_MAX_DPUS][_ZGL_FBO_SET_POP];
+    } perDpu[ZGL_MAX_DPUS][_ZGL_FBO_SWAPS];
 };
 
 ZGL void _ZglDsysEnqueueDeletion(afxDrawSystem dsys, afxUnit exuIdx, afxUnit type, afxSize gpuHandle);

@@ -129,7 +129,7 @@ vec4 saturate(vec4 x) {\n \
 // SHADER                                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-_ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt, _avxProgrammableStage stages[], afxUnit* glShaderCnt, GLuint glShaders[])
+_ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, avxPipeline pip)
 {
     afxError err = { 0 };
     glVmt const* gl = dpu->gl;
@@ -146,11 +146,14 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
     afxArray code;
     AfxMakeArray(&code, sizeof(afxByte), 4096, NIL, 0);
 
-    for (afxUnit stageIdx = 0; stageIdx < stageCnt; stageIdx++)
+    for (afxUnit stageIdx = 0; stageIdx < pip->m.stageCnt; stageIdx++)
     {
+        if (pip->stagesExt[stageIdx].glShaderHandle)
+            continue;
+
         AfxEmptyArray(&code, TRUE, FALSE);
-        afxUnit progId = stages[stageIdx].progId;
-        avxShaderType stage = stages[stageIdx].stage;
+        afxUnit progId = pip->m.stages[stageIdx].progId;
+        avxShaderType stage = pip->m.stages[stageIdx].stage;
 
         _avxCodeBlock* prog;
         if (!AvxGetProgram(codb, progId, (void**)&prog))
@@ -187,9 +190,9 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
         }
 
         // Workaround to select an shader entry-point function in GLSL.
-        if (!AfxIsStringEmpty(&stages[stageIdx].fn.s))
+        if (!AfxIsStringEmpty(&pip->m.stages[stageIdx].fn.s))
         {
-            AfxFormatString(&tmps.s, "\n#define main %.*s \n", AfxPushString(&stages[stageIdx].fn.s));
+            AfxFormatString(&tmps.s, "\n#define main %.*s \n", AfxPushString(&pip->m.stages[stageIdx].fn.s));
             void* room = AfxPushArrayUnits(&code, tmps.s.len, &arrel, NIL, 0);
             AfxDumpString(&tmps.s, 0, tmps.s.len, room);
         }
@@ -241,7 +244,19 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
         AfxCopy(room2, incCommFuncs, sizeof(incCommFuncs));
 #endif
         afxUnit nullTermArrel;
-        AvxDumpShaderCode(codb, progId, &code);
+        //AvxDumpShaderCode(codb, progId, &code);
+        {
+            _avxCodeBlock* slot;
+            if (!AvxGetProgram(codb, progId, (void**)&slot))
+                return afxError_NOT_FOUND;
+
+            if (slot->codeLen)
+            {
+                afxString cbs;
+                AfxMakeString(&cbs, 0, slot->code, slot->codeLen);
+                _AvxConvertToGlsl(&cbs, &code);
+            }
+        }
         AfxPushArrayUnits(&code, 1, &nullTermArrel, (afxChar[]) { 0 }, 0);
 
         GLuint shader;
@@ -261,7 +276,10 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
 
             //gl->ShaderSource(shader, 1, (GLchar const*const[]) { (void*)code.bytemap }, (GLint const[]) { code.cnt }); _ZglThrowErrorOccuried();
 #if !0
-            AfxReportComment("%.*s", code.pop, code.bytemap);
+            //if (echo)
+            {
+                AfxReportComment("%.*s", code.pop, code.bytemap);
+            }
 #endif
             gl->ShaderSource(shader, 3, (GLchar const*const[]) { (void*)meta.buf, (void*)defines.buf, (void*)code.bytemap }, (GLint const[]) { meta.s.len, defines.s.len, code.pop }); _ZglThrowErrorOccuried();
             gl->CompileShader(shader); _ZglThrowErrorOccuried();
@@ -277,7 +295,8 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
             }
             else
             {
-                glShaders[tmpShdGlHandleCnt] = shader;
+                pip->stagesExt[stageIdx].glShaderHandle = shader;
+                //glShaders[tmpShdGlHandleCnt] = shader;
                 tmpShdGlHandleCnt++;
             }
         }
@@ -286,8 +305,10 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
         {
             for (afxUnit i = tmpShdGlHandleCnt; i-- > 0;)
             {
-                gl->DeleteShader(glShaders[tmpShdGlHandleCnt]); _ZglThrowErrorOccuried();
-                glShaders[tmpShdGlHandleCnt] = NIL;
+                //gl->DeleteShader(glShaders[tmpShdGlHandleCnt]); _ZglThrowErrorOccuried();
+                //glShaders[tmpShdGlHandleCnt] = NIL;
+                gl->DeleteShader(pip->stagesExt[stageIdx].glShaderHandle); _ZglThrowErrorOccuried();
+                pip->stagesExt[stageIdx].glShaderHandle = NIL;
             }
             break;
         }
@@ -295,7 +316,7 @@ _ZGL afxError _DpuCreateShaders(zglDpu* dpu, avxCodebase codb, afxUnit stageCnt,
 
     AfxEmptyArray(&code, FALSE, FALSE);
 
-    *glShaderCnt = tmpShdGlHandleCnt;
+    //*glShaderCnt = tmpShdGlHandleCnt;
 
     return err;
 }
@@ -384,7 +405,7 @@ _ZGL afxError _ZglShdDtor(avxCodebase shd)
         shd->glProgHandle = 0;
     }
 
-    if (_AVX_SHD_CLASS_CONFIG.dtor(shd))
+    if (_AVX_CLASS_CONFIG_CODB.dtor(shd))
         AfxThrowError();
 
     return err;
@@ -395,7 +416,7 @@ _ZGL afxError _ZglShdCtor(avxCodebase shd, void** args, afxUnit invokeNo)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &shd);
 
-    if (_AVX_SHD_CLASS_CONFIG.ctor(shd, args, invokeNo)) AfxThrowError();
+    if (_AVX_CLASS_CONFIG_CODB.ctor(shd, args, invokeNo)) AfxThrowError();
     else
     {
         shd->glHandle = NIL;
@@ -406,7 +427,7 @@ _ZGL afxError _ZglShdCtor(avxCodebase shd, void** args, afxUnit invokeNo)
         afxDrawSystem dsys = AvxGetShaderHost(shd);
         shd->shdUniqueId = ++dsys->shdUniqueId;
 
-        if (err && _AVX_SHD_CLASS_CONFIG.dtor(shd))
+        if (err && _AVX_CLASS_CONFIG_CODB.dtor(shd))
             AfxThrowError();
     }
     AFX_ASSERT_OBJECTS(afxFcc_SHD, 1, &shd);

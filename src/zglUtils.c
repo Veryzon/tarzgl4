@@ -516,6 +516,7 @@ _ZGL GLuint AfxToGlShaderStage(avxShaderType s)
         [avxShaderType_TESS_CTRL] = GL_TESS_CONTROL_SHADER,
         [avxShaderType_TESS_EVAL] = GL_TESS_EVALUATION_SHADER,
         [avxShaderType_COMPUTE] = GL_COMPUTE_SHADER,
+        
         NIL
     };
 

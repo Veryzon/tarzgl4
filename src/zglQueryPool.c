@@ -57,7 +57,7 @@ _ZGL void _DpuBeginQuery(zglDpu* dpu, avxQueryPool qryp, afxUnit qryIdx, afxBool
 
     */
 
-    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SWAPS;
     gl->BeginQuery(qryp->glTarget, qryp->perDpu[dpu->m.exuIdx].glHandle[qryIdx]);
     dpu->timeElapsedQueryIdActive = qryp->perDpu[dpu->m.exuIdx].glHandle[qryIdx];
 }

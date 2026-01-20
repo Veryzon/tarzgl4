@@ -164,7 +164,7 @@ _ZGL void DpuPushConstants(zglDpu* dpu, afxUnit32 offset, afxUnit32 siz, void co
 
     // copy right into mapped memory.
     // Copy or just hold the pointer to data in command buffer?
-    afxUnit pushSetIdx = dpu->dpuIterIdx % _ZGL_PUSH_SET_POP;
+    afxUnit pushSetIdx = dpu->pushSetIdx;
     AfxCopy(&dpu->pushSets[pushSetIdx].pushConstMappedMem[offset], data, siz);
     dpu->pushSets[pushSetIdx].shouldPushConsts = TRUE;
     dpu->pushSets[pushSetIdx].shouldPushConstRange = (dpu->pushSets[pushSetIdx].shouldPushConstBase + dpu->pushSets[pushSetIdx].shouldPushConstRange) > (offset + siz) ? dpu->pushSets[pushSetIdx].shouldPushConstRange : siz;
@@ -222,7 +222,7 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                 The unit number is stored in the program, but the texture bound to that unit is global.
     */
 
-    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SWAPS;
 
     avxLigature liga = dpu->nextLiga;
     if (liga != dpu->activeLiga)
@@ -241,14 +241,16 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
 #ifdef COHERENT_PUSHABLES // TODO: Test it to avoid COHERENT mapping.
 
 #else
+        afxUnit pushSetIdx = dpu->pushSetIdx;
+
         if (liga->m.pushCnt
-#ifndef FORCE_ARG_REBIND
-            && dpu->shouldPushConsts
-#endif
+//#ifndef FORCE_ARG_REBIND
+            && dpu->pushSets[pushSetIdx].shouldPushConsts
+//#endif
             )
         {
-            afxUnit pushSetIdx = dpu->dpuIterIdx % _ZGL_PUSH_SET_POP;
-
+#if 0
+#if 0 // Intel HD Graphics does not update between draw calls with any combination of flush, dynamic storage or coherent map.
             if (gl->FlushMappedNamedBufferRange)
             {
                 gl->FlushMappedNamedBufferRange(dpu->pushSets[pushSetIdx].pushConstUbo, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
@@ -258,9 +260,19 @@ _ZGL void _ZglFlushLigatureState(zglDpu* dpu)
                 gl->BindBuffer(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
                 gl->FlushMappedBufferRange(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange); _ZglThrowErrorOccuried();
             }
+#else
+            gl->BindBuffer(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
+            gl->BufferSubData(GL_UNIFORM_BUFFER, dpu->pushSets[pushSetIdx].shouldPushConstBase, dpu->pushSets[pushSetIdx].shouldPushConstRange, &dpu->pushSets[pushSetIdx].pushConstMappedMem[dpu->pushSets[pushSetIdx].shouldPushConstBase]); _ZglThrowErrorOccuried();
+#endif
             dpu->pushSets[pushSetIdx].shouldPushConstBase = 0;
             dpu->pushSets[pushSetIdx].shouldPushConstRange = 0;
+#else
+            gl->BindBufferBase(GL_UNIFORM_BUFFER, dpu->activePushUboReservedBindPoint, dpu->pushSets[pushSetIdx].pushConstUbo); _ZglThrowErrorOccuried();
+#endif
+            
             dpu->pushSets[pushSetIdx].shouldPushConsts = FALSE;
+
+            dpu->pushSetIdx = (dpu->pushSetIdx + 1) % _ZGL_PUSH_SWAPS;
         }
 #endif//COHERENT_PUSHABLES
 
@@ -771,7 +783,7 @@ _ZGL afxError _DpuBindAndResolveLiga(zglDpu* dpu, avxLigature liga, GLuint glHan
     glVmt const* gl = dpu->gl;
     AFX_ASSERT(glHandle);
 
-    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SET_POP;
+    afxUnit psoHandleIdx = dpu->dpuIterIdx % _ZGL_PSO_SWAPS;
 
     afxString32 tmp;
     AfxMakeString32(&tmp, 0);
@@ -955,7 +967,7 @@ _ZGL afxError _ZglLigaDtor(avxLigature liga)
         {
             for (afxUnit j = 0; j < dsys->m.bridgeCnt; j++)
             {
-                for (afxUnit k = 0; k < _ZGL_PSO_SET_POP; k++)
+                for (afxUnit k = 0; k < _ZGL_PSO_SWAPS; k++)
                 {
                     GLuint glTexHandle = liga->perDpu[j][k].texBufGlHandle[i];
 
@@ -969,7 +981,7 @@ _ZGL afxError _ZglLigaDtor(avxLigature liga)
         }
     }
 
-    if (_AVX_LIGA_CLASS_CONFIG.dtor(liga))
+    if (_AVX_CLASS_CONFIG_LIGA.dtor(liga))
         AfxThrowError();
 
     return err;
@@ -980,7 +992,7 @@ _ZGL afxError _ZglLigaCtor(avxLigature liga, void** args, afxUnit invokeNo)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);
 
-    if (_AVX_LIGA_CLASS_CONFIG.ctor(liga, args, invokeNo))
+    if (_AVX_CLASS_CONFIG_LIGA.ctor(liga, args, invokeNo))
     {
         AfxThrowError();
         return err;
@@ -1010,7 +1022,7 @@ _ZGL afxError _ZglLigaCtor(avxLigature liga, void** args, afxUnit invokeNo)
 
     liga->tboCnt = tboCnt;
 
-    if (err && _AVX_LIGA_CLASS_CONFIG.dtor(liga))
+    if (err && _AVX_CLASS_CONFIG_LIGA.dtor(liga))
         AfxThrowError();
 
     AFX_ASSERT_OBJECTS(afxFcc_LIGA, 1, &liga);

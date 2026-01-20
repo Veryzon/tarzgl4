@@ -1593,35 +1593,148 @@ _ZGL PROC wglGetProcAddressSIG(HMODULE opengl32, LPCSTR lpProcName)
     return f;
 }
 
-_ZGL afxBool wglHasExtensionSIG(HDC hDc, afxChar const* ext)
+// WGL extensions only
+_ZGL afxBool wglHasWsiExtensionSIG(HDC hDc, afxChar const* ext)
 {
-    const char *extensions;
+    afxError err = { 0 };
 
-    if (wglGetExtensionsStringEXT == NULL && wglGetExtensionsStringARB == NULL)
-        return 0;
+    /*
+        Prefix.
+        WGL extensions do not require a specific prefix (like WGL_ or GL_) when querying or checking for their presence. 
+        When you call wglGetExtensionsStringEXT or wglGetExtensionsStringARB, it returns a list of extensions, without 
+        the WGL_ prefix. For example, a typical WGL extension string might include something like: "WGL_ARB_pixel_format WGL_ARB_create_context".
 
-    if (wglGetExtensionsStringARB == NULL || hDc == INVALID_HANDLE_VALUE)
-        extensions = wglGetExtensionsStringEXT();
-    else
-        extensions = wglGetExtensionsStringARB(hDc);
+        But when you query these extensions, you should use the name without the WGL_ prefix (e.g., ARB_pixel_format, 
+        ARB_create_context).
+    */
 
-    if (extensions == NULL || ext == NULL)
-        return 0;
-
-    char const *s, *t;
-
-    while (1)
+    if (ext && (*ext != 'W'))
     {
-        if (!(s = strstr(extensions, ext)))
-            break;
-
-        t = s + strlen(ext);
-
-        if ((s == extensions || *(s - 1) == ' ') && (*t == ' ' || *t == '\0'))
-            return TRUE;
-
-        extensions = t;
+        AfxReportError("wglHasWsiExtensionSIG() works only for WGL extensions");
+        AfxThrowError();
+        return FALSE;
     }
+
+    // Ensure the extension functions are available
+    if (wglGetExtensionsStringEXT == NULL && wglGetExtensionsStringARB == NULL)
+    {
+        AfxThrowError();
+        return FALSE;
+    }
+    
+    // Get the extensions string
+    const char* extensions = NULL;
+    if (wglGetExtensionsStringARB != NULL && hDc != INVALID_HANDLE_VALUE)
+        extensions = wglGetExtensionsStringARB(hDc);
+    else if (wglGetExtensionsStringEXT != NULL)
+        extensions = wglGetExtensionsStringEXT();
+
+    // Check for a valid extensions string
+    if (extensions == NULL || ext == NULL)
+        return FALSE;
+
+    // Loop through the extensions string and search for the target extension
+    const char* start = extensions;
+    while (start != NULL) {
+        // Find the next space or the end of the string
+        const char* space = strchr(start, ' ');
+
+        // If no space is found, we are at the last extension
+        const char* end = (space != NULL) ? space : start + strlen(start);
+
+        // Check if the current extension matches the requested extension
+        size_t len = end - start;
+        if (strncmp(start, ext, len) == 0 && (strlen(ext) == len) && (space == NULL || space == end || *(space - 1) == ' ')) {
+            return TRUE;
+        }
+
+        // Move to the next extension in the list
+        start = (space != NULL) ? space + 1 : NULL;
+    }
+
+    // Return false if the extension is not found
+    return FALSE;
+}
+
+_ZGL afxBool glHasExtensionSIG(glVmt const* gl, afxChar const* ext)
+{
+    afxError err = { 0 };
+
+    /*
+        Prefix.
+        OpenGL extensions typically do not require the GL_ prefix when you're checking for their presence using a 
+        function like glGetString(GL_EXTENSIONS). However, many extensions are named with the GL_ prefix (e.g., 
+        GL_ARB_vertex_buffer_object), so you should include the prefix when checking for OpenGL extensions.
+
+        OpenGL extension strings returned by glGetString(GL_EXTENSIONS) usually look like this:
+        "GL_ARB_vertex_buffer_object GL_ARB_multitexture"
+        So you need to include the GL_ prefix when querying for OpenGL extensions, e.g., "GL_ARB_vertex_buffer_object".
+    */
+
+    if (ext && (*ext == 'W'))
+    {
+        AfxReportError("glHasExtensionSIG() does not work for WGL extensions");
+        AfxThrowError();
+        return FALSE;
+    }
+
+    // Ensure glGetString or glGetStringi is available
+    if (gl->GetString == NULL && gl->GetStringi == NULL)
+        return FALSE;
+
+    // Check if we're dealing with OpenGL 3.0+ or older
+    const char* extensions = NULL;
+
+    // Try to use glGetString(GL_EXTENSIONS) if available (for older OpenGL versions or compatibility profile)
+    if (gl->GetString != NULL) {
+        extensions = (const char*)gl->GetString(GL_EXTENSIONS);
+
+        // If extensions string is NULL, fall back to glGetStringi
+        if (extensions == NULL && gl->GetStringi != NULL) {
+            // Start checking extensions using glGetStringi (for OpenGL 3.0+ and above)
+            GLint numExtensions = 0;
+            gl->GetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+
+            // Loop through all extensions
+            for (GLint i = 0; i < numExtensions; i++) {
+                const char* extName = (const char*)gl->GetStringi(GL_EXTENSIONS, i);
+                if (strcmp(extName, ext) == 0) {
+                    return TRUE;
+                }
+            }
+            return FALSE;  // Extension not found
+        }
+    }
+
+    // If extensions string is still NULL, something went wrong
+    if (extensions == NULL || ext == NULL)
+        return FALSE;
+
+    // Ensure the extension name starts with the "GL_" prefix
+    //char fullExt[strlen("GL_") + strlen(ext) + 1];
+    //strcpy(fullExt, "GL_");
+    //strcat(fullExt, ext);
+
+    // Loop through the extensions string and search for the target extension
+    const char* start = extensions;
+    while (start != NULL) {
+        // Find the next space or the end of the string
+        const char* space = strchr(start, ' ');
+
+        // If no space is found, we are at the last extension
+        const char* end = (space != NULL) ? space : start + strlen(start);
+
+        // Check if the current extension matches the requested extension
+        size_t len = end - start;
+        if (strncmp(start, /*fullExt*/ext, len) == 0 && (strlen(/*fullExt*/ext) == len) && (space == NULL || space == end || *(space - 1) == ' ')) {
+            return TRUE;
+        }
+
+        // Move to the next extension in the list
+        start = (space != NULL) ? space + 1 : NULL;
+    }
+
+    // Return false if the extension is not found
     return FALSE;
 }
 
@@ -2546,35 +2659,59 @@ _ZGL afxError wglCreateContextSIGMA(HDC hDC, HGLRC hShareCtx, int verMaj, int ve
     return err;
 }
 
-_ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, afxDrawFeatures* pFeatures)
+_ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, avxFeatures* pFeatures)
 {
     afxError err = { 0 };
-    afxDrawFeatures features = { 0 };
+    avxFeatures features = { 0 };
     
-    features.robustBufAccess = wglHasExtensionSIG(hDC, "GL_ARB_robustness");
-    features.primShader = wglHasExtensionSIG(hDC, "GL_ARB_geometry_shader4");
-    features.tessShader = wglHasExtensionSIG(hDC, "GL_ARB_tessellation_shader");
-    features.sampleRateShading = wglHasExtensionSIG(hDC, "GL_ARB_sample_shading");
-    features.dxt = wglHasExtensionSIG(hDC, "GL_ARB_compressed_texture_pixel_storage");
-    features.samplerAnisotropy = wglHasExtensionSIG(hDC, "GL_ARB_texture_filter_anisotropic");
-    features.multiViewport = wglHasExtensionSIG(hDC, "GL_ARB_viewport_array");
-    features.samplerMirrorClampToEdge = wglHasExtensionSIG(hDC, "GL_ARB_texture_mirror_clamp_to_edge");
-    features.multiDrawIndirect = wglHasExtensionSIG(hDC, "GL_ARB_multi_draw_indirect");
-    features.drawIndirectFirstInst = wglHasExtensionSIG(hDC, "GL_ARB_base_instance");
-    features.voidCanvas = wglHasExtensionSIG(hDC, "GL_ARB_framebuffer_no_attachments");
-    features.samplerFilterMinMax = wglHasExtensionSIG(hDC, "GL_ARB_texture_filter_minmax");
-    features.shaderCullDist = wglHasExtensionSIG(hDC, "GL_ARB_cull_distance");
-    features.shaderRasterGatherExt = wglHasExtensionSIG(hDC, "GL_ARB_texture_gather");
-    features.shaderBufInt64Atomics = wglHasExtensionSIG(hDC, "GL_ARB_shader_atomic_counters");
-    features.vtxPipelineStoresAndAtomics = wglHasExtensionSIG(hDC, "GL_ARB_shader_atomic_counter_ops");
-    features.depthClamp = wglHasExtensionSIG(hDC, "GL_ARB_depth_clamp");
-    features.depthBiasClamp = wglHasExtensionSIG(hDC, "GL_ARB_polygon_offset_clamp");
-    features.depthBounds = wglHasExtensionSIG(hDC, "GL_EXT_depth_bounds_test");
-    features.rasterCubeArray = wglHasExtensionSIG(hDC, "GL_ARB_texture_cube_map_array");
-    features.largePoints = wglHasExtensionSIG(hDC, "GL_ARB_point_parameters");
-    features.pipelineStatsQuery = wglHasExtensionSIG(hDC, "GL_ARB_pipeline_statistics_query");
-    features.occlusionQueryPrecise = wglHasExtensionSIG(hDC, "GL_ARB_timer_query");
+    features.robustness = glHasExtensionSIG(gl, "GL_ARB_robustness");
 
+    features.sampleRateShading = glHasExtensionSIG(gl, "GL_ARB_sample_shading");
+    features.shaderRasterGatherExt = glHasExtensionSIG(gl, "GL_ARB_texture_gather");
+    features.shaderBufInt64Atomics = glHasExtensionSIG(gl, "GL_ARB_shader_atomic_counters");
+    features.vtxPipelineStoresAndAtomics = glHasExtensionSIG(gl, "GL_ARB_shader_atomic_counter_ops"); // glHasExtensionSIG("ARB_shader_atomic_counters");
+
+    features.voidCanvas = glHasExtensionSIG(gl, "GL_ARB_framebuffer_no_attachments");
+
+    features.pipelineStatsQuery = glHasExtensionSIG(gl, "GL_ARB_pipeline_statistics_query"); // glHasExtensionSIG("EXT_pipeline_statistics_query");
+    features.occlusionQueryPrecise = glHasExtensionSIG(gl, "GL_ARB_timer_query"); // glHasExtensionSIG("EXT_occlusion_query_boolean");
+
+    // Depth and rasterization features
+    features.depthClamp = glHasExtensionSIG(gl, "GL_ARB_depth_clamp");
+    features.depthBiasClamp = glHasExtensionSIG(gl, "GL_ARB_polygon_offset_clamp"); // glHasExtensionSIG("EXT_depth_bias_clamp");
+    features.depthBounds = glHasExtensionSIG(gl, "GL_EXT_depth_bounds_test");
+    features.fillModeNonSolid = glHasExtensionSIG(gl, "GL_ARB_polygon_mode");
+    features.wideLines = glHasExtensionSIG(gl, "GL_EXT_wide_line");
+    features.largePoints = glHasExtensionSIG(gl, "GL_ARB_point_parameters"); // glHasExtensionSIG(gl, "GL_EXT_large_points");
+    features.alphaToOne = glHasExtensionSIG(gl, "GL_EXT_texture_filter_anisotropic");
+
+
+    features.primShader = glHasExtensionSIG(gl, "GL_ARB_geometry_shader4");
+    features.tesselation = glHasExtensionSIG(gl, "GL_ARB_tessellation_shader");
+
+    // texture
+    features.dxt = glHasExtensionSIG(gl, "GL_ARB_compressed_texture_pixel_storage"); // glHasExtensionSIG("ARB_texture_compression_dxt1");
+    features.etc2 = glHasExtensionSIG(gl, "GL_EXT_texture_compression_s3tc");
+    features.astc_LDR = glHasExtensionSIG(gl, "GL_EXT_texture_compression_astc");
+    features.rasterCubeArray = glHasExtensionSIG(gl, "GL_ARB_texture_cube_map_array");
+
+    // sampler
+    features.samplerAnisotropy = glHasExtensionSIG(gl, "GL_ARB_texture_filter_anisotropic"); // glHasExtensionSIG("EXT_texture_filter_anisotropic");
+    features.samplerMirrorClampToEdge = glHasExtensionSIG(gl, "GL_ARB_texture_mirror_clamp_to_edge");
+    features.samplerFilterMinMax = glHasExtensionSIG(gl, "GL_ARB_texture_filter_minmax");
+
+    // viewport
+    features.viewports = glHasExtensionSIG(gl, "GL_ARB_viewport_array"); // glHasExtensionSIG("EXT_multiview");
+    features.cullDist = glHasExtensionSIG(gl, "GL_ARB_cull_distance");
+
+    // MDI
+    features.mdi = glHasExtensionSIG(gl, "GL_ARB_multi_draw_indirect");
+    features.baseInst = glHasExtensionSIG(gl, "GL_ARB_base_instance");
+
+    // framebuffer ops
+    features.independentBlend = glHasExtensionSIG(gl, "GL_EXT_blend_func_separate");
+    features.dualSrcBlend = glHasExtensionSIG(gl, "GL_EXT_blend_func_extended");
+    features.logicOp = glHasExtensionSIG(gl, "GL_ARB_logic_op");
 
     /*
     afxBool8 fullDrawIdxUint32;
@@ -2687,14 +2824,14 @@ _ZGL void wglDetectDeviceFeaturesSIGMA(glVmt const* gl, HDC hDC, afxDrawFeatures
     *pFeatures = features;
 }
 
-_ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, afxDrawLimits* pLimits)
+_ZGL void wglDetectDeviceLimitsSIGMA(glVmt const* gl, avxLimits* pLimits)
 {
     afxError err = { 0 };
     GLfloat dataf;
     GLfloat dataf2[3];
     GLint datai;
     GLint datai2[3];
-    afxDrawLimits limits = { 0 };
+    avxLimits limits = { 0 };
 
 #if 0
     afxUnit maxMemAllocCnt;

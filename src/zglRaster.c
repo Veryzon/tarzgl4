@@ -2113,7 +2113,7 @@ _ZGL afxError _ZglRasDtor(avxRaster ras)
         ras->glHandle = 0;
     }
 
-    if (_AVX_RAS_CLASS_CONFIG.dtor(ras))
+    if (_AVX_CLASS_CONFIG_RAS.dtor(ras))
         AfxThrowError();
 
     return err;
@@ -2123,46 +2123,53 @@ _ZGL afxError _ZglRasCtor(avxRaster ras, void** args, afxUnit invokeNo)
 {
     afxError err = { 0 };
 
-    if (_AVX_RAS_CLASS_CONFIG.ctor(ras, args, invokeNo)) AfxThrowError();
-    else
+    afxDrawSystem dsys = AvxGetRasterHost(ras);
+    avxRasterInfo const* rasi = args[1] ? ((avxRasterInfo const*)args[1]) + invokeNo : NIL;
+    avxSubrasterInfo const* subi = args[2] ? ((avxSubrasterInfo const*)args[2]) + invokeNo : NIL;
+    avxExorasterInfo const* exorasi = args[3] ? ((avxExorasterInfo const*)args[3]) + invokeNo : NIL;
+
+    if (_AVX_CLASS_CONFIG_RAS.ctor(ras, args, invokeNo))
     {
-        afxDrawSystem dsys = AvxGetRasterHost(ras);
-        ras->rasUniqueId = ++dsys->rasUniqueId;
+        AfxThrowError();
+        return err;
+    }
 
-        ras->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
+    ras->rasUniqueId = ++dsys->rasUniqueId;
 
-        GLint glIntFmt;
-        ZglDetermineGlTargetInternalFormatType(ras, &ras->glTarget, &ras->glIntFmt, &ras->glFmt, &ras->glType);
+    ras->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
+
+    GLint glIntFmt;
+    ZglDetermineGlTargetInternalFormatType(ras, &ras->glTarget, &ras->glIntFmt, &ras->glFmt, &ras->glType);
         
-        if ((ras->m.usage & avxRasterUsage_DRAW) == avxRasterUsage_DRAW)
-        {
-            avxFormatDescription pfd;
-            AvxDescribeRasterFormat(ras, &pfd);
+    if ((ras->m.usage & avxRasterUsage_DRAW) == avxRasterUsage_DRAW)
+    {
+        avxFormatDescription pfd;
+        AvxDescribeRasterFormat(ras, &pfd);
 
-            if ((pfd.flags & (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL)) == (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL))
-                ras->glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
-            if ((pfd.flags & avxFormatFlag_DEPTH) == avxFormatFlag_DEPTH)
-                ras->glAttachment = GL_DEPTH_ATTACHMENT;
-            else if ((pfd.flags & avxFormatFlag_STENCIL) == avxFormatFlag_STENCIL)
-                ras->glAttachment = GL_STENCIL_ATTACHMENT;
-            else if (pfd.flags & avxFormatFlag_COLOR)
-                ras->glAttachment = GL_COLOR_ATTACHMENT0;
+        if ((pfd.flags & (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL)) == (avxFormatFlag_DEPTH | avxFormatFlag_STENCIL))
+            ras->glAttachment = GL_DEPTH_STENCIL_ATTACHMENT;
+        if ((pfd.flags & avxFormatFlag_DEPTH) == avxFormatFlag_DEPTH)
+            ras->glAttachment = GL_DEPTH_ATTACHMENT;
+        else if ((pfd.flags & avxFormatFlag_STENCIL) == avxFormatFlag_STENCIL)
+            ras->glAttachment = GL_STENCIL_ATTACHMENT;
+        else if (pfd.flags & avxFormatFlag_COLOR)
+            ras->glAttachment = GL_COLOR_ATTACHMENT0;
 
 #ifdef RENDERBUFFER_ENABLED
-            if (((ras->m.usage & avxRasterUsage_ALL) == avxRasterUsage_DRAW) && // RBO can not be read/written out of a draw pass.
-                (ras->m.whd.d == 1) && // RBO can not be layered
-                (!(ras->m.flags & avxRasterFlag_MIP))) // RBO can not be subsampled
+        if (((ras->m.usage & avxRasterUsage_ALL) == avxRasterUsage_DRAW) && // RBO can not be read/written out of a draw pass.
+            (ras->m.whd.d == 1) && // RBO can not be layered
+            (!(ras->m.flags & avxRasterFlag_MIP))) // RBO can not be subsampled
+        {
+            if (ras->glTarget == GL_TEXTURE_2D)
             {
-                if (ras->glTarget == GL_TEXTURE_2D)
-                {
-                    ras->glTarget = GL_RENDERBUFFER;
-                }
+                ras->glTarget = GL_RENDERBUFFER;
             }
-#endif
         }
-
-        if (err && _AVX_RAS_CLASS_CONFIG.dtor(ras))
-            AfxThrowError();
+#endif
     }
+
+    if (err && _AVX_CLASS_CONFIG_RAS.dtor(ras))
+        AfxThrowError();
+    
     return err;
 }

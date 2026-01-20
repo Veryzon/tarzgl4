@@ -826,7 +826,7 @@ _ZGL afxError _BufDtorCb(avxBuffer buf)
         buf->glTexHandle = 0;
     }
 #endif
-    if (_AVX_BUF_CLASS_CONFIG.dtor(buf))
+    if (_AVX_CLASS_CONFIG_BUF.dtor(buf))
         AfxThrowError();
 
     return err;
@@ -839,7 +839,7 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
 
     avxBufferInfo const *spec = ((avxBufferInfo const *)args[1]) + invokeNo;
 
-    if (_AVX_BUF_CLASS_CONFIG.ctor(buf, args, invokeNo))
+    if (_AVX_CLASS_CONFIG_BUF.ctor(buf, args, invokeNo))
     {
         AfxThrowError();
         return err;
@@ -1059,7 +1059,7 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
         GPU writes are automatically visible to the CPU (no vkInvalidateMappedMemoryRanges() needed).
         This mimics the behavior of coherent buffer mappings in OpenGL.
 
-
+        What cursed use case could 'MAP_WRITE_BIT | MAP_PERSISTENT_BIT' have? Lacking both 'MAP_COHERENT_BIT' and 'MAP_FLUSH_EXPLICIT_BIT'.
     */
 
     /*
@@ -1085,7 +1085,7 @@ _ZGL afxError _BufCtorCb(avxBuffer buf, void** args, afxUnit invokeNo)
         (!(glMapRangeAccess & GL_MAP_COHERENT_BIT) || !(glGenAccess & GL_MAP_COHERENT_BIT)))
         AfxThrowError();
 
-    if (err && _AVX_BUF_CLASS_CONFIG.dtor(buf))
+    if (err && _AVX_CLASS_CONFIG_BUF.dtor(buf))
         AfxThrowError();
 
     // Indirect Command Buffers (e.g., via glMultiDrawIndirect) are not reliably shareable because they are attached to execution context-specific stuff.

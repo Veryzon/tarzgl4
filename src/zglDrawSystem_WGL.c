@@ -18,7 +18,7 @@
 #include "zglCommands.h"
 #include "zglObjects.h"
 #define _AUX_UX_C
-#include "../qwadro_afx/src/ux/auxIcd.h"
+#include "../qwadro_afx/mmux/auxIcd.h"
 
 _ZGLINL afxError _ZglDsysDeallocateRastersCb_SW(afxDrawSystem dsys, afxUnit cnt, avxRaster rasters[])
 {
@@ -192,7 +192,7 @@ _ZGL afxError _ZglDsysDtorCb(afxDrawSystem dsys)
 
     //AvxWaitForDrawSystem(dsys, AFX_TIMEOUT_INFINITE);
 
-    if (_AVX_DSYS_CLASS_CONFIG.dtor(dsys))
+    if (_AVX_CLASS_CONFIG_DSYS.dtor(dsys))
         AfxThrowError();
 
     AfxDeregisterChainedClasses(&dsys->m.ctx.classes);
@@ -225,15 +225,15 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
 
     afxModule icd = args[0];
     AFX_ASSERT_OBJECTS(afxFcc_MDLE, 1, &icd);
-    _avxDsysAcquisition const* cfg = AFX_CAST(_avxDsysAcquisition const*, args[1]) + invokeNo;
-    _avxDexuAcquisition* bridgeCfgs = AFX_CAST(_avxDexuAcquisition*, args[2]) + invokeNo;
+    _avxDsysAcq const* cfg = AFX_CAST(_avxDsysAcq const*, args[1]) + invokeNo;
+    _avxDexuAcq* bridgeCfgs = AFX_CAST(_avxDexuAcq*, args[2]) + invokeNo;
 
     afxDrawDevice ddev = bridgeCfgs[0].ddev;
     AFX_ASSERT_OBJECTS(afxFcc_DDEV, 1, &ddev);
 
     dsys->glVerMaj = ddev->oglVerMajor;
     dsys->glVerMin = ddev->oglVerMinor;
-    dsys->robustCtx = !!cfg->reqFeatures.robustBufAccess;
+    dsys->robustCtx = !!cfg->reqFeatures.robustness;
 
     if (wglCreateSurfaceSIGMA(0, 0, &dsys->hPrimeWnd, &dsys->hPrimeDC, &dsys->primeDcPixFmt, &dsys->primeDcPfd))
     {
@@ -253,69 +253,69 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         return err;
     }
 
-    _avxDsysAcquisition cfg2 = *cfg;
+    _avxDsysAcq cfg2 = *cfg;
 
-    afxClassConfig bufClsCfg = _AVX_BUF_CLASS_CONFIG;
+    afxClassConfig bufClsCfg = _AVX_CLASS_CONFIG_BUF;
     bufClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxBuffer));
     bufClsCfg.ctor = (void*)_BufCtorCb;
     bufClsCfg.dtor = (void*)_BufDtorCb;
 
-    afxClassConfig rasClsCfg = _AVX_RAS_CLASS_CONFIG;
+    afxClassConfig rasClsCfg = _AVX_CLASS_CONFIG_RAS;
     rasClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxRaster));
     rasClsCfg.ctor = (void*)_ZglRasCtor;
     rasClsCfg.dtor = (void*)_ZglRasDtor;
 
-    afxClassConfig canvClsCfg = _AVX_CANV_CLASS_CONFIG;
+    afxClassConfig canvClsCfg = _AVX_CLASS_CONFIG_CANV;
     canvClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxCanvas));
     canvClsCfg.ctor = (void*)_ZglCanvCtor;
     canvClsCfg.dtor = (void*)_ZglCanvDtor;
 
-    afxClassConfig sampClsCfg = _AVX_SAMP_CLASS_CONFIG;
+    afxClassConfig sampClsCfg = _AVX_CLASS_CONFIG_SAMP;
     sampClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxSampler));
     sampClsCfg.ctor = (void*)_ZglSampCtor;
     sampClsCfg.dtor = (void*)_ZglSampDtor;
 
-    afxClassConfig ligaClsCfg = _AVX_LIGA_CLASS_CONFIG;
+    afxClassConfig ligaClsCfg = _AVX_CLASS_CONFIG_LIGA;
     ligaClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxLigature));
     ligaClsCfg.ctor = (void*)_ZglLigaCtor;
     ligaClsCfg.dtor = (void*)_ZglLigaDtor;
 
-    afxClassConfig vtxdClsCfg = _AVX_VIN_CLASS_CONFIG;
+    afxClassConfig vtxdClsCfg = _AVX_CLASS_CONFIG_VIN;
     vtxdClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxVertexInput));
     vtxdClsCfg.ctor = (void*)_ZglVinCtor;
     vtxdClsCfg.dtor = (void*)_ZglVinDtor;
 
-    afxClassConfig shdClsCfg = _AVX_SHD_CLASS_CONFIG;
+    afxClassConfig shdClsCfg = _AVX_CLASS_CONFIG_CODB;
     shdClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxCodebase));
     shdClsCfg.ctor = (void*)_ZglShdCtor;
     shdClsCfg.dtor = (void*)_ZglShdDtor;
 
-    afxClassConfig pipClsCfg = _AVX_PIP_CLASS_CONFIG;
+    afxClassConfig pipClsCfg = _AVX_CLASS_CONFIG_PIP;
     pipClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxPipeline));
     pipClsCfg.ctor = (void*)_ZglPipCtor;
     pipClsCfg.dtor = (void*)_ZglPipDtor;
 
-    afxClassConfig qrypClsCfg = _AVX_QRYP_CLASS_CONFIG;
+    afxClassConfig qrypClsCfg = _AVX_CLASS_CONFIG_QRYP;
     qrypClsCfg.fixedSiz = sizeof(AFX_OBJECT(avxQueryPool));
     qrypClsCfg.ctor = (void*)_ZglQrypCtor;
     qrypClsCfg.dtor = (void*)_ZglQrypDtor;
 
-    afxClassConfig fencClsConf = _AVX_FENC_CLASS_CONFIG;
+    afxClassConfig fencClsConf = _AVX_CLASS_CONFIG_FENC;
     fencClsConf.fixedSiz = sizeof(AFX_OBJECT(avxFence));
     fencClsConf.ctor = (void*)_ZglFencCtorCb;
     fencClsConf.dtor = (void*)_ZglFencDtorCb;
 
-    afxClassConfig doutClsCfg = _AVX_DOUT_CLASS_CONFIG;
+    afxClassConfig doutClsCfg = _AVX_CLASS_CONFIG_DOUT;
     //doutClsCfg.fixedSiz = sizeof(AFX_OBJ(afxSurface));
     //doutClsCfg.ctor = (void*)_ZglDoutCtorCb;
     //doutClsCfg.dtor = (void*)_ZglDoutDtorCb;
 
-    if (_AuxGetInteropSurfaceClass(dsys, &AFX_STRING("wgl"), &doutClsCfg))
+    if (_AuxIcdGetInteropDoutClass(dsys, &AFX_STRING("wgl"), &doutClsCfg))
     {
-        doutClsCfg = _AVX_DOUT_CLASS_CONFIG;
+        doutClsCfg = _AVX_CLASS_CONFIG_DOUT;
     }
 
-    afxClassConfig dexuClsCfg = _AVX_DEXU_CLASS_CONFIG;
+    afxClassConfig dexuClsCfg = _AVX_CLASS_CONFIG_DEXU;
     dexuClsCfg.fixedSiz = sizeof(AFX_OBJ(afxDrawBridge));
     dexuClsCfg.ctor = (void*)_ZglDexuCtorCb;
     dexuClsCfg.dtor = (void*)_ZglDexuDtorCb;
@@ -339,7 +339,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         //bridgeCfgs[i].dctxClsCfg = &dqueClsCfg;
     }
 
-    if (_AVX_DSYS_CLASS_CONFIG.ctor(dsys, (void*[]) { icd, (void*)&cfg2, (void*)bridgeCfgs }, 0)) AfxThrowError();
+    if (_AVX_CLASS_CONFIG_DSYS.ctor(dsys, (void*[]) { icd, (void*)&cfg2, (void*)bridgeCfgs }, 0)) AfxThrowError();
     else
     {
         dsys->m.ddi = &_ZGL_DDI_DSYS;
@@ -436,7 +436,7 @@ _ZGL afxError _ZglDsysCtorCb(afxDrawSystem dsys, void** args, afxUnit invokeNo)
         if (err)
             AfxDeregisterChainedClasses(&dsys->m.ctx.classes);
 
-        if (err && _AVX_DSYS_CLASS_CONFIG.dtor(dsys))
+        if (err && _AVX_CLASS_CONFIG_DSYS.dtor(dsys))
             AfxThrowError();
     }
 

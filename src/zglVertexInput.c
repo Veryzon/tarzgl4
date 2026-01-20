@@ -54,7 +54,7 @@ _ZGL void _ZglUnbindVinResources(zglDpu* dpu)
     if (!activeVin) return;
     AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &activeVin);
 
-    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SWAPS;
     zglVertexInputState* state = &activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].bindings;
     AFX_ASSERT(activeVin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle);
 
@@ -95,7 +95,7 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
 
     if (!vin)
     {
-        afxUnit emptyVaoIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+        afxUnit emptyVaoIdx = dpu->dpuIterIdx % _ZGL_VAO_SWAPS;
 
 #ifdef _ZGL_PURGE_VAO_ON_SWITCH
         _ZglUnbindVinResources(dpu);
@@ -111,7 +111,7 @@ _ZGL void _ZglFlushVertexInputState(zglDpu* dpu)
         return;
     }
 
-    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SET_POP;
+    afxUnit vaoHandleIdx = dpu->dpuIterIdx % _ZGL_VAO_SWAPS;
 
     AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
     GLuint glHandle = vin->perDpu[dpu->m.exuIdx][vaoHandleIdx].glHandle;
@@ -528,7 +528,7 @@ _ZGL afxError _ZglVinDtor(avxVertexInput vin)
 
     for (afxUnit i = 0; i < ZGL_MAX_DPUS; i++)
     {
-        for (afxUnit j = 0; j < _ZGL_VAO_SET_POP; j++)
+        for (afxUnit j = 0; j < _ZGL_VAO_SWAPS; j++)
         {
             if (vin->perDpu[i][j].glHandle)
             {
@@ -538,7 +538,7 @@ _ZGL afxError _ZglVinDtor(avxVertexInput vin)
         }
     }
 
-    if (_AVX_VIN_CLASS_CONFIG.dtor(vin))
+    if (_AVX_CLASS_CONFIG_VIN.dtor(vin))
         AfxThrowError();
 
     return err;
@@ -549,7 +549,7 @@ _ZGL afxError _ZglVinCtor(avxVertexInput vin, void** args, afxUnit invokeNo)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_VIN, 1, &vin);
 
-    if (_AVX_VIN_CLASS_CONFIG.ctor(vin, args, invokeNo)) AfxThrowError();
+    if (_AVX_CLASS_CONFIG_VIN.ctor(vin, args, invokeNo)) AfxThrowError();
     else
     {
         AfxZero(vin->perDpu, sizeof(vin->perDpu));
@@ -558,7 +558,7 @@ _ZGL afxError _ZglVinCtor(avxVertexInput vin, void** args, afxUnit invokeNo)
         afxDrawSystem dsys = AfxGetHost(vin);
         vin->vdeclUniqueId = ++dsys->vdecUniqueId;
 
-        if (err && _AVX_VIN_CLASS_CONFIG.dtor(vin))
+        if (err && _AVX_CLASS_CONFIG_VIN.dtor(vin))
             AfxThrowError();
     }
     return err;

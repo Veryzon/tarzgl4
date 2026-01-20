@@ -151,7 +151,7 @@ _ZGL afxError _ZglSampDtor(avxSampler samp)
         samp->glHandle = 0;
     }
 
-    if (_AVX_SAMP_CLASS_CONFIG.dtor(samp))
+    if (_AVX_CLASS_CONFIG_SAMP.dtor(samp))
         AfxThrowError();
 
     return err;
@@ -162,13 +162,13 @@ _ZGL afxError _ZglSampCtor(avxSampler samp, void** args, afxUnit invokeNo)
     afxError err = { 0 };
     AFX_ASSERT_OBJECTS(afxFcc_SAMP, 1, &samp);
 
-    if (_AVX_SAMP_CLASS_CONFIG.ctor(samp, args, invokeNo)) AfxThrowError();
+    if (_AVX_CLASS_CONFIG_SAMP.ctor(samp, args, invokeNo)) AfxThrowError();
     else
     {
         samp->glHandle = 0;
         samp->updFlags = ZGL_UPD_FLAG_DEVICE_INST;
 
-        if (err && _AVX_SAMP_CLASS_CONFIG.dtor(samp))
+        if (err && _AVX_CLASS_CONFIG_SAMP.dtor(samp))
             AfxThrowError();
     }
     return err;

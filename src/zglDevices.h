@@ -238,7 +238,7 @@ AFX_DEFINE_STRUCT(zglDpu)
 
     GLuint          tmpFbo[_ZGL_MAX_SWAPCHAIN_CAP];
 
-    GLuint          emptyVaos[_ZGL_VAO_SET_POP];
+    GLuint          emptyVaos[_ZGL_VAO_SWAPS];
     GLuint          fboOpSrc;
     avxRaster       fboOpSrcAnnex;
     GLuint          fboOpDst;
@@ -251,8 +251,9 @@ AFX_DEFINE_STRUCT(zglDpu)
         afxBool     shouldPushConsts;
         afxUnit     shouldPushConstBase;
         afxUnit     shouldPushConstRange;
-    }               pushSets[_ZGL_PUSH_SET_POP];
+    }               pushSets[_ZGL_PUSH_SWAPS];
     afxUnit         activePushUboReservedBindPoint;
+    afxUnit         pushSetIdx;
 
     GLuint          timeElapsedQueryIdActive;
     GLuint64        maxSrvWaitTimeout;
@@ -317,6 +318,11 @@ AFX_OBJECT(afxDrawQueue)
     AFX_OBJ(_avxDrawQueue) m;
 };
 
+AFX_OBJECT(afxDrawContext)
+{
+    AFX_OBJ(_avxDrawContext) m;
+};
+
 AFX_OBJECT(afxDrawSystem)
 {
     AFX_OBJECT(_avxDrawSystem) m;
@@ -352,7 +358,7 @@ AFX_OBJECT(afxDrawSystem)
 #if 0
 AFX_OBJECT(afxDisplay)
 {
-    AFX_OBJECT(_avxDisplay) m;
+    AFX_OBJECT(_auxDisplay) m;
     DISPLAY_DEVICEA ddinfo;
     DISPLAY_DEVICEA ddminfo;
 };
@@ -431,7 +437,7 @@ ZGL afxError _DpuPresentDout(zglDpu* dpu, afxSurface dout, afxUnit outBufIdx);
 ZGL afxError _ZglDdevOpenCb(afxDrawDevice ddev, afxDrawSystem dsys, void** args, afxUnit invokeNo);
 ZGL afxError _ZglDdevCloseCb(afxDrawDevice ddev, afxDrawSystem dsys);
 
-ZGL afxError _ZglOpenDexuCb(afxDrawDevice ddev, afxDrawBridge dexu, afxDrawBridgeConfig const* cfg);
+ZGL afxError _ZglOpenDexuCb(afxDrawDevice ddev, afxDrawBridge dexu, avxBridgeConfig const* cfg);
 
 //ZGL afxBool _ZglDqueVmtSubmitCb(afxDrawSystem dsys, afxDrawBridge dexu, afxDrawSubmissionSpecification const *spec, afxUnit *submNo);
 ZGL afxBool _DexuProcCb(afxDrawBridge dexu, afxThread thr);
@@ -458,12 +464,12 @@ _ZGL afxError _ZglSemDtorCb(afxSemaphore sem);
 _ZGL afxError _ZglFencCtorCb(avxFence fenc, void** args, afxUnit invokeNo);
 _ZGL afxError _ZglFencDtorCb(avxFence fenc);
 ZGL afxError _ZglSignalFence(zglDpu* dpu, avxFence fenc);
-ZGL afxError _ZglFencSignalOnHostCb(avxFence fenc);
+ZGL afxError _ZglFencSignalOnHostCb(avxFence fenc, afxUnit64 value);
 ZGL afxError _ZglResetFence(zglDpu* dpu, avxFence fenc);
 
 
-ZGL afxError _DpuWaitForFence(zglDpu* dpu, avxFence fenc);
-ZGL afxError _DpuSignalFence(zglDpu* dpu, avxFence fenc);
+ZGL afxError _DpuWaitForFence(zglDpu* dpu, avxFence fenc, afxUnit64 value);
+ZGL afxError _DpuSignalFence(zglDpu* dpu, avxFence fenc, afxUnit64 value);
 ZGL afxUnit _DpuProcessFenceSignalChain(zglDpu* dpu);
 
 #endif//ZGL_DEVICES_H
